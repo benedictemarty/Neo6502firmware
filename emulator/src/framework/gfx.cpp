@@ -152,7 +152,11 @@ static void _GFXMainLoop(void *arg) {
 	SDL_FillRect(mainSurface, NULL, 												// Draw the background.
 						SDL_MapRGB(mainSurface->format, RED(background),GREEN(background),BLUE(background)));
 	int render = GFXXRender(mainSurface);											// Ask app to render state
-	if (render) SDL_UpdateWindowSurface(mainWindow);								// And update the main window.
+	if (render && SDL_UpdateWindowSurface(mainWindow) != 0) {						// And update the main window.
+		static int reported = 0;
+		if (!reported++) printf("SDL_UpdateWindowSurface : %s\n",SDL_GetError());
+	}
+	if (getenv("NEO_WINDOW_BMP") != NULL) SDL_SaveBMP(mainSurface,getenv("NEO_WINDOW_BMP"));	// Debug : dump what is drawn.
 }
 
 // *******************************************************************************************************************************
