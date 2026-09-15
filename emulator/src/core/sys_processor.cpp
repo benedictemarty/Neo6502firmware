@@ -33,7 +33,7 @@ static char **argumentList;
 static bool useDebuggerKeys = false;  												// Use the debugger keys.
 static bool traceMode = false;														// Dump each CPU instruction to stdout.
 
-// Test automation (headless runs) : cycles:N shot:C:FILE text:C:FILE keys:C:TEXT  (see CPURunTestHooks)
+// Test automation (headless runs) : cycles:N shot:C:FILE text:C:FILE keys:C:TEXT mouse:C:X,Y,B  (see CPURunTestHooks)
 static LONG32 totalCycles = 0;  													// Cycles since reset.
 static LONG32 irqTickCycles = 0,irqTickNext = 0;  									// F-60 interrupt tick (cycles between ticks).
 static bool irqPending = false;  													// IRQB low (level), until vector fetch.
@@ -196,11 +196,12 @@ void CPUReset(void) {
 				exitAtCycles = atol(command+7);
 			}
 			if ((strncmp(command,"shot:",5) == 0 || strncmp(command,"text:",5) == 0 || 	// Timed screenshot / console text / autotype
-						strncmp(command,"keys:",5) == 0) && testHookCount < 16) {
-				char *sep = strchr(command+5,':');
+						strncmp(command,"keys:",5) == 0 || strncmp(command,"mouse:",6) == 0) && testHookCount < 16) {
+				int plen = (command[0] == 'm') ? 6 : 5;  									// mouse:C:X,Y,B (bmarty)
+				char *sep = strchr(command+plen,':');
 				if (sep != NULL) {
 					*sep = '\0';
-					testHooks[testHookCount].at = atol(command+5);
+					testHooks[testHookCount].at = atol(command+plen);
 					testHooks[testHookCount].kind = command[0];
 					strncpy(testHooks[testHookCount].arg,sep+1,sizeof(testHooks[0].arg)-1);
 					testHooks[testHookCount].done = false;
@@ -282,6 +283,10 @@ static void CPURunTestHooks(void) {
 			if (testHooks[i].kind == 's') RNDWriteScreenshot(testHooks[i].arg);
 			if (testHooks[i].kind == 't') CPUConsoleText(testHooks[i].arg);
 			if (testHooks[i].kind == 'k') { typeText = testHooks[i].arg;typePos = 0;typeNext = totalCycles; }
+			if (testHooks[i].kind == 'm') {  												// mouse:C:X,Y,B : position et boutons (test)
+				int x = 0,y = 0,b = 0;
+				if (sscanf(testHooks[i].arg,"%d,%d,%d",&x,&y,&b) == 3) { MSEEnableMouse();MSESetPosition(x,y);MSEUpdateButtonState(b); }
+			}
 		}
 	}
 	if (typePos >= 0 && typeText[typePos] != '\0' && totalCycles >= typeNext) {  		// Autotype : press, 3 frames, release, 3 frames.
