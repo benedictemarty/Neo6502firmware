@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : image multi-boot à 4 slots : + BBC Master 128 (`bbc_master`, slot 3, 359 Ko) → 1 028 Ko ; sélection du slot 3 vérifiée sur libemul.
 - 2026-09-15 : `make -C multiboot image` produit `neo6502-multi.uf2` (Neo 194 Ko + reload BBC 279 Ko + Oric 187 Ko, 669 Ko) ; `make -C multiboot check` (libemul).
 - 2026-09-15 : F-92 — API 2,20 Console Debug Echo : l'affichage console est recopié sur le port de débogage (UART carte / stderr émulateurs) pour capturer l'écran d'une vraie carte depuis le PC ; F-91 (Neo en périphérique CDC) : étude close — un seul contrôleur USB, le lien PC passe par l'UART.
 - 2026-09-15 : émulateur `neo` — option de test `mouse:C:X,Y,B` (position et boutons planifiés), pour le différentiel Phosphoneo.

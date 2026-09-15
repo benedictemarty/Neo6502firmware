@@ -23,7 +23,7 @@ exécuté sur carte**.
 | `0x10000` | 480 Ko | slot 0 : **firmware Neo6502** (187 Ko) — défaut |
 | `0x88000` | 480 Ko | slot 1 (ex. reload BBC : 230 Ko + images disque) |
 | `0x100000` | 480 Ko | slot 2 (ex. reload Oric : 190 Ko) |
-| `0x178000` | 480 Ko | slot 3 (ex. reload Apple //e) |
+| `0x178000` | 480 Ko | slot 3 : **reload BBC Master 128** (`bbc_master`, MOS 3.20 en flash, 359 Ko) |
 
 ## Chaîne
 1. **Image** : lier avec `multiboot/memmap_slot_N.ld` (copie de `memmap_default.ld` du SDK,
@@ -54,7 +54,9 @@ exécuté sur carte**.
 
 ## Produire l'image complète
 `make -C multiboot image` → `multiboot/neo6502-multi.uf2` (sélecteur + Neo à jour + reload BBC
-et Oric si `~/reload-emulator` est présent ; 669 Ko sur 2 Mo). `make -C multiboot check` la
+Model B, Oric et BBC Master 128 si `~/reload-emulator` est présent ; 1 028 Ko sur 2 Mo). Model B
+et Master sont deux images (`bbc`, `bbc_master` = `BBC_MASTER=1`, ROM MOS 3.20 en flash) :
+le Télémon les montre comme `F1 bbc` et `F3 bbc_master`. `make -C multiboot check` la
 vérifie sur libemul. À flasher : BOOTSEL enfoncé, glisser le fichier sur `RPI-RP2`.
 
 ## Côté reload-emulator (fork `benedictemarty`, branche `bbc`)
