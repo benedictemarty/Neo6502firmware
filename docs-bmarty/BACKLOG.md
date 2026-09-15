@@ -66,6 +66,13 @@ couleurs (texte 40×32 8×8). Faits : 1 bpp pleine largeur prouvé par PicoDVI
 (`terminal` 720×480) ; 4 bpp doublé = chemin palette existant ; l'inconnue est
 le coût de 480 encodages/trame (F-54).
 
+### Épopée F6 — Multitâche 6502 (question bmarty 2026-09-15 : « peut-on proposer du multithread préemptif ? »)
+
+| ID | Prio | Story | Origine | État |
+|---|---|---|---|---|
+| F-60 | P3 | **Tick IRQ vers le 65C02** : fonction API « activer/désactiver un tick périodique » (50 Hz trame ou 100 Hz timer) sur IRQB (GPIO25, `wdc65C02cpu_set_irq()` existe mais **n'est appelé nulle part** aujourd'hui) + acquittement ; disponible dans `neo`/Phosphoneo (co-sim US-27 P4). | bmarty | TODO |
+| F-61 | P3 | **Noyau préemptif 6502** (bibliothèque côté 6502, pas firmware) : contexte par tâche (A/X/Y/P/PC/S, tranche de page zéro et de pile), commutation sur le tick, créer/terminer/dormir/sémaphore ; **l'API `$FF00` n'est pas réentrante** → tick masqué pendant un appel API ou mutex API dans le noyau. Côté RP2040, pas de RTOS préemptif (core0 sert le bus cycle par cycle, core1 rend le DVI) : coopératif seulement. | bmarty | TODO |
+
 Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour
 F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 

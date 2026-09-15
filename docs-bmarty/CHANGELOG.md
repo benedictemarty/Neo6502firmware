@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : épopée F6 multitâche 6502 (F-60 tick IRQ, F-61 noyau préemptif) inscrite, avec les contraintes constatées (IRQB jamais levée par le firmware, API non réentrante).
 - 2026-09-15 : F-51 — architecture multi-modes (ADR-02) : descripteur de mode et
   table (0 : 320×240×256 inchangé ; 1 : Hercules 720×350 1 bpp, texte 80×25 ;
   2 : 320×256 4 bpp, texte 40×32), `GFXSetMode(n)` effectif, **API 5,9 Set
