@@ -25,6 +25,8 @@ static int16_t turtleColour = 7; 												// Turtle drawing colour.
 
 static SPRITE_INTERNAL sprites[MAX_SPRITES];
 static uint8_t turtleImage[16*16/2];
+static SPRITE_ACTION saHide;
+static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p);
 
 // ***************************************************************************************
 //
@@ -97,9 +99,16 @@ void SPRResetAll(void) {
 // ***************************************************************************************
 
 void SPRReset(void) {
+	if (GFXIsPackedMode()) {  													// No sprite layer : erase (XOR) what is drawn.
+		for (int i = 0;i < MAX_SPRITES;i++) {
+			if (sprites[i].isDrawn) { SPRSetupAction(&saHide,&sprites[i]);SPRPHYErase(&saHide); }
+		}
+		spriteVisibleCount = 0;
+		SPRResetAll();
+		return;
+	}
 	spriteVisibleCount = 0;
 	SPRResetAll();  	
-	if (GFXIsPackedMode()) return;  											// No sprite layer in packed modes.
 	for (int i = 0;i < gMode.xGSize * gMode.yGSize;i++) {  						// Clear the sprite layer
 		gMode.graphicsMemory[i] &= 0x0F;  										// top 4 bits og graphics memory.
 	}
@@ -124,6 +133,17 @@ void SPRSetTurtleSprite(int16_t spriteID,int16_t rotation,int16_t colour) {
 //
 // ***************************************************************************************
 
+//
+//		The draw page was cleared (packed modes) : the drawn sprites are gone with it,
+//		mark them not drawn so that the next update does not XOR garbage back in.
+//
+void SPRScreenCleared(void) {
+	if (!GFXIsPackedMode()) return;
+	for (int i = 0;i < MAX_SPRITES;i++) {
+		if (sprites[i].isDrawn) { sprites[i].isDrawn = false;spriteVisibleCount--; }
+	}
+}
+
 static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p) {
 	sa->display = gMode.graphicsMemory + p->x + p->y*gMode.xGSize; 				// Work out the draw address top left of sprite.
 	sa->image = p->imageAddress; 												// Where graphic data comes from.
@@ -137,8 +157,6 @@ static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p) {
 //									Hide a sprite
 //
 // ***************************************************************************************
-
-static SPRITE_ACTION saHide;
 
 void SPRHide(uint8_t *paramData) {
 	int spriteID = *paramData;  												// Sprite ID
@@ -200,7 +218,6 @@ int SPRUpdate(uint8_t *paramData) {
 
 	uint8_t spriteID = paramData[0];  											// Sprite ID
 	if (spriteID >= MAX_SPRITES) return 1;  									// Invalid
-	if (GFXIsPackedMode()) return 1;  											// Sprites need the 8 bpp layer : mode 0 only.
 
 	uint16_t x = paramData[1] + (paramData[2] << 8);  							// Extract new data.
 	uint16_t y = paramData[3] + (paramData[4] << 8);

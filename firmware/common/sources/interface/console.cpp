@@ -124,7 +124,7 @@ static void CONDrawCharacter(uint16_t x,uint16_t y,uint16_t ch,uint16_t fcol,uin
 void CONClearScreen(void) {
 	graphMode->xCursor = graphMode->yCursor = 0;  								// Home cursor
 	if (graphMode->xGSize != 0) {  												// Graphics present ?
-		if (SPRSpritesInUse()) {  												// Sprites present, only delete that layer
+		if (SPRSpritesInUse() && !GFXIsPackedMode()) {  												// Sprites present, only delete that layer
 			for (int i = 0;i < gMode.xGSize*gMode.yGSize;i++) {
 				graphMode->graphicsMemory[i] &= 0xF0;
 			}
@@ -133,6 +133,7 @@ void CONClearScreen(void) {
 			if (graphMode->bitsPerPixel == 4) fill = (fill & 0x0F) | (fill << 4);
 			if (graphMode->bitsPerPixel == 1) fill = (fill & 1) ? 0xFF : 0x00;
 			memset(graphMode->graphicsMemory,fill,graphMode->pageSize);  		// Draw page only (F-55)
+			SPRScreenCleared();  												// Packed modes : sprites went with it.
 		}
 	}
 	for (int c = 0;c < MAXCONSOLEMEMORY;c++) {  								// Erase the console memory.

@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-53 — sprites en modes 1 et 2 (XOR pixel à pixel dans le tampon, `SPRPHYDraw` générique, `SPRReset` efface les sprites dessinés, `SPRScreenCleared` après 2,12) ; démo tortue.
 - 2026-09-15 : émulateur `neo` — l'échelle `scale=1..4` s'applique à tous les modes
   vidéo (la fenêtre s'agrandit pour 720×350), argument `fullscreen` et bascule
   **Ctrl+F11** (plein écran bureau, échelle entière maximale). Demande bmarty.

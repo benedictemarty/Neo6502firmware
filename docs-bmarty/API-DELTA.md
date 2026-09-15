@@ -10,8 +10,11 @@ et documentée dans le `groupN.inc` concerné.
 | 5 Graphics | 11 Set Draw Page | P0 = page (0-1 ; mode 0 : 0 seulement) | erreur si la page n'existe pas | absente | F-55 |
 | 5 Graphics | 12 Set Display Page | P0 = page | erreur si la page n'existe pas ; effective à la trame suivante (attendre avec 5,37) | absente | F-55 |
 
-Comportements modifiés : en modes 1 et 2, 6,2 (sprite) renvoie une erreur (pas
-de couche sprite hors 8 bpp) ; 5,7 (image) et 5,8 (tilemap) dessinent avec les
-index réduits du mode ; 5,33 (lecture pixel) renvoie l'index de couleur du mode
+Comportements modifiés : en modes 1 et 2 les sprites (groupe 6, tortue groupe 9)
+sont **dessinés en XOR dans le tampon** (pas de couche séparée) : couleurs exactes
+sur fond noir, mélangées (XOR) sur fond coloré, inversion en monochrome ; un
+texte ou une primitive dessinés par-dessus effacent le sprite (comme sur un
+micro 8 bits sans matériel de sprite) et 2,12 les efface aussi ; 5,7 (image) et
+5,8 (tilemap) dessinent avec les index réduits du mode ; 5,33 (lecture pixel) renvoie l'index de couleur du mode
 (0-1 ou 0-15) de la page de dessin ; 2,12 (effacement) n'efface que la page de
 dessin.
