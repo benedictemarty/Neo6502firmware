@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : **jalon F5** — `feat/video-modes` fusionnée dans `bmarty/main` (`dc655ac`) : modes 1 et 2, pages, sprites XOR, attributs MDA, émulateur multi-modes ; pas d'étiquette git (la bannière du firmware vient de `git describe`, réservé aux versions amont). Rendu carte à valider (F-52-hercules.md).
 - 2026-09-15 : F-52 — attributs MDA en mode Hercules (souligné, gras, clignotant, inverse) portés par les quartets encre/papier ; `CONBlinkSync` appelé par `DSPSync` (carte, Phosphoneo) et `HWSync` (émulateur).
 - 2026-09-15 : F-53 — sprites en modes 1 et 2 (XOR pixel à pixel dans le tampon, `SPRPHYDraw` générique, `SPRReset` efface les sprites dessinés, `SPRScreenCleared` après 2,12) ; démo tortue.
 - 2026-09-15 : émulateur `neo` — l'échelle `scale=1..4` s'applique à tous les modes
