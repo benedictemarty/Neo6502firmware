@@ -8,7 +8,7 @@ parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
 | ID | P | Story | Origine | État |
 |----|---|-------|---------|------|
 | F-00 | P1 | Installer la chaîne (arm-none-eabi, 64tass, Pico SDK…) et **compiler le firmware et l'émulateur tels quels** ; consigner versions et durée. | drive US-C1, oric2 US-05 | TODO |
-| F-01 | P1 | **Capture d'écran / mode headless** dans l'émulateur `neo` (`--screenshot-at`, `--cycles`, `--type-keys` comme Phosphoric) → tests visuels automatiques pour tous les projets. | scumm US-03, civ US-13, bbc US-04 | TODO |
+| F-01 | P1 | **Options de test sur l'émulateur `neo`** (voie 1, décision 2026-09-15) : `--headless`, `--cycles N`, `--screenshot-at C:FILE` (.ppm/.bmp), `--screenshot-text-at` (console 53×30), `--type-keys C:TEXT` (injection dans la file clavier du firmware), `--trace FILE`, `--dump-ram-when A:V:FILE`, `--poke-at` ; sortie déterministe. Le golden model complet est le projet à part **Phosphoneo**. | scumm US-03, civ US-13, bbc US-04 | TODO |
 | F-02 | P2 | Corriger la documentation là où elle contredit le code (ex. 2,2 Console Status) — PR documentaire. | kbd notes | TODO |
 
 ## Épopée F1 — Fonctions manquantes (petites, candidates amont)
