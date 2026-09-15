@@ -1,0 +1,42 @@
+# Backlog du fork firmware
+
+Stories transférées depuis les projets applicatifs (référence d'origine entre
+parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
+
+## Épopée F0 — Base
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-00 | P1 | Installer la chaîne (arm-none-eabi, 64tass, Pico SDK…) et **compiler le firmware et l'émulateur tels quels** ; consigner versions et durée. | drive US-C1, oric2 US-05 | TODO |
+| F-01 | P1 | **Capture d'écran / mode headless** dans l'émulateur `neo` (`--screenshot-at`, `--cycles`, `--type-keys` comme Phosphoric) → tests visuels automatiques pour tous les projets. | scumm US-03, civ US-13, bbc US-04 | TODO |
+| F-02 | P2 | Corriger la documentation là où elle contredit le code (ex. 2,2 Console Status) — PR documentaire. | kbd notes | TODO |
+
+## Épopée F1 — Fonctions manquantes (petites, candidates amont)
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-10 | P1 | **IRQ périodique / vsync** : le RP2040 déclenche l'IRQ du 65C02 (broche IRQB, déjà câblée) à 50/60 Hz ou sur trame, activable par API (nouvelle fonction groupe 1), avec acquittement ; vecteur `$FFFE` laissé au programme. | bbc US-16, oric2 | TODO |
+| F-11 | P1 | **Blitter : format source 2 bpp** (4 pixels/octet) dans 12,3, plus option de doublage horizontal ; utile MODE 5 BBC, C64, CPC. | bbc US-11 | TODO |
+| F-12 | P2 | **Son : volume instantané par canal** et/ou enveloppe simple (attaque/relâchement) en complément de 8,7. | bbc US-14 | TODO |
+| F-13 | P2 | **Hôte USB CDC-ACM** : `CFG_TUH_CDC 1`, callbacks, tampon ; exposition par routage des fonctions UART 10,13-10,18 ou nouvelles fonctions ≥ 10,19 ; maquette dans l'émulateur (pty/TCP). | drive US-C2..C4 | TODO |
+| F-14 | P2 | **Date/heure** : API lecture/écriture d'une horloge (RTC PCF8563 sur I2C si présent, sinon compteur), horodatage FAT. | manques | TODO |
+| F-15 | P3 | **Mode vidéo 640×240 monochrome / texte 80 colonnes** (framebuffer 1 bpp de 19,2 Ko remplaçant le 320×240 à la demande). | question PO | TODO |
+
+## Épopée F2 — Mémoire et bus (mesures de timing obligatoires)
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-20 | P2 | **Fenêtre d'adresses externe** : plage où le RP2040 ne pilote pas D0-D7 en lecture (périphériques lisibles sur BUS1), gestion `RDY`. | drive US-B3 | TODO |
+| F-21 | P3 | **Banques ROM en flash** commutées par registre (`$FF0x`), pour ROM étendues / cartouches. | oric2 US-22, question banking | TODO |
+| F-22 | P3 | Cadence 65C02 réglable à chaud (1 MHz compat / 6,25 MHz), si le PIO le permet. | oric2 US-13 | TODO |
+
+## Épopée F3 — Modes machine (gros, décision par ADR)
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-30 | P3 | **Mode Oric** dans le firmware (ULA/VIA/AY/Microdisc) — ou fork de reload : ADR-01 de Neo6502oric2. | oric2 | TODO |
+| F-31 | P3 | **Mode BBC** (6845/ULA, VIA ×2, SN76489, 8271/1770, Master 128 ?) : épopée 3 de Neo6502bbc. | bbc US-30..36 | TODO |
+
+## Politique amont
+Ordre de proposition : F-01 → F-02 → F-11 → F-10 → F-13 → F-14. Les épopées
+F2/F3 restent dans le fork tant qu'elles ne sont pas stabilisées et mesurées.
