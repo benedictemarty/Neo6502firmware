@@ -8,6 +8,7 @@ parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
 | ID | P | Story | Origine | État |
 |----|---|-------|---------|------|
 | F-00 | P1 | Installer la chaîne et **compiler le firmware et l'émulateur tels quels**. Fait le 2026-09-15 pour la partie PC : 64tass 1.60, python3-git/pil, `make -C firmware prelim` (+ `make -C basic convert build`, `mkdir bin`), `make -C emulator emulator` → `bin/neo`. **Bug amont corrigé** (`feat/emulator-build-fix`, à proposer en PR). Firmware RP2040 (`make -C firmware build`) : à faire (Pico SDK à récupérer). | drive US-C1, oric2 US-05 | WIP |
+| F-02 | P2 | Émulateur `neo` : échelle 1-4 pour tous les modes vidéo, fenêtre redimensionnée, plein écran (`fullscreen`, Ctrl+F11). | bmarty | DONE 2026-09-15 |
 | F-01 | P1 | **Options de test sur l'émulateur `neo`** (voie 1, décision 2026-09-15) : `--headless`, `--cycles N`, `--screenshot-at C:FILE` (.ppm/.bmp), `--screenshot-text-at` (console 53×30), `--type-keys C:TEXT` (injection dans la file clavier du firmware), `--trace FILE`, `--dump-ram-when A:V:FILE`, `--poke-at` ; sortie déterministe. Le golden model complet est le projet à part **Phosphoneo**. | scumm US-03, civ US-13, bbc US-04 | DONE 2026-09-15 (`feat/emulator-test-options`, candidat PR amont ; `--dump-ram-when`/`--poke-at`/`--trace FILE` non portés, `trace` existant) |
 | F-02 | P2 | Corriger la documentation là où elle contredit le code (ex. 2,2 Console Status) — PR documentaire. | kbd notes | TODO |
 

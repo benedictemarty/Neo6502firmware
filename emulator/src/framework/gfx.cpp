@@ -66,6 +66,39 @@ void GFXOpenWindow(const char *title,int width,int height,int colour) {
 	SOUNDPlay();
 
 	SDL_ShowCursor(SDL_DISABLE);                                                    // Hide mouse cursor
+	if (GFXIsFullScreen()) GFXSetFullScreen(1);  									// fullscreen argument given.
+}
+
+// *******************************************************************************************************************************
+//
+//						Window size / full screen (bmarty : scale 1-4 for every video mode, full screen)
+//
+// *******************************************************************************************************************************
+
+static int isFullScreen = 0;
+
+void GFXSetWindowSize(int width,int height) {
+	if (isFullScreen) return;
+	int w,h;
+	SDL_GetWindowSize(mainWindow,&w,&h);
+	if (w == width && h == height) return;
+	SDL_SetWindowSize(mainWindow,width,height);
+	mainSurface = SDL_GetWindowSurface(mainWindow);									// Surface is recreated on resize.
+}
+
+void GFXSetFullScreen(int fs) {
+	isFullScreen = fs ? 1 : 0;
+	if (mainWindow == NULL) return;  												// Before the window exists (command line) : applied at open.
+	SDL_SetWindowFullscreen(mainWindow,isFullScreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+	mainSurface = SDL_GetWindowSurface(mainWindow);
+}
+
+int GFXIsFullScreen(void) {
+	return isFullScreen;
+}
+
+void GFXGetDrawableSize(int *width,int *height) {
+	*width = mainSurface->w;*height = mainSurface->h;
 }
 
 // *******************************************************************************************************************************
@@ -93,6 +126,11 @@ static void _GFXMainLoop(void *arg) {
 			int ctrl = ((SDL_GetModState() & KMOD_LCTRL) != 0);						// If control pressed
 			if (CPUUseDebugKeys() == 0) ctrl = (ctrl == 0);							// Debugger in use, ESC on its own
 			if (ctrl) isRunning = 0; 												// Exit
+		}
+		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_F11 &&  		// Ctrl+F11 : toggle full screen.
+										(SDL_GetModState() & KMOD_LCTRL) != 0) {
+			GFXSetFullScreen(!isFullScreen);
+			continue;
 		}
 		if (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP) {					// Handle other keys.
 			_GFXUpdateKeyRecord(event.key.keysym.sym,event.type == SDL_KEYDOWN);

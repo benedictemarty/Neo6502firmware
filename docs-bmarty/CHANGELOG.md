@@ -1,6 +1,9 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : émulateur `neo` — l'échelle `scale=1..4` s'applique à tous les modes
+  vidéo (la fenêtre s'agrandit pour 720×350), argument `fullscreen` et bascule
+  **Ctrl+F11** (plein écran bureau, échelle entière maximale). Demande bmarty.
 - 2026-09-15 : F-55 pages écran — `MAXGRAPHICSMEMORY` 76 800 → 81 920 (2 pages en
   modes 1/2), `gMode.pageSize/pageCount/drawPage/displayPage/displayMemory`, API
   **5,11 Set Draw Page** et **5,12 Set Display Page**, `RNDSetDisplayPage` (carte :

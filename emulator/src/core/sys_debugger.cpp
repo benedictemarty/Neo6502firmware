@@ -115,6 +115,9 @@ void DBGSaveArguments(int argc,char *argv[]) {
 		if (strncmp(p,"scale=",6) == 0 && strlen(p) == 7) {
 			DBGSetDisplayScale(p[6]-'0');
 		}
+		if (strcmp(p,"fullscreen") == 0 || strcmp(p,"fullscreen=1") == 0) {  		// Full screen from the start (Ctrl+F11 toggles).
+			GFXSetFullScreen(1);
+		}
 	}
 }
 
@@ -124,13 +127,27 @@ void DBGSaveArguments(int argc,char *argv[]) {
 //
 // *******************************************************************************************************************************
 
+//
+//		Scale (scale=1..4, or the largest integer that fits in full screen) applies to every
+//		video mode ; the window grows to fit modes wider than 320x240 (Hercules 720x350).
+//
 void DGBXGetActiveDisplayInfo(SDL_Rect *r,int *pxs,int *pys,int *pxc,int *pyc) {
 		*pxc = gMode.xGSize;*pyc = gMode.yGSize;
-		*pxs = SCALE * 320 / (*pxc);*pys = SCALE * 240 / (*pyc);					// Fit modes larger than 320x240 in the same window
-		if (*pxs < 1) *pxs = 1;  													// (Hercules at scale 1 is clipped on the right : debug window only).
-		if (*pys < 1) *pys = 1;
+		int sw,sh;
+		if (GFXIsFullScreen()) {
+			GFXGetDrawableSize(&sw,&sh);
+			int s = sw / (*pxc);if (sh / (*pyc) < s) s = sh / (*pyc);
+			if (s < 1) s = 1;
+			*pxs = *pys = s;
+		} else {
+			*pxs = *pys = SCALE;
+			sw = WIN_WIDTH;sh = WIN_HEIGHT;
+			if ((*pxc) * SCALE + 16 > sw) sw = (*pxc) * SCALE + 16;  				// Grow the window for wide/tall modes.
+			if ((*pyc) * SCALE + 16 > sh) sh = (*pyc) * SCALE + 16;
+			GFXSetWindowSize(sw,sh);
+		}
 		r->w = (*pxs) * (*pxc);r->h = (*pys) * (*pyc);
-		r->x = WIN_WIDTH/2-r->w/2;r->y = WIN_HEIGHT/2-r->h/2;
+		r->x = sw/2-r->w/2;r->y = sh/2-r->h/2;
 }
 
 // *******************************************************************************************************************************
