@@ -4,9 +4,11 @@
 //      Name :      multiboot.cpp
 //      Author :    bmarty <bmarty@mailo.com>
 //      Purpose :   API 1,14 / 1,15 : reboot on another flash image, slot names (F-81).
-//                  The layout comes from multiboot/neoboot.h ; when the selector is not
-//                  installed (firmware flashed at 0 as usual) the directory magic is
-//                  absent and both calls fail cleanly.
+//                  The layout comes from multiboot/neoboot.h : a slot is "there" when it
+//                  holds a plausible image, and its name is read from the image's own
+//                  binary_info — the menu follows whatever is actually in flash. When
+//                  this firmware runs at flash 0 (no selector) slot 0 overlaps it and
+//                  the other slots are erased flash : both calls fail cleanly.
 //      NOT YET RUN ON A BOARD.
 //
 // ***************************************************************************************
@@ -17,21 +19,21 @@
 #include "hardware/structs/watchdog.h"
 #include "../../multiboot/neoboot.h"
 
-static const struct neoboot_directory *MBDirectory(void) {
-	const struct neoboot_directory *d = (const struct neoboot_directory *)(XIP_BASE + NEOBOOT_DIR_OFFSET);
-	return (d->magic == NEOBOOT_MAGIC) ? d : NULL;
+static bool MBSelectorInstalled(void) {  											// This firmware was linked for a slot and runs from it.
+	extern char __flash_binary_start[];
+	return (uint32_t)__flash_binary_start >= XIP_BASE + NEOBOOT_SLOT0_OFFSET;
 }
 
 uint8_t HWGetImageName(uint8_t slot, char *name, int maxLen) {
-	const struct neoboot_directory *d = MBDirectory();
-	if (d == NULL || slot >= NEOBOOT_SLOTS || d->name[slot][0] == 0) return 1;
-	strncpy(name, d->name[slot], maxLen - 1);name[maxLen - 1] = 0;
+	if (!MBSelectorInstalled() || !neoboot_slot_present(slot)) return 1;
+	const char *n = neoboot_slot_name(slot);
+	if (n == NULL) snprintf(name, maxLen, "image %d", slot);  						// No binary_info : still selectable.
+	else { strncpy(name, n, maxLen - 1);name[maxLen - 1] = 0; }
 	return 0;
 }
 
 uint8_t HWRebootImage(uint8_t slot) {
-	char name[NEOBOOT_NAME_LEN];
-	if (HWGetImageName(slot, name, sizeof(name)) != 0) return 1;
+	if (!MBSelectorInstalled() || !neoboot_slot_present(slot)) return 1;
 	watchdog_hw->scratch[0] = NEOBOOT_MAGIC | slot;  								// Read by the selector after the reset.
 	watchdog_reboot(0, 0, 10);  													// Standard boot (bootrom -> selector's boot2 -> selector).
 	while (1) tight_loop_contents();

@@ -59,6 +59,7 @@ endif()
 # bmarty F-80 : -DNEO_MULTIBOOT_SLOT=0 links the firmware for slot 0 of the multi-boot layout
 if (DEFINED NEO_MULTIBOOT_SLOT)
     pico_set_linker_script(firmware ${CMAKE_CURRENT_LIST_DIR}/../../multiboot/memmap_slot_${NEO_MULTIBOOT_SLOT}.ld)
+    pico_set_program_name(firmware "Neo6502")                                   # shown by the Télémon OS menu (binary_info)
     message(STATUS "Neo6502 firmware linked for multi-boot slot ${NEO_MULTIBOOT_SLOT}")
 endif()
 

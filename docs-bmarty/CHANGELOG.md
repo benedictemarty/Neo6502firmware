@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : multi-boot — plus d'annuaire : présence et nom des images lus dans la flash elle-même (table de vecteurs + `binary_info`), le menu suit ce qui est flashé (demande bmarty) ; `pico_set_program_name(firmware "Neo6502")`.
 - 2026-09-15 : F-80/F-81 multi-boot RP2040 — `multiboot/` (sélecteur `neoboot` 8,9 Ko, scripts de liaison par slot, `mkimage.py`), `make -C firmware build-multiboot` (slot 0), API 1,14 Reboot Image / 1,15 Get Image Name (`hardware/multiboot.cpp`, annuaire en flash) ; vérifié sur libemul via Phosphoneo (`test-multiboot`), non exécuté sur carte (`F-80-multiboot.md`).
 - 2026-09-15 : épopée F8 multi-boot RP2040 (F-80..F-82) pour lancer les images reload-emulator (BBC, Oric, Apple //e) depuis le Télémon.
 - 2026-09-15 : épopée F7 (modes vidéo historiques Apple II / Oric / BBC rendus depuis la RAM 6502, interception d'adresses) inscrite pour le sélecteur d'OS (Neo6502kbd EPIC-02).

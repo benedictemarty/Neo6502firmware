@@ -28,10 +28,6 @@
 #include "hardware/sync.h"
 #include "neoboot.h"
 
-// The slot directory (names, written by mkimage.py) lives in the last sector of the
-// selector region : the Neo firmware reads it through API 1,15.
-const struct neoboot_directory *neoboot_dir = (const struct neoboot_directory *)(XIP_BASE + NEOBOOT_DIR_OFFSET);
-
 static void __attribute__((noreturn)) launch(uint32_t slotBase) {
 	static uint8_t boot2Copy[256] __attribute__((aligned(4)));
 	memcpy(boot2Copy, (const void *)slotBase, 256);  								// The image's own boot2 (checksummed by its build).
@@ -44,13 +40,6 @@ static void __attribute__((noreturn)) launch(uint32_t slotBase) {
 	__builtin_unreachable();
 }
 
-static int slot_present(int slot) {
-	const uint32_t *vt = (const uint32_t *)(neoboot_slot_base(slot) + 0x100);
-	uint32_t sp = vt[0], pc = vt[1];  												// Sanity : SP in SRAM, PC in the slot, thumb.
-	return (sp >= 0x20000000u && sp <= 0x20042000u) &&
-		   (pc >= neoboot_slot_base(slot) && pc < neoboot_slot_base(slot) + NEOBOOT_SLOT_SIZE) && (pc & 1);
-}
-
 int main(void) {
 	int slot = NEOBOOT_DEFAULT_SLOT;
 	uint32_t req = watchdog_hw->scratch[0];
@@ -58,8 +47,8 @@ int main(void) {
 		slot = req & 0xFF;
 		watchdog_hw->scratch[0] = 0;  												// One shot : a plain reset goes back to the default.
 	}
-	if (slot >= NEOBOOT_SLOTS || !slot_present(slot)) slot = NEOBOOT_DEFAULT_SLOT;
-	if (!slot_present(slot)) {  													// Nothing to run at all : blink the LED forever.
+	if (slot >= NEOBOOT_SLOTS || !neoboot_slot_present(slot)) slot = NEOBOOT_DEFAULT_SLOT;
+	if (!neoboot_slot_present(slot)) {  													// Nothing to run at all : blink the LED forever.
 		gpio_init(PICO_DEFAULT_LED_PIN);gpio_set_dir(PICO_DEFAULT_LED_PIN, GPIO_OUT);
 		while (1) { gpio_xor_mask(1u << PICO_DEFAULT_LED_PIN);sleep_ms(200); }
 	}

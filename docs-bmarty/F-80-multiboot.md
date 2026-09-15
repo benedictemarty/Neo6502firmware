@@ -19,8 +19,7 @@ exécuté sur carte**.
 ## Disposition de la flash (2 Mo) — `multiboot/neoboot.h`
 | Offset | Taille | Contenu |
 |---|---|---|
-| `0x00000` | 60 Ko | **sélecteur** `neoboot` (8,9 Ko : boot2 + choix + saut) |
-| `0x0F000` | 4 Ko | **annuaire** des slots (magic `NEO`, 4 noms de 32 octets), écrit par `mkimage.py`, lu par l'API 1,15 |
+| `0x00000` | 64 Ko | **sélecteur** `neoboot` (8,9 Ko : boot2 + choix + saut) |
 | `0x10000` | 480 Ko | slot 0 : **firmware Neo6502** (187 Ko) — défaut |
 | `0x88000` | 480 Ko | slot 1 (ex. reload BBC : 230 Ko + images disque) |
 | `0x100000` | 480 Ko | slot 2 (ex. reload Oric : 190 Ko) |
@@ -37,17 +36,27 @@ exécuté sur carte**.
    le `boot2` de l'image en RAM et l'appelle, puis vectorise dans l'image. Slot vide →
    slot 0 ; rien du tout → LED clignotante.
 3. **Image unique** : `multiboot/mkimage.py -o neo6502-multi.uf2 --selector neoboot.uf2
-   --slot 0 firmware_slot0.uf2 "Neo6502" --slot 1 bbc_slot1.uf2 "BBC Micro"` — vérifie
-   que chaque bloc UF2 tombe dans son slot, ajoute l'annuaire. À glisser sur `RPI-RP2`.
-4. **API** (F-81, groupe 1) : **1,14 Reboot Image** (P0 = slot ; ne revient pas) ;
-   **1,15 Get Image Name** (P0 = slot, P1-2 = tampon préfixé). Sans sélecteur installé
-   (annuaire absent) les deux renvoient une erreur ; idem dans `neo`/Phosphoneo.
-5. **Télémon** (Neo6502kbd) : le menu `O` liste `F1..F3 <nom>` et `F1` redémarre sur l'image.
+   --slot 0 firmware_slot0.uf2 --slot 1 bbc_slot1.uf2` — vérifie que chaque bloc UF2
+   tombe dans son slot et affiche le nom `binary_info` de chaque image. À glisser sur
+   `RPI-RP2`. Une image peut aussi être flashée seule plus tard (son UF2 lié pour le
+   slot) : **le menu s'adapte à ce qui est réellement en flash** (demande bmarty).
+4. **Détection** (`neoboot.h`, partagée sélecteur/firmware) : un slot est occupé si sa
+   table de vecteurs est plausible (SP en SRAM, PC dans le slot, bit thumb) ; son nom
+   est le `program name` du `binary_info` du SDK (en-tête juste après les vecteurs :
+   marqueurs `0x7188ebf2`/`0xe71aa390`, entrée `ID_AND_STRING` tag `RP` id
+   `0x02031c86`) — `firmware` → « Neo6502 » via `pico_set_program_name`, reload → « bbc »,
+   « oric »… ; « image n » si l'image n'a pas de binary_info.
+5. **API** (F-81, groupe 1) : **1,14 Reboot Image** (P0 = slot ; ne revient pas) ;
+   **1,15 Get Image Name** (P0 = slot, P1-2 = tampon préfixé). Erreur si le firmware ne
+   tourne pas dans un slot (flashé à 0, sans sélecteur) ou si le slot est vide ; idem
+   dans `neo`/Phosphoneo.
+6. **Télémon** (Neo6502kbd) : le menu `O` liste `F1..F3 <nom>` (slots occupés seulement) et `Fn` redémarre sur l'image.
 
 ## Vérifié (Phosphoneo `make test-multiboot`, sonde `tools/cosim/multiboot_probe.c`)
 Flash émulée = `neoboot.elf` + `firmware.bin` (slot 0) copié à `0x10000` : le sélecteur
-entre dans le slot au pas 2 994 (`0x100101F6`), le firmware relié atteint `CPUExecute`
-en 15,0 M pas comme le firmware normal.
+entre dans le slot au pas 3 000 (`0x100101F6`), le firmware relié atteint `CPUExecute`
+en 15,0 M pas comme le firmware normal ; un appel invité de `HWGetImageName` renvoie
+« Neo6502 » pour le slot 0 et « vide » pour 1-3.
 
 ## Non vérifié / risques (carte)
 | # | Risque | Vérification |
