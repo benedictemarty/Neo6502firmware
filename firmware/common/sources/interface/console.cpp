@@ -413,7 +413,17 @@ static void CONInsertCharacter(void) {
 //
 // ***************************************************************************************
 
+static uint8_t consoleEcho = 0;  												// F-92 : mirror console output to the debug port
+
+void CONSetDebugEcho(uint8_t on) {
+	consoleEcho = on;
+}
+
 void CONWrite(int c) {
+	if (consoleEcho) {  														// F-92 : text and newlines go to the debug UART / stderr
+		if (c == CC_ENTER) { FDBWrite(13);FDBWrite(10); }
+		else if ((c >= 32 && c < 127) || (c >= 0xC0 && consoleEcho > 1)) FDBWrite((uint8_t)c);
+	}
 
 	switch (c) {
 

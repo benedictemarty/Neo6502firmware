@@ -17,7 +17,8 @@
 extern const uint8_t font_5x7[];
 
 void CONInitialise(struct GraphicsMode *gMode);
-void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
+void CONBlinkSync(void);
+void CONSetDebugEcho(uint8_t on);  												// F-92 : 1 = echo printable text to the debug port  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);
 void CONWriteHex(uint16_t h);	
 void CONWriteString(const char *s, ...);

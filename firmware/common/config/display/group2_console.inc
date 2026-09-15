@@ -129,3 +129,10 @@ GROUP 2 Console
         CONSetCursorVisible(DPARAMS[0] ? 1 : 0);
     DOCUMENTATION
         Set the cursor visibility to Param[0]. This is reset by clearing the screen.
+
+    FUNCTION 20 Console Debug Echo
+        CONSetDebugEcho(DPARAMS[0]);
+    DOCUMENTATION
+        Parameter:0 non zero : every printable character written to the console (and Enter, as CR LF) is also sent to the debug port
+        (UART GP28/GP29 on the board, stderr in the emulators) ; 2 also forwards the user defined characters $C0-$FF. 0 stops the echo.
+        Lets a PC capture the screen text of a real board over the serial link (F-92, board validation without a monitor).

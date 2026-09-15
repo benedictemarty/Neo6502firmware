@@ -88,7 +88,9 @@ le coût de 480 encodages/trame (F-54).
 | ID | Prio | Story | Origine | État |
 |---|---|---|---|---|
 | F-90 | P1 | **Modems et adaptateurs USB-série CDC-ACM** sur le port hôte : classe TinyUSB `cdc_host` (+ FTDI, CP210x), API groupe 14 (statut, octet/bloc en lecture et écriture, line coding), 2 périphériques ; hôtes PC sur tty/pty (`NEO_CDC_TTY`), co-sim avec le modem émulé de libemul. | bmarty « ajouter la prise en charge des modems CDC » | **DONE** 2026-09-15 (carte non testée, R15–R17) — `F-90-cdc.md` |
-| F-91 | P2 | Le Neo6502 **lui-même** en périphérique CDC (câble USB vers un PC : console série, transfert) — impossible en même temps que le mode hôte sur l'unique port USB du RP2040 ; à étudier via l'UART GP28/29 (nxmit) ou un pont. | Neo6502drive EPIC-04 | TODO (étude) |
+| F-91 | P2 | Le Neo6502 **lui-même** en périphérique CDC (câble USB vers un PC). **Étude faite** : le RP2040 n'a qu'un contrôleur USB, hôte (clavier, MSC, CDC) ou périphérique, pas les deux ; le lien PC ↔ Neo passe donc par l'**UART GP28/GP29** (230 400 bauds, `nxmit`, adaptateur USB-série côté PC) — déjà là pour le transfert (`nxmit`) et le débogage (1,10) ; F-92 y ajoute l'écran. Un pont CDC exigerait un second MCU (Pico W modem, Feather : Neo6502drive US-C5). | Neo6502drive EPIC-04 | Étude close ; pas de développement firmware |
+
+| F-92 | P1 | **Écho console → port de débogage** (API 2,20) : le texte affiché part aussi sur l'UART GP28/GP29 (stderr dans les émulateurs) pour capturer l'écran d'une **vraie carte** depuis le PC (`nxmit`/adaptateur USB-série) et rejouer les tests golden sur le matériel. | validation carte | **DONE** 2026-09-15 (vérifié dans Phosphoneo : stderr) |
 
 ### Épopée F8 — Multi-boot RP2040 (sélecteur d'OS : firmware Neo ⇄ images reload-emulator)
 
