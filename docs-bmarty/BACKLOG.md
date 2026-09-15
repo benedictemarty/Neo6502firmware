@@ -20,7 +20,7 @@ parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
 | F-12 | P2 | **Son : volume instantané par canal** et/ou enveloppe simple (attaque/relâchement) en complément de 8,7. | bbc US-14 | TODO |
 | F-13 | P2 | **Hôte USB CDC-ACM** : `CFG_TUH_CDC 1`, callbacks, tampon ; exposition par routage des fonctions UART 10,13-10,18 ou nouvelles fonctions ≥ 10,19 ; maquette dans l'émulateur (pty/TCP). | drive US-C2..C4 | TODO |
 | F-14 | P2 | **Date/heure** : API lecture/écriture d'une horloge (RTC PCF8563 sur I2C si présent, sinon compteur), horodatage FAT. | manques | TODO |
-| F-15 | P3 | **Mode vidéo 640×240 monochrome / texte 80 colonnes** (framebuffer 1 bpp de 19,2 Ko remplaçant le 320×240 à la demande). | question PO | TODO |
+| F-15 | P3 | Mode 640×240 mono / texte 80 colonnes — **repris dans l'épopée F5 (modes vidéo)**. | question PO | → F5 |
 
 ## Épopée F2 — Mémoire et bus (mesures de timing obligatoires)
 
@@ -36,6 +36,32 @@ parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
 |----|---|-------|---------|------|
 | F-30 | P3 | **Mode Oric** dans le firmware (ULA/VIA/AY/Microdisc) — ou fork de reload : ADR-01 de Neo6502oric2. | oric2 | TODO |
 | F-31 | P3 | **Mode BBC** (6845/ULA, VIA ×2, SN76489, 8271/1770, Master 128 ?) : épopée 3 de Neo6502bbc. | bbc US-30..36 | TODO |
+
+## Épopée F5 — Modes vidéo et pages écran (`GFXSetMode` réel)
+
+Faits (vérifiés) : signal DVI 640×480@60 (PicoDVI ; autres timings dans la
+bibliothèque : 800×480, 800×600, 960×540 sur-cadencé), rendu ligne par ligne
+par core1 (index → RGB565 → TMDS), framebuffer unique 320×240 × 8 bits
+(76,8 Ko), ≈ 47 Ko de SRAM libres, `GFXSetMode()` ignore son paramètre.
+Bilan mémoire 256 couleurs : 320×256 = 81,9 Ko ✓, 400×240 = 96 Ko ✓ (timing
+800×480), 480×270 = 129,6 Ko limite, 640×240 = 153,6 Ko ✗ ; en 16 couleurs :
+640×240 = 76,8 Ko ✓, 320×240 double tampon = 2 × 38,4 Ko ✓ ; en 2 couleurs :
+640×480 = 38,4 Ko ✓ (double tampon ✓), Hercules 720×348 = 31,3 Ko ✓ (timing
+800×480).
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-50 | P1 | **Mesure du budget de rendu** : coût par ligne de core1 (conversion + TMDS) pour 320, 640 et 720 pixels, à 60 Hz, sur carte (F-00 partie ARM faite) — et à quelles fréquences (252 MHz, 372 MHz). Décide de la faisabilité de tout le reste. | question PO | TODO |
+| F-51 | P1 | **Architecture multi-modes** : descripteur de mode (largeur, hauteur, bits/pixel, doublage H/V, timing DVI), `GFXSetMode(n)` effectif, console adaptée (largeur/hauteur en caractères, police 6×8 ou 8×8), émulateur `neo` et Phosphoneo (`neo_host`) alignés ; ADR-02. | | TODO |
+| F-52 | P2 | **Mode 640×480 × 1 bpp** (texte 80 colonnes, « Hercules/VGA mono ») : 38,4 Ko, double tampon possible ; blitter avec source 1 bit vers ce mode. | Télémon, Neo6502bbc, civ | TODO |
+| F-53 | P2 | **Mode 640×480 × 2 bpp (4 couleurs)** ou **640×240 × 4 bpp (16 couleurs)** : 76,8 Ko ; choix par mesure F-50 ; blitter 2 bpp (F-11) associé. | Neo6502bbc (MODE 4/5) | TODO |
+| F-54 | P2 | **Mode 320×256 × 8 bits** (lignes non doublées, image centrée) pour les portages PAL 256 lignes. | scumm/bbc | TODO |
+| F-55 | P2 | **Pages écran** : deux framebuffers en 320×240 × 4 bpp (ou 640×480 × 1 bpp), page visible / page de travail, bascule à la trame (API groupe 5 : fonctions « set display page / set draw page / wait vsync »). | question PO (« plusieurs screens ») | TODO |
+| F-56 | P3 | **Hercules 720×348 × 1 bpp** centré dans un timing 800×480 (ou réduit) ; **400×240 × 8 bits** en 800×480. | question PO | TODO |
+| F-57 | P3 | Modes texte : 80×30 / 80×60 sur les modes 1 bpp, police 8×8 chargeable. | Télémon | TODO |
+
+Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour
+F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 
 ## Épopée F4 — Toolbox (ADR-01, `docs-bmarty/adr/0001-toolbox.md`)
 
