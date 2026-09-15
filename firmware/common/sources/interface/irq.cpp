@@ -10,15 +10,15 @@
 
 #include "common.h"
 
-static uint16_t tickHz = 0;
+uint16_t irqTickHz = 0;  														// Global : read by the Phosphoneo co-sim
 
 uint8_t IRQSetTick(uint16_t hz) {
 	if (hz > IRQ_TICK_MAX_HZ) return 1;
-	tickHz = hz;
+	irqTickHz = hz;
 	HWIRQSetTick(hz);
 	return 0;
 }
 
 uint16_t IRQGetTick(void) {
-	return tickHz;
+	return irqTickHz;
 }

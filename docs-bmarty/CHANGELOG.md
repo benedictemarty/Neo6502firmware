@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-60 — `IRQTickCallback` et `irqTickHz` rendus globaux pour la co-sim Phosphoneo ; tick et ordonnanceur vérifiés sur le firmware ARM réel (hors timer/GPIO, HLE).
 - 2026-09-15 : F-82 (retour depuis reload : touche Pause) et liaison des images reload par slot faites dans le fork reload ; image multi-boot Neo + BBC + Oric assemblée (639 Ko), sélection des slots vérifiée sur libemul.
 - 2026-09-15 : multi-boot — plus d'annuaire : présence et nom des images lus dans la flash elle-même (table de vecteurs + `binary_info`), le menu suit ce qui est flashé (demande bmarty) ; `pico_set_program_name(firmware "Neo6502")`.
 - 2026-09-15 : F-80/F-81 multi-boot RP2040 — `multiboot/` (sélecteur `neoboot` 8,9 Ko, scripts de liaison par slot, `mkimage.py`), `make -C firmware build-multiboot` (slot 0), API 1,14 Reboot Image / 1,15 Get Image Name (`hardware/multiboot.cpp`, annuaire en flash) ; vérifié sur libemul via Phosphoneo (`test-multiboot`), non exécuté sur carte (`F-80-multiboot.md`).

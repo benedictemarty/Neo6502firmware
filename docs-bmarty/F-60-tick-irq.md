@@ -27,6 +27,13 @@ sur carte** (aucun Neo6502 disponible).
 | `neo` (`sys_processor.cpp`, `6502.cpp`) | compteur de cycles (`CYCLE_RATE / hz`) | `CPUTriggerIRQ()` : pris si I=0, sinon reste en attente |
 | Phosphoneo (`main.c`) | compteur de cycles | `cpu_set_irq(false)` dans `bus_read` sur `$FFFF` |
 
+## Vérifié en co-simulation (Phosphoneo `make test-cosim`)
+Le chemin API 1,12 → `IRQSetTick` → `HWIRQSetTick` et le rappel `IRQTickCallback`
+(code ARM réel) tournent sur libemul ; le timer matériel et GPIO25 n'étant pas modélisés,
+l'hôte joue le rappel à la cadence demandée et lit `irqAsserted`. `irqtick` (100 ticks/s)
+et l'ordonnanceur F-61 (`rtos_idle`) donnent la même sortie que dans `neo`. Le test
+`$FFFF` de `processor_pio.cpp` reste non exécuté (boucle bus HLE) → R9.
+
 ## Risque carte
 | # | Risque | Vérification |
 |---|---|---|

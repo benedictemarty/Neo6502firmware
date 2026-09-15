@@ -32,7 +32,7 @@ static repeating_timer_t tickTimer;
 static bool tickActive = false;
 volatile bool irqAsserted = false;  											// Read by the bus loop (processor_pio.cpp)
 
-static bool _IRQTick(repeating_timer_t *rt) {
+extern "C" bool IRQTickCallback(repeating_timer_t *rt) {  						// Global : Phosphoneo co-sim calls it in place of the (unmodelled) timer
 	irqAsserted = true;
 	wdc65C02cpu_set_irq(true);
 	return true;
@@ -43,7 +43,7 @@ void HWIRQSetTick(uint16_t hz) {
 	irqAsserted = false;
 	wdc65C02cpu_set_irq(false);
 	if (hz == 0) return;
-	tickActive = add_repeating_timer_us(-(int64_t)(1000000 / hz), _IRQTick, NULL, &tickTimer);
+	tickActive = add_repeating_timer_us(-(int64_t)(1000000 / hz), IRQTickCallback, NULL, &tickTimer);
 }
 
 struct repeating_timer timer;
