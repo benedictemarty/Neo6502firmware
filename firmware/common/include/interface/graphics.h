@@ -15,7 +15,8 @@
 
 #define MAXCONSOLEWIDTH  	(80) 	 											// Max console size 
 #define MAXCONSOLEHEIGHT  	(43)												// (80x43 in 9x8 on Hercules, 40x32 on 320x256)
-#define MAXGRAPHICSMEMORY 	(320 * 240)  										// Max byte memory , graphics (largest mode)
+#define MAXGRAPHICSMEMORY 	(2 * 160 * 256)  									// Graphics memory : 1 page of mode 0, 2 pages of modes 1 and 2 (F-55)
+#define MAXSCREENWIDTH 		(720)  												// Widest mode (line buffers)
 
 //
 //		Display modes (F5 / ADR-02). Mode 0 is the original 320x240x256 and is byte for byte
@@ -54,6 +55,10 @@ struct GraphicsMode {
 	uint8_t  modeID;															// Current mode (GFX_MODE_*)
 	uint8_t  bitsPerPixel;														// 8, 4 or 1 (see descriptor)
 	uint16_t stride;															// Bytes per pixel line
+	uint32_t pageSize;															// Bytes per page (stride * yGSize)
+	uint8_t  pageCount;															// Pages available in this mode (F-55)
+	uint8_t  drawPage,displayPage;												// graphicsMemory points at the draw page
+	uint8_t  *displayMemory;													// Base of the displayed page
 };
 
 extern struct GraphicsMode gMode;
@@ -68,6 +73,10 @@ int  GFXGetMode(void);
 void GFXWritePixelRaw(int x,int y,uint8_t colour); 								// Any mode, no clipping, no sprite layer.
 uint8_t GFXReadPixelRaw(int x,int y);
 int  GFXIsPackedMode(void); 													// 1 if bitsPerPixel != 8 (generic slow paths only)
+int  GFXSetDrawPage(int page);  												// F-55 : 0 if ok, 1 if no such page
+int  GFXSetDisplayPage(int page);
+uint8_t GFXReadDisplayPixelRaw(int x,int y);  									// Pixel of the displayed page (renderers)
+void RNDSetDisplayPage(uint8_t *displayMemory); 								// Implementation specific : shown from next frame
 void GFXDefaultPalette(void);
 void GFXResetDefaults(void);
 void GFXSetDefaults(uint8_t *cmd);

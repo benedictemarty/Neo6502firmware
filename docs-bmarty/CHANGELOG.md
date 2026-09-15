@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-55 pages écran — `MAXGRAPHICSMEMORY` 76 800 → 81 920 (2 pages en
+  modes 1/2), `gMode.pageSize/pageCount/drawPage/displayPage/displayMemory`, API
+  **5,11 Set Draw Page** et **5,12 Set Display Page**, `RNDSetDisplayPage` (carte :
+  bascule au début de trame ; émulateurs : immédiate), `GFXReadDisplayPixelRaw` ;
+  effacement limité à la page de dessin. F-53 : images (5,7) et tilemaps (5,8)
+  disponibles en modes compacts.
 - 2026-09-15 : F-52 (partiel) — police 8×14 (`font_8x14.h`, script `vga14.py`) pour la
   console 80×25 en 9×14 ; renderer DVI multi-modes (`dvi_320x240x256.cpp` : timings
   par mode, boucle d'encodage core1, 1 bpp `tmds_encode_1bpp`, bandes noires,

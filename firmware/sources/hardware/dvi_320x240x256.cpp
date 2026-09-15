@@ -75,7 +75,8 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 struct dvi_inst dvi0;                                                			// DVI information structure
 
 uint16_t palette[256];                                            				// Current DVI palette (RGB565)
-uint8_t  *screenMemory;                                           				// Graphics RAM
+uint8_t  *screenMemory;                                           				// Page being displayed
+static uint8_t *pendingDisplayMemory = NULL;  									// Page to display from the next frame (F-55)
 static struct GraphicsMode *currentMode = NULL;  								// Mode being displayed
 static const struct DisplayTiming *currentTiming = NULL;
 static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green, bit 2 red
@@ -115,6 +116,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (lineCounter == currentTiming->logicalLines) {
 		frameCounter++;
 		lineCounter = 0;
+		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
 		uint8_t xHit,yHit;
 		cursorEnabled = MSEGetCursorDrawInformation(&xCursor,&yCursor); 		// Get cursor info this frame.
 		cursorImage = CURGetCurrent(&xHit,&yHit);
@@ -310,6 +312,11 @@ void RNDStartMode0(struct GraphicsMode *gMode) {
 //		Every mode has a renderer now. Set to mode 0 only if the board misbehaves in
 //		the other modes (untested on hardware).
 //
+void RNDSetDisplayPage(uint8_t *displayMemory) {
+	pendingDisplayMemory = displayMemory;  											// Taken into account at the next frame start.
+	if (!isInitialised) screenMemory = displayMemory;
+}
+
 int RNDModeSupported(int mode) {
 	return mode >= 0 && mode < GFX_MODE_COUNT;
 }

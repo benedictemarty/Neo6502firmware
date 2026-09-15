@@ -45,6 +45,9 @@ déjà réservés, sans mémoire supplémentaire.
    actuelle est dessinée dans la cellule, les lignes au-delà de 8 sont fond ; la
    police 9×14 réelle arrive avec F-52.
 6. `MAXCONSOLEHEIGHT` passe de 30 à 43 (mémoire console : 80×44 mots).
+7. **Pages** (F-55) : `MAXGRAPHICSMEMORY` = 81 920 octets = 2 pages de mode 2
+   (2 × 40 960) ou de mode 1 (2 × 31 500), 1 page de mode 0 ; page de dessin et
+   page affichée indépendantes (5,11 / 5,12), bascule au début de trame.
 
 ## Conséquences
 - + Aucun surcoût pour le mode 0 (chemins inchangés, un test `bitsPerPixel != 8`).

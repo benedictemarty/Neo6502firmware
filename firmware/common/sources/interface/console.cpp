@@ -132,7 +132,7 @@ void CONClearScreen(void) {
 			uint8_t fill = graphMode->backCol;  								// Replicate the colour in packed modes.
 			if (graphMode->bitsPerPixel == 4) fill = (fill & 0x0F) | (fill << 4);
 			if (graphMode->bitsPerPixel == 1) fill = (fill & 1) ? 0xFF : 0x00;
-			memset(graphMode->graphicsMemory,fill,MAXGRAPHICSMEMORY); 
+			memset(graphMode->graphicsMemory,fill,graphMode->pageSize);  		// Draw page only (F-55)
 		}
 	}
 	for (int c = 0;c < MAXCONSOLEMEMORY;c++) {  								// Erase the console memory.

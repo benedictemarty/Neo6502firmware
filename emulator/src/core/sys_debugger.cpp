@@ -61,6 +61,10 @@ int RNDModeSupported(int mode) {
 	return mode >= 0 && mode < GFX_MODE_COUNT;
 }
 
+void RNDSetDisplayPage(uint8_t *displayMemory) {
+	videoRAM = displayMemory;  													// Immediate : the emulator renders from gMode.displayMemory anyway.
+}
+
 // *******************************************************************************************************************************
 //
 //								Write the 320x240 display to a binary PPM (P6) file, for automated tests
@@ -74,7 +78,7 @@ int RNDWriteScreenshot(const char *fileName) {
 	fprintf(f,"P6\n%d %d\n255\n",gMode.xGSize,gMode.yGSize);
 	for (int y = 0;y < gMode.yGSize;y++) {
 		for (int x = 0;x < gMode.xGSize;x++) {
-			uint16_t p = palette[GFXReadPixelRaw(x,y)];
+			uint16_t p = palette[GFXReadDisplayPixelRaw(x,y)];
 			fputc(((p >> 8) & 0x0F) * 17,f);fputc(((p >> 4) & 0x0F) * 17,f);fputc((p & 0x0F) * 17,f);
 		}
 	}
@@ -270,7 +274,7 @@ void DBGXRender(int *address,int showDisplay) {
 			for (int y = 0;y < yc;y++) {
 				rc2.y = r.y + y*ys;rc2.x = r.x;
 				for (int x = 0;x < xc;x++) {
-					int col = palette[GFXReadPixelRaw(x,y)];
+					int col = palette[GFXReadDisplayPixelRaw(x,y)];
 					if (col != 0) GFXRectangle(&rc2,col);
 					rc2.x += xs;
 				}

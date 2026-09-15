@@ -42,6 +42,34 @@ static void GFXInitialiseMode(int mode) {
 	gMode.modeID = mode;
 	gMode.bitsPerPixel = d->bitsPerPixel;
 	gMode.stride = d->stride;
+	gMode.pageSize = (uint32_t)d->stride * d->yGSize;  							// Pages (F-55) : as many as fit, at most 2.
+	gMode.pageCount = MAXGRAPHICSMEMORY / gMode.pageSize;
+	if (gMode.pageCount > 2) gMode.pageCount = 2;
+	gMode.drawPage = gMode.displayPage = 0;
+	gMode.displayMemory = graphicsMemory;
+}
+
+int GFXSetDrawPage(int page) {
+	if (page < 0 || page >= gMode.pageCount) return 1;
+	gMode.drawPage = page;
+	gMode.graphicsMemory = graphicsMemory + page * gMode.pageSize;
+	return 0;
+}
+
+int GFXSetDisplayPage(int page) {
+	if (page < 0 || page >= gMode.pageCount) return 1;
+	gMode.displayPage = page;
+	gMode.displayMemory = graphicsMemory + page * gMode.pageSize;
+	RNDSetDisplayPage(gMode.displayMemory);
+	return 0;
+}
+
+uint8_t GFXReadDisplayPixelRaw(int x,int y) {
+	uint8_t *save = gMode.graphicsMemory;  										// Same unpacking as the draw page.
+	gMode.graphicsMemory = gMode.displayMemory;
+	uint8_t p = GFXReadPixelRaw(x,y);
+	gMode.graphicsMemory = save;
+	return p;
 }
 
 int GFXGetMode(void) {
@@ -91,6 +119,7 @@ int GFXSetMode(int Mode) {
 	if (Mode < 0 || Mode >= GFX_MODE_COUNT || !RNDModeSupported(Mode)) return 1; 	// Unknown or not displayable here.
 	GFXInitialiseMode(Mode); 													// Initialise the mode
 	RNDStartMode0(&gMode); 					 									// Start it (renderer reads the descriptor fields)
+	RNDSetDisplayPage(gMode.displayMemory);
 	GFXDefaultPalette();   														// Standard palette
 	if (gMode.bitsPerPixel == 1) GFXSetPalette(1,255,255,255); 					// Monochrome : "on" is white (changeable with 5,32)
 	CONInitialise(&gMode);  													// Initialise the console.

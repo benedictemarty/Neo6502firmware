@@ -78,6 +78,18 @@ GROUP 5 Graphics
         Return the current display mode in Parameter:0, the pixel width in Parameters:1,2, the pixel height in Parameters:3,4,
         the bits per pixel in Parameter:5 and the console size in characters in Parameters:6,7.
 
+    FUNCTION 11 Set Draw Page
+        *DERROR = GFXSetDrawPage(DPARAMS[0]);
+    DOCUMENTATION
+        Select the page (Parameter:0) that console and graphics commands draw into (F-55).
+        Mode 0 has one page, modes 1 and 2 have two (0 and 1). Sets the error flag if the page does not exist.
+
+    FUNCTION 12 Set Display Page
+        *DERROR = GFXSetDisplayPage(DPARAMS[0]);
+    DOCUMENTATION
+        Select the page (Parameter:0) shown on screen from the next frame (F-55). Use Function 37 (Frame Count) to wait for the swap.
+        Sets the error flag if the page does not exist.
+
     FUNCTION 32 Set Palette
         GFXSetPalette(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3]);
     DOCUMENTATION

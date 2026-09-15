@@ -343,7 +343,6 @@ void GFXGraphicsCommand(uint8_t cmd,uint8_t *data) {
 			GFXScaledText(&gMode,DSPGetString(data,8),x1,y1,useSolidFill);
 			break;
 		case 7:
-			if (GFXIsPackedMode()) { data[2] = 1;break; }  						// Images are 4 bpp objects on an 8 bpp screen : mode 0 only.
 			GFXDrawImage(&gMode,x1,y1,data[8],drawSize,flipBits,useSolidFill);
 			break;
 		case 33:
