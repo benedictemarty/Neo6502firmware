@@ -59,4 +59,5 @@ int DBGXDasm65(int addr, char* buffer);												// Disassemble the instructio
 int DBGXInstructionSize65(int addr);												// Calc size (1,2 or 3) of instruction found at at addr.
 void DBGXDumpMem(int addr, int nbytes, char* buffer);								// Dump hex bytes out into a string.
 
+int RNDWriteScreenshot(const char *fileName);
 #endif

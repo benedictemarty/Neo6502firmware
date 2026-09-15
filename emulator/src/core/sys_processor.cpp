@@ -19,6 +19,7 @@
 #include "sys_debug_system.h"
 #include "hardware.h"
 #include "common.h"
+#include "interface/kbdcodes.h"
 
 // *******************************************************************************************************************************
 //
@@ -31,6 +32,18 @@ static int argumentCount;
 static char **argumentList;
 static bool useDebuggerKeys = false;  												// Use the debugger keys.
 static bool traceMode = false;														// Dump each CPU instruction to stdout.
+
+// Test automation (headless runs) : cycles:N shot:C:FILE text:C:FILE keys:C:TEXT  (see CPURunTestHooks)
+static LONG32 totalCycles = 0;  													// Cycles since reset.
+static LONG32 exitAtCycles = 0;  													// cycles:N  exit after N cycles.
+struct TestHook { LONG32 at; char kind; char arg[512]; bool done; };
+static TestHook testHooks[16];
+static int testHookCount = 0;
+static const char *typeText = NULL;  												// keys:C:TEXT autotype state.
+static int typePos = -1;
+static LONG32 typeNext = 0;
+static bool typeDown = false;
+static int typeCode = 0,typeMods = 0;
 
 WORD16 CPUGetPC(void) {
 	return CPUGetPC65();
@@ -166,6 +179,21 @@ void CPUReset(void) {
 			if (strncmp(command,"path:",5) == 0) {  								// Set storage path
 				HWSetDefaultPath(command+5);
 			}
+			if (strncmp(command,"cycles:",7) == 0) {  								// Exit after N cycles (headless tests)
+				exitAtCycles = atol(command+7);
+			}
+			if ((strncmp(command,"shot:",5) == 0 || strncmp(command,"text:",5) == 0 || 	// Timed screenshot / console text / autotype
+						strncmp(command,"keys:",5) == 0) && testHookCount < 16) {
+				char *sep = strchr(command+5,':');
+				if (sep != NULL) {
+					*sep = '\0';
+					testHooks[testHookCount].at = atol(command+5);
+					testHooks[testHookCount].kind = command[0];
+					strncpy(testHooks[testHookCount].arg,sep+1,sizeof(testHooks[0].arg)-1);
+					testHooks[testHookCount].done = false;
+					testHookCount++;
+				}
+			}
 			if (strcmp(command,"trace") == 0) { 									// Dump every CPU instruction to stdout.
 				traceMode = true;
 			}
@@ -195,6 +223,81 @@ int CPUUseDebugKeys(void) {
 //
 // *******************************************************************************************************************************
 
+// *******************************************************************************************************************************
+//
+//								Test automation hooks : timed screenshot, console text, autotype, exit
+//
+// *******************************************************************************************************************************
+
+static int CPUAsciiToHID(char ch,int *mods) {
+	static const char *shifted = ")!@#$%^&*(";
+	static const char *plain  = "-=[]\\;'`,./";
+	static const char *shift2 = "_+{}|:\"~<>?";
+	*mods = 0;
+	if (ch >= 'a' && ch <= 'z') return 0x04 + ch - 'a';
+	if (ch >= 'A' && ch <= 'Z') { *mods = KEY_SHIFT;return 0x04 + ch - 'A'; }
+	if (ch >= '1' && ch <= '9') return 0x1E + ch - '1';
+	if (ch == '0') return 0x27;
+	for (int i = 0;i < 10;i++) if (shifted[i] == ch) { *mods = KEY_SHIFT;return (i == 0) ? 0x27 : 0x1E + i - 1; }
+	for (int i = 0;plain[i];i++) if (plain[i] == ch) return 0x2D + i;
+	for (int i = 0;shift2[i];i++) if (shift2[i] == ch) { *mods = KEY_SHIFT;return 0x2D + i; }
+	if (ch == '\n') return 0x28;
+	if (ch == 27) return 0x29;
+	if (ch == ' ') return 0x2C;
+	if (ch == '\t') return 0x2B;
+	if (ch == 8) return 0x2A;
+	return 0;
+}
+
+static void CPUConsoleText(const char *fileName) {
+	FILE *f = fopen(fileName,"w");
+	if (f == NULL) return;
+	for (int y = 0;y < gMode.yCSize;y++) {
+		for (int x = 0;x < gMode.xCSize;x++) {
+			int ch = gMode.consoleMemory[x + y * MAXCONSOLEWIDTH] & 0xFF;
+			fputc((ch >= 32 && ch < 127) ? ch : (ch == 0 ? ' ' : '.'),f);
+		}
+		fputc('\n',f);
+	}
+	fclose(f);
+}
+
+static void CPURunTestHooks(void) {
+	for (int i = 0;i < testHookCount;i++) {
+		if (!testHooks[i].done && totalCycles >= testHooks[i].at) {
+			testHooks[i].done = true;
+			if (testHooks[i].kind == 's') RNDWriteScreenshot(testHooks[i].arg);
+			if (testHooks[i].kind == 't') CPUConsoleText(testHooks[i].arg);
+			if (testHooks[i].kind == 'k') { typeText = testHooks[i].arg;typePos = 0;typeNext = totalCycles; }
+		}
+	}
+	if (typePos >= 0 && typeText[typePos] != '\0' && totalCycles >= typeNext) {  		// Autotype : press, 3 frames, release, 3 frames.
+		if (!typeDown) {
+			char ch = typeText[typePos];
+			if (ch == '\\' && typeText[typePos+1] != '\0') { typePos++;ch = (typeText[typePos] == 'n') ? '\n' : typeText[typePos]; }
+			typeCode = CPUAsciiToHID(ch,&typeMods);
+			if (typeCode == 0) { typePos++;return; }
+			KBDEvent(1,typeCode,typeMods);
+			typeDown = true;
+		} else {
+			KBDEvent(0,typeCode,0);
+			typeDown = false;typePos++;
+		}
+		typeNext = totalCycles + 3 * CYCLES_PER_FRAME;
+	}
+	if (exitAtCycles != 0 && totalCycles >= exitAtCycles) {
+		for (int i = 0;i < testHookCount;i++) { 										// Flush hooks that were due at exit.
+			if (!testHooks[i].done && testHooks[i].at >= exitAtCycles) {
+				testHooks[i].done = true;
+				if (testHooks[i].kind == 's') RNDWriteScreenshot(testHooks[i].arg);
+				if (testHooks[i].kind == 't') CPUConsoleText(testHooks[i].arg);
+			}
+		}
+		printf("cycles:%ld reached - exiting emulator\n",(long)exitAtCycles);
+		CPUExit();
+	}
+}
+
 BYTE8 CPUExecuteInstruction(void) {
 	BYTE8 forceSync = 0;
 
@@ -212,7 +315,10 @@ BYTE8 CPUExecuteInstruction(void) {
 		printf("%04x  %-10s %s\n", CPUGetPC(), mem, dasm);
 	}
 
+	LONG32 before = cycles;
 	forceSync = CPUExecute6502();
+	totalCycles += cycles - before;
+	CPURunTestHooks();
 
 	int cycleMax = CYCLES_PER_FRAME; 	
 	if (cycles < cycleMax && forceSync == 0) return 0;								// Not completed a frame.
