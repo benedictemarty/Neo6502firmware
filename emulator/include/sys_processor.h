@@ -80,6 +80,7 @@ typedef struct __CPUSTATUS65 {
 
 BYTE8 CPUExecute6502(void);
 int CPUTriggerIRQ(void);
+int CPUIRQPending(void);
 void CPUReset6502(void);
 CPUSTATUS65 *CPUGetStatus65(void);
 WORD16 CPUGetPC65(void);

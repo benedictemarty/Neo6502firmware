@@ -62,6 +62,9 @@ BYTE8 CPUExecute6502(void) {
 
 		case 0xF3: 	 																// $F3 forces sync in emulator. Not needed in real hardware.
 			forceSync = 1;break;
+		case 0xCB:  																// WAI (WDC) : wait until IRQB is asserted, then continue
+			if (!CPUIRQPending()) pc--;  											// (taken at the next instruction if I=0). bmarty F-61.
+			Cycles(3);break;
 	}
 	return forceSync;
 }

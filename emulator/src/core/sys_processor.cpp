@@ -36,7 +36,7 @@ static bool traceMode = false;														// Dump each CPU instruction to stdo
 // Test automation (headless runs) : cycles:N shot:C:FILE text:C:FILE keys:C:TEXT  (see CPURunTestHooks)
 static LONG32 totalCycles = 0;  													// Cycles since reset.
 static LONG32 irqTickCycles = 0,irqTickNext = 0;  									// F-60 interrupt tick (cycles between ticks).
-static bool irqPending = false;
+static bool irqPending = false;  													// IRQB low (level), until vector fetch.
 
 void HWIRQSetTick(uint16_t hz) {
 	irqTickCycles = (hz == 0) ? 0 : CYCLE_RATE / hz;
@@ -68,7 +68,12 @@ BYTE8 *CPUAccessMemory(void) {
 }
 
 BYTE8 Read(WORD16 address) {
+	if (address == 0xFFFF) irqPending = false;  									// F-60 : reading the vector high byte releases IRQB.
 	return cpuMemory[address];
+}
+
+int CPUIRQPending(void) {
+	return irqPending;
 }
 
 void _Write(WORD16 address,BYTE8 data) { 

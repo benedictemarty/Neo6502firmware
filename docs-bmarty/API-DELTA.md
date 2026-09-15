@@ -27,3 +27,12 @@ micro 8 bits sans matériel de sprite) et 2,12 les efface aussi ; 5,7 (image) et
 5,8 (tilemap) dessinent avec les index réduits du mode ; 5,33 (lecture pixel) renvoie l'index de couleur du mode
 (0-1 ou 0-15) de la page de dessin ; 2,12 (effacement) n'efface que la page de
 dessin.
+
+## Vecteurs du noyau 6502 ajoutés (F-61)
+
+Table `jmp` étendue vers le bas (`$FFC1-$FFDC`, les 9 vecteurs amont `$FFDF-$FFF7`
+sont inchangés) : `KSemSignal $FFC1`, `KSemWait $FFC4`, `KTaskTicks $FFC7`,
+`KTaskUnlock $FFCA`, `KTaskLock $FFCD`, `KTaskExit $FFD0`, `KTaskSleep $FFD3`,
+`KTaskYield $FFD6`, `KTaskCreate $FFD9`, `KTaskInit $FFDC`. Le vecteur IRQ `$FFFE`
+pointe sur `KIrqHandler` (reset si l'ordonnanceur n'est pas actif, comme avant).
+Détails : `F-61-rtos.md`.
