@@ -52,11 +52,18 @@ exécuté sur carte**.
    dans `neo`/Phosphoneo.
 6. **Télémon** (Neo6502kbd) : le menu `O` liste `F1..F3 <nom>` (slots occupés seulement) et `Fn` redémarre sur l'image.
 
+## Côté reload-emulator (fork `benedictemarty`, branche `bbc`)
+`cmake -DNEO_MULTIBOOT_DIR=~/Neo6502firmware/multiboot -DNEO_SLOT_BBC=1 -DNEO_SLOT_ORIC=2`
+(`platforms/rp2040/build_mb`) → `bbc.uf2` (257 Ko) et `oric.uf2` (186 Ko) liés pour leurs
+slots ; touche **Pause** = retour au firmware Neo (`neo_multiboot.h`). Image complète :
+`mkimage.py … --slot 0 firmware_slot0.uf2 --slot 1 bbc.uf2 --slot 2 oric.uf2` (639 Ko).
+
 ## Vérifié (Phosphoneo `make test-multiboot`, sonde `tools/cosim/multiboot_probe.c`)
 Flash émulée = `neoboot.elf` + `firmware.bin` (slot 0) copié à `0x10000` : le sélecteur
 entre dans le slot au pas 3 000 (`0x100101F6`), le firmware relié atteint `CPUExecute`
-en 15,0 M pas comme le firmware normal ; un appel invité de `HWGetImageName` renvoie
-« Neo6502 » pour le slot 0 et « vide » pour 1-3.
+en 15,0 M pas comme le firmware normal ; avec les images reload dans les slots 1 et 2,
+`HWGetImageName` (1,15) renvoie « Neo6502 », « bbc », « oric », « vide » ; `scratch[0] =
+'NEO'|1` (resp. 2) fait entrer le sélecteur dans le slot 1 (resp. 2) au pas ≈ 3 000.
 
 ## Non vérifié / risques (carte)
 | # | Risque | Vérification |
