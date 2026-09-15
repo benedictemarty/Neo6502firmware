@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-60 — tick d'interruption vers le 65C02 : API 1,12 Set Interrupt Tick / 1,13 Get ; module commun `irq.cpp` ; carte : timer matériel sur core0 + relâchement d'IRQB à la lecture de `$FFFF` dans la boucle bus (3 `nop` retirés, **non testé sur carte**, R9/R10) ; `neo` : `CPUTriggerIRQ` en attente tant que I=1 ; fiche `F-60-tick-irq.md`.
 - 2026-09-15 : **jalon F5** — `feat/video-modes` fusionnée dans `bmarty/main` (`dc655ac`) : modes 1 et 2, pages, sprites XOR, attributs MDA, émulateur multi-modes ; pas d'étiquette git (la bannière du firmware vient de `git describe`, réservé aux versions amont). Rendu carte à valider (F-52-hercules.md).
 - 2026-09-15 : F-52 — attributs MDA en mode Hercules (souligné, gras, clignotant, inverse) portés par les quartets encre/papier ; `CONBlinkSync` appelé par `DSPSync` (carte, Phosphoneo) et `HWSync` (émulateur).
 - 2026-09-15 : F-53 — sprites en modes 1 et 2 (XOR pixel à pixel dans le tampon, `SPRPHYDraw` générique, `SPRReset` efface les sprites dessinés, `SPRScreenCleared` après 2,12) ; démo tortue.

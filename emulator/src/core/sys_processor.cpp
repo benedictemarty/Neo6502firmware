@@ -35,6 +35,14 @@ static bool traceMode = false;														// Dump each CPU instruction to stdo
 
 // Test automation (headless runs) : cycles:N shot:C:FILE text:C:FILE keys:C:TEXT  (see CPURunTestHooks)
 static LONG32 totalCycles = 0;  													// Cycles since reset.
+static LONG32 irqTickCycles = 0,irqTickNext = 0;  									// F-60 interrupt tick (cycles between ticks).
+static bool irqPending = false;
+
+void HWIRQSetTick(uint16_t hz) {
+	irqTickCycles = (hz == 0) ? 0 : CYCLE_RATE / hz;
+	irqTickNext = totalCycles + irqTickCycles;
+	irqPending = false;
+}
 static LONG32 exitAtCycles = 0;  													// cycles:N  exit after N cycles.
 struct TestHook { LONG32 at; char kind; char arg[512]; bool done; };
 static TestHook testHooks[16];
@@ -319,6 +327,11 @@ BYTE8 CPUExecuteInstruction(void) {
 	forceSync = CPUExecute6502();
 	totalCycles += cycles - before;
 	CPURunTestHooks();
+	if (irqTickCycles != 0 && totalCycles >= irqTickNext) {  						// F-60 : periodic IRQ (level : pending until taken).
+		irqTickNext += irqTickCycles;
+		irqPending = true;
+	}
+	if (irqPending && CPUTriggerIRQ()) irqPending = false;
 
 	int cycleMax = CYCLES_PER_FRAME; 	
 	if (cycles < cycleMax && forceSync == 0) return 0;								// Not completed a frame.

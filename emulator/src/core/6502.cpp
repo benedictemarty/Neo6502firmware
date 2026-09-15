@@ -72,6 +72,16 @@ BYTE8 CPUExecute6502(void) {
 //
 // *******************************************************************************************************************************
 
+//
+//		Interrupt request (F-60 tick) : level sampled once, like a short IRQB pulse.
+//
+//		Returns 1 if taken (I=0), 0 if masked (the caller keeps it pending, like a level).
+int CPUTriggerIRQ(void) {
+	if (interruptDisableFlag) return 0;
+	irqCode();
+	return 1;
+}
+
 WORD16 CPUGetPC65(void) {
 	return pc;
 }

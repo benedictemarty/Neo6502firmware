@@ -69,6 +69,19 @@ GROUP 1 System
     DOCUMENTATION
         Do a MOS command (a '* command') these are specified in the Wiki as they will be steadily expanded.
 
+    FUNCTION 12 Set Interrupt Tick
+        *DERROR = IRQSetTick(DSPGetInt16(DCOMMAND,4));
+    DOCUMENTATION
+        Start (or stop with 0) a periodic interrupt to the 65C02 at Parameters:0,1 Hz (1..1000), delivered as a short pulse on IRQB (F-60).
+        The interrupt vector $FFFE/$FFFF is in RAM : install a handler there first, then CLI. No acknowledge is needed ; a tick
+        arriving while interrupts are disabled is lost. An interrupt handler may call the API but must save and restore
+        $FF01-$FF0B if the main program could be preparing a call. The DSP Reset (1,0) stops the tick.
+
+    FUNCTION 13 Get Interrupt Tick
+        DPARAMS[0] = IRQGetTick() & 0xFF;DPARAMS[1] = IRQGetTick() >> 8;
+    DOCUMENTATION
+        Return the current interrupt tick rate in Parameters:0,1 (0 = off).
+
     FUNCTION 10 Write character to debug
         FDBWrite(DPARAMS[0]);
     DOCUMENTATION

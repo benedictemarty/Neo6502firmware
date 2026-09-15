@@ -78,6 +78,7 @@ void DSPReset(void) {
 	MEMInitialiseMemory();                                                      // Set up memory, load kernel ROM
 	MSEInitialise();  															// Mouse first, before starting graphics.
 	CURInitialise();
+	IRQSetTick(0);                                                              // No interrupt tick (F-60)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo

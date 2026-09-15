@@ -21,6 +21,8 @@
 #include "system/wdc65C02cpu.h"
 #include "sm0_memory_emulation_with_clock.pio.h"
 
+extern volatile bool irqAsserted;  											// tick.cpp (F-60)
+
 void initPio() {
     uint offset = 0;
 
@@ -66,12 +68,18 @@ void __time_critical_func(CPUExecute)(void) {
             pio_sm_put(pio1, 0, cpuMemory[value.data.address]);
             
             consecutive_writes = 0;
+
+            // F-60 : vector fetch ($FFFF) of an interrupt sequence releases IRQB (bmarty).
+            // Cost ~3 cycles on every read : the nop padding below was 14, now 11 (R9 in F-60 notes).
+            if (value.data.address == 0xFFFF && irqAsserted) {
+                irqAsserted = false;
+                wdc65C02cpu_set_irq(false);
+            }
             
             __asm volatile (
               "nop; nop; nop; nop\n\t"
               "nop; nop; nop; nop\n\t"
-              "nop; nop; nop; nop\n\t"
-              "nop; nop\n\t"
+              "nop; nop; nop\n\t"
               ::: "memory"
             );
           

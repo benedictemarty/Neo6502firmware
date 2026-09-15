@@ -5,6 +5,8 @@ et documentée dans le `groupN.inc` concerné.
 
 | Groupe | Fonction | Paramètres | Retour | Amont | Depuis |
 |---|---|---|---|---|---|
+| 1 System | 12 Set Interrupt Tick | P0-1 = Hz (1..1000, 0 = arrêt) | erreur si > 1000 ; IRQB pulsée au tick, relâchée à la lecture de `$FFFF` | absente | F-60 |
+| 1 System | 13 Get Interrupt Tick | — | P0-1 = Hz courant | absente | F-60 |
 | 5 Graphics | 9 Set Graphics Mode | P0 = mode (0 : 320×240×256, 1 : Hercules 720×350 1 bpp, 2 : 320×256×16) | erreur si mode inconnu ou non supporté par l'hôte | absente | F-51 (ADR-02) |
 | 5 Graphics | 10 Get Graphics Mode | — | P0 mode, P1-2 largeur, P3-4 hauteur, P5 bpp, P6 colonnes, P7 lignes | absente | F-51 (ADR-02) |
 | 5 Graphics | 11 Set Draw Page | P0 = page (0-1 ; mode 0 : 0 seulement) | erreur si la page n'existe pas | absente | F-55 |
