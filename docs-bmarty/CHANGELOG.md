@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-90 vérifiée avec le vrai Pico W modem (Neo6502drive) sur `/dev/ttyACM0`, en comportemental et sur le vrai firmware en co-sim.
 - 2026-09-15 : F-90 — série USB CDC (modems, adaptateurs USB-série) : groupe 14 (statut, lecture/écriture octet et bloc, line coding), `hardware/cdc.cpp` sur TinyUSB `cdc_host` (`CFG_TUH_CDC 2`, FTDI, CP210x), hôte PC `cdc_host_tty.cpp` (`NEO_CDC_TTY`) ; vérifié sur le vrai firmware en co-sim avec un faux modem Hayes (Phosphoneo `test-cdc`), non exécuté sur carte.
 - 2026-09-15 : F-60 — `IRQTickCallback` et `irqTickHz` rendus globaux pour la co-sim Phosphoneo ; tick et ordonnanceur vérifiés sur le firmware ARM réel (hors timer/GPIO, HLE).
 - 2026-09-15 : F-82 (retour depuis reload : touche Pause) et liaison des images reload par slot faites dans le fork reload ; image multi-boot Neo + BBC + Oric assemblée (639 Ko), sélection des slots vérifiée sur libemul.

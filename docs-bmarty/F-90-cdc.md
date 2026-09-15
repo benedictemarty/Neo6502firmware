@@ -41,6 +41,12 @@ programme `hayes.neo6502` attend 14,1 = connecté, envoie `ATI` puis `ATZ`, affi
 « Neo6502 fake modem 1.0 / OK / OK / FIN » — identique sur le backend comportemental et
 sur le vrai firmware en co-sim. Pour un vrai modem sur PC : `NEO_CDC_TTY=/dev/ttyACM0 bin/neo`.
 
+## Vérifié avec un vrai modem (2026-09-15)
+Pico W Wi-Fi modem de Neo6502drive (`2e8a:000a`, `/dev/ttyACM0` sur le PC) :
+`NEO_CDC_TTY=/dev/ttyACM0` (comportemental) et `--cdc-tty /dev/ttyACM0` (vrai firmware
+en co-sim) → `ATI` = « Neo6502drive Pico W modem 0.1.0 », `ATZ` = `OK`. Le modem fait
+l'écho des commandes (`ATE0` pour le couper).
+
 ## Risques carte
 | # | Risque | Vérification |
 |---|---|---|
