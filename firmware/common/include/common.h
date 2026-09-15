@@ -40,6 +40,9 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <hardware.h>
+#ifndef __time_critical_func
+#define __time_critical_func(x) x                                               // Pico SDK attribute : no-op on the emulator
+#endif
 #endif
 //
 //		Neo6502 Includes
