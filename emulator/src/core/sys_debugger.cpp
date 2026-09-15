@@ -53,6 +53,14 @@ void RNDStartMode0(struct GraphicsMode *gMode) {
 	isExtArray = gMode->isExtLine;
 }
 
+//
+//		The emulator can display every mode (rendering is done from the packed buffer
+//		through GFXReadPixelRaw, so it is the same code path for all of them).
+//
+int RNDModeSupported(int mode) {
+	return mode >= 0 && mode < GFX_MODE_COUNT;
+}
+
 // *******************************************************************************************************************************
 //
 //								Write the 320x240 display to a binary PPM (P6) file, for automated tests
@@ -63,10 +71,12 @@ int RNDWriteScreenshot(const char *fileName) {
 	if (videoRAM == NULL) return -1;
 	FILE *f = fopen(fileName,"wb");
 	if (f == NULL) return -1;
-	fprintf(f,"P6\n320 240\n255\n");
-	for (int i = 0;i < 320*240;i++) {
-		uint16_t p = palette[videoRAM[i]];
-		fputc(((p >> 8) & 0x0F) * 17,f);fputc(((p >> 4) & 0x0F) * 17,f);fputc((p & 0x0F) * 17,f);
+	fprintf(f,"P6\n%d %d\n255\n",gMode.xGSize,gMode.yGSize);
+	for (int y = 0;y < gMode.yGSize;y++) {
+		for (int x = 0;x < gMode.xGSize;x++) {
+			uint16_t p = palette[GFXReadPixelRaw(x,y)];
+			fputc(((p >> 8) & 0x0F) * 17,f);fputc(((p >> 4) & 0x0F) * 17,f);fputc((p & 0x0F) * 17,f);
+		}
 	}
 	fclose(f);
 	return 0;
@@ -111,8 +121,10 @@ void DBGSaveArguments(int argc,char *argv[]) {
 // *******************************************************************************************************************************
 
 void DGBXGetActiveDisplayInfo(SDL_Rect *r,int *pxs,int *pys,int *pxc,int *pyc) {
-		*pxs = SCALE;*pys = SCALE;
-		*pxc = 320;*pyc = 240;
+		*pxc = gMode.xGSize;*pyc = gMode.yGSize;
+		*pxs = SCALE * 320 / (*pxc);*pys = SCALE * 240 / (*pyc);					// Fit modes larger than 320x240 in the same window
+		if (*pxs < 1) *pxs = 1;  													// (Hercules at scale 1 is clipped on the right : debug window only).
+		if (*pys < 1) *pys = 1;
 		r->w = (*pxs) * (*pxc);r->h = (*pys) * (*pyc);
 		r->x = WIN_WIDTH/2-r->w/2;r->y = WIN_HEIGHT/2-r->h/2;
 }
@@ -255,10 +267,10 @@ void DBGXRender(int *address,int showDisplay) {
 		rc2.w = xs;rc2.h = ys;
 		BYTE8 *vPtr = videoRAM;
 		if (vPtr != NULL) {
-			for (int y = 0;y < 240;y++) {
+			for (int y = 0;y < yc;y++) {
 				rc2.y = r.y + y*ys;rc2.x = r.x;
-				for (int x = 0;x < 320;x++) {
-					int col = palette[*vPtr++];
+				for (int x = 0;x < xc;x++) {
+					int col = palette[GFXReadPixelRaw(x,y)];
 					if (col != 0) GFXRectangle(&rc2,col);
 					rc2.x += xs;
 				}
@@ -270,8 +282,8 @@ void DBGXRender(int *address,int showDisplay) {
 				cursorImage = CURGetCurrent(&xHit,&yHit);				
 				cursorX -= xHit;cursorY -= yHit;
 				uint8_t w = 16,h = 16;
-				if (cursorX + 16 >= 320) w = 320-cursorX;
-				if (cursorY + 16 >= 240) h = 240-cursorY;
+				if (cursorX + 16 >= xc) w = xc-cursorX;
+				if (cursorY + 16 >= yc) h = yc-cursorY;
 				rc2.w = xs;rc2.h = ys;
 				for (int x = 0;x < w;x++) {
 					for (int y = 0;y < h;y++) {
@@ -282,10 +294,10 @@ void DBGXRender(int *address,int showDisplay) {
 					}
 				}
 			}
-			for (int y = 0; y < 240/8;y++) {
+			for (int y = 0; y < gMode.yCSize;y++) {
 			 	rc2.x = r.x + r.w + 4;
-			 	rc2.y = r.y + y * ys * 8 + 2;
-			 	rc2.w = xs * 2;rc2.h = ys * 8 - 4;
+			 	rc2.y = r.y + y * ys * gMode.fontHeight + 2;
+			 	rc2.w = xs * 2;rc2.h = ys * gMode.fontHeight - 4;
 			 	GFXRectangle(&rc2,isExtArray[y] ? 0x0F0 : 0xF00);
 			}
 		}	

@@ -14,8 +14,31 @@
 #define _GRAPHICS_H
 
 #define MAXCONSOLEWIDTH  	(80) 	 											// Max console size 
-#define MAXCONSOLEHEIGHT  	(30)
-#define MAXGRAPHICSMEMORY 	(320 * 240)  										// Max byte memory , graphics
+#define MAXCONSOLEHEIGHT  	(43)												// (80x43 in 9x8 on Hercules, 40x32 on 320x256)
+#define MAXGRAPHICSMEMORY 	(320 * 240)  										// Max byte memory , graphics (largest mode)
+
+//
+//		Display modes (F5 / ADR-02). Mode 0 is the original 320x240x256 and is byte for byte
+//		unchanged. Other modes pack pixels (1 bpp MSB first, 4 bpp high nibble first) in the
+//		same graphicsMemory; only the generic code paths (console, pixel, line, rectangle,
+//		read pixel) support them so far. RNDModeSupported() lets each host (RP2040, emulator,
+//		Phosphoneo) say which modes it can display.
+//
+#define GFX_MODE_320x240x256	(0)
+#define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
+#define GFX_MODE_320x256x16		(2)												// 320x256, 4 bpp, text 40x32 in 8x8
+#define GFX_MODE_COUNT 			(3)
+
+struct GraphicsModeDescriptor {
+	uint16_t xGSize,yGSize;														// Pixels
+	uint8_t  bitsPerPixel;														// 8, 4 or 1
+	uint16_t stride;															// Bytes per pixel line
+	uint8_t  xCSize,yCSize;														// Console size (chars)
+	uint8_t  fontWidth,fontHeight;												// Character cell
+	uint8_t  timing;															// 0 = 640x480p60 pixel doubled, 1 = 720x480p60 native
+	uint16_t yOffset;															// Vertical centring (lines) on the DVI frame
+};
+extern const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT];
 #define MAXCONSOLEMEMORY 	(MAXCONSOLEWIDTH * (MAXCONSOLEHEIGHT+1))			// Max byte memory, console text.
 																				// (extra line for scrolling.)
 struct GraphicsMode {
@@ -28,6 +51,9 @@ struct GraphicsMode {
 	uint16_t *consoleMemory;  									  				// console memory.
 	uint8_t  isExtLine[MAXCONSOLEHEIGHT]; 										// True if console is extended line.
 	uint8_t  isCursorVisible;													// True if cursor visible.
+	uint8_t  modeID;															// Current mode (GFX_MODE_*)
+	uint8_t  bitsPerPixel;														// 8, 4 or 1 (see descriptor)
+	uint16_t stride;															// Bytes per pixel line
 };
 
 extern struct GraphicsMode gMode;
@@ -35,8 +61,13 @@ extern struct GraphicsMode gMode;
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b); 				// Implementation specific.
 int  RNDGetFrameCount(void);
 void RNDStartMode0(struct GraphicsMode *gMode);
+int  RNDModeSupported(int mode); 												// Implementation specific : can this host display it ?
 
-void GFXSetMode(int Mode);  													// General.g
+int  GFXSetMode(int Mode);  													// General. Returns 0 if ok, 1 if unsupported.
+int  GFXGetMode(void);
+void GFXWritePixelRaw(int x,int y,uint8_t colour); 								// Any mode, no clipping, no sprite layer.
+uint8_t GFXReadPixelRaw(int x,int y);
+int  GFXIsPackedMode(void); 													// 1 if bitsPerPixel != 8 (generic slow paths only)
 void GFXDefaultPalette(void);
 void GFXResetDefaults(void);
 void GFXSetDefaults(uint8_t *cmd);

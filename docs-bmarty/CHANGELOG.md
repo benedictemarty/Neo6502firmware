@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-51 — architecture multi-modes (ADR-02) : descripteur de mode et
+  table (0 : 320×240×256 inchangé ; 1 : Hercules 720×350 1 bpp, texte 80×25 ;
+  2 : 320×256 4 bpp, texte 40×32), `GFXSetMode(n)` effectif, **API 5,9 Set
+  Graphics Mode** et **5,10 Get Graphics Mode**, accès pixel générique,
+  console/primitives en modes compacts, sprites/tilemap/images limités au mode 0,
+  `RNDModeSupported` par hôte (carte : mode 0 tant que F-52/F-53 ne sont pas
+  faits), capture PPM et fenêtre de `neo` à la taille du mode.
 - 2026-09-15 : F5 recadrée par le PO — modes v1 : Hercules 720×350 (texte 80×25 en
   9×14, graphique 720×348) et 320×256 × 16 couleurs (texte 40×32 en 8×8), pages
   écran ; 640×256 et 400×240 en variantes ultérieures.

@@ -99,6 +99,7 @@ void SPRResetAll(void) {
 void SPRReset(void) {
 	spriteVisibleCount = 0;
 	SPRResetAll();  	
+	if (GFXIsPackedMode()) return;  											// No sprite layer in packed modes.
 	for (int i = 0;i < gMode.xGSize * gMode.yGSize;i++) {  						// Clear the sprite layer
 		gMode.graphicsMemory[i] &= 0x0F;  										// top 4 bits og graphics memory.
 	}
@@ -199,6 +200,7 @@ int SPRUpdate(uint8_t *paramData) {
 
 	uint8_t spriteID = paramData[0];  											// Sprite ID
 	if (spriteID >= MAX_SPRITES) return 1;  									// Invalid
+	if (GFXIsPackedMode()) return 1;  											// Sprites need the 8 bpp layer : mode 0 only.
 
 	uint16_t x = paramData[1] + (paramData[2] << 8);  							// Extract new data.
 	uint16_t y = paramData[3] + (paramData[4] << 8);

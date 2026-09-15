@@ -138,6 +138,15 @@ void RNDStartMode0(struct GraphicsMode *gMode) {
 	isInitialised = true;
 }
 
+//
+//		This renderer only knows the 320x240x256 scanline path : the Hercules (F-52) and
+//		320x256x16 (F-53) renderers are not written yet, so refuse the other modes here
+//		rather than display garbage.
+//
+int RNDModeSupported(int mode) {
+	return mode == GFX_MODE_320x240x256;
+}
+
 // ***************************************************************************************
 //
 //                      Get frame counter

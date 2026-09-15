@@ -56,6 +56,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	}
 
 	if (mapData == NULL) return 1;  										// No map specified.
+	if (GFXIsPackedMode()) return 1;  										// Tiles are 8 bpp objects : mode 0 only.
 	if (xPos < 0 ||  yPos < 0 ||  											// Invalid draw position.
 				xPos >= width * tileSize || yPos >= height * tileSize) return 1;
 

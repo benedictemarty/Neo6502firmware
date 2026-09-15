@@ -45,6 +45,30 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 //
 // ***************************************************************************************
 
+//
+//		Packed modes (1/4 bpp) go through GFXWritePixelRaw. The built in font is 8 lines
+//		high ; in a taller cell (Hercules 9x14) the remaining lines are background until
+//		the real 9x14 font arrives (F-52). Colours beyond the mode depth are masked by
+//		GFXWritePixelRaw (1 bpp keeps bit 0 : any non black colour is "on").
+//
+static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fcol,uint8_t bcol) {
+	uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight;
+	int xOrg = x * cWidth + (graphMode->xGSize - graphMode->xCSize * cWidth) / 2;	// Horizontal centering.
+	int yOrg = y * cHeight;
+	if (graphMode->bitsPerPixel == 1 && fcol != 0 && bcol != 0) bcol = 0;  		// Keep text readable in monochrome.
+	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
+		uint16_t b = 0;
+		if (y1 < 8) {
+			b = font_5x7[(ch-32)*8 + y1];
+			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1];
+		}
+		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
+			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);
+			b = b << 1;
+		}
+	}
+}
+
 static void CONPaintCharacter(uint16_t x,uint16_t y) {
  	if (x < graphMode->xCSize && y < graphMode->yCSize) {  						// Coords in range.
  		uint16_t ch = graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH];		// Character data
@@ -52,7 +76,9 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  		uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight; 
  		ch = ch & 0xFF;  														// Character #
 
- 		if (graphMode->xGSize != 0) {  											// Only if graphics mode.
+ 		if (graphMode->xGSize != 0 && graphMode->bitsPerPixel != 8) {  			// Packed modes : generic path.
+ 			CONPaintCharacterPacked(x,y,ch,fcol,bcol);
+ 		} else if (graphMode->xGSize != 0) {  									// Only if graphics mode.
 			for (uint16_t y1 = 0;y1 < cHeight;y1++) {  							// Each line of font data
 
 				uint16_t b = font_5x7[(ch-32)*cHeight + y1]; 					// Bit pattern for that line.
@@ -98,7 +124,10 @@ void CONClearScreen(void) {
 				graphMode->graphicsMemory[i] &= 0xF0;
 			}
 		} else {																// Erase graphics screen to black
-			memset(graphMode->graphicsMemory,graphMode->backCol,MAXGRAPHICSMEMORY); 
+			uint8_t fill = graphMode->backCol;  								// Replicate the colour in packed modes.
+			if (graphMode->bitsPerPixel == 4) fill = (fill & 0x0F) | (fill << 4);
+			if (graphMode->bitsPerPixel == 1) fill = (fill & 1) ? 0xFF : 0x00;
+			memset(graphMode->graphicsMemory,fill,MAXGRAPHICSMEMORY); 
 		}
 	}
 	for (int c = 0;c < MAXCONSOLEMEMORY;c++) {  								// Erase the console memory.
@@ -258,6 +287,17 @@ void CONSetCursorVisible(uint8_t vFlag) {
 // ***************************************************************************************
 
 void CONReverseCursorBlock(void) {
+	if (graphMode->isCursorVisible != 0 && graphMode->bitsPerPixel != 8) { 		// Packed modes : generic path.
+		int xOrg = graphMode->xCursor * graphMode->fontWidth +
+					(graphMode->xGSize - graphMode->xCSize * graphMode->fontWidth) / 2;
+		int yOrg = graphMode->yCursor * graphMode->fontHeight;
+		for (int y = 0;y < graphMode->fontHeight;y++) {
+			for (int x = 0;x < graphMode->fontWidth;x++) {
+				GFXWritePixelRaw(xOrg+x,yOrg+y,GFXReadPixelRaw(xOrg+x,yOrg+y) ^ graphMode->foreCol);
+			}
+		}
+		return;
+	}
 	if (graphMode->isCursorVisible != 0) {
 		for (int y = 0;y < graphMode->fontHeight;y++) {
 			uint8_t *p = graphMode->graphicsMemory + 
