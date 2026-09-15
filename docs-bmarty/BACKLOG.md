@@ -37,6 +37,19 @@ parenthèses). Statuts : TODO · WIP · DONE · UPSTREAM (fusionné en amont).
 | F-30 | P3 | **Mode Oric** dans le firmware (ULA/VIA/AY/Microdisc) — ou fork de reload : ADR-01 de Neo6502oric2. | oric2 | TODO |
 | F-31 | P3 | **Mode BBC** (6845/ULA, VIA ×2, SN76489, 8271/1770, Master 128 ?) : épopée 3 de Neo6502bbc. | bbc US-30..36 | TODO |
 
+## Épopée F4 — Toolbox (ADR-01, `docs-bmarty/adr/0001-toolbox.md`)
+
+| ID | P | Story | Origine | État |
+|----|---|-------|---------|------|
+| F-40 | P2 | **Ratifier l'ADR-01** (numérotation ≥ 32, conventions de structures et d'erreurs, ordre) et créer le squelette `config/toolbox/group32_quickdraw.inc` + `sources/interface/toolbox/`. | Télémon, portages | TODO |
+| F-41 | P2 | **QuickDraw (32)** : port courant + clipping, rectangles, lignes, motifs, `CopyBits` sur le blitter, fontes proportionnelles (format + outil PC de conversion), `DrawString/TextWidth` ; captures golden Phosphoneo. | | TODO |
+| F-42 | P2 | **Event Manager (33)** : file unifiée clavier/souris/fenêtre/timer, `GetNextEvent`, `WaitNextEvent` (timeout ; IRQ F-10 quand disponible). | | TODO |
+| F-43 | P2 | **Window Manager (34)** : fenêtres, ordre Z, cadres dessinés par le firmware, invalidation/`update`, drag/size, `FindWindow`. | | TODO |
+| F-44 | P3 | **Menu (35) et Control (36) Managers**. | | TODO |
+| F-45 | P3 | **Dialog Manager (37)**, descriptions en RAM 6502. | | TODO |
+| F-46 | P3 | **Resource/Font (38) et Memory RP2040 (39)** : ressources sur SD, poignées hors des 64 Ko. | | TODO |
+| F-47 | P2 | **Vitrine** : le Télémon (Neo6502kbd) utilise fenêtres + menus + événements ; documentation `api.tex` complète ; proposition amont. | | TODO |
+
 ## Politique amont
 Ordre de proposition : F-01 → F-02 → F-11 → F-10 → F-13 → F-14. Les épopées
 F2/F3 restent dans le fork tant qu'elles ne sont pas stabilisées et mesurées.

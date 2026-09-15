@@ -1,6 +1,8 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : ADR-01 Toolbox (groupes 32–39 : QuickDraw, Event, Window, Menu,
+  Control, Dialog, Resource/Font, Memory RP2040) et épopée F4 (F-40..F-47).
 - 2026-09-15 : F-01 — options de test headless de l'émulateur (`cycles:`, `shot:`,
   `text:`, `keys:`), validées par le différentiel Phosphoneo (5 cas identiques).
 - 2026-09-15 : F-00 partie PC — prelim + NeoBASIC + émulateur compilés ; correctif
