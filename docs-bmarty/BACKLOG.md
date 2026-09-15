@@ -83,6 +83,13 @@ le coût de 480 encodages/trame (F-54).
 | F-72 | P3 | Rendu MODE 7 télétexte BBC (`$7C00`, SAA5050) et MODE 0-6. | EPIC-02 / Neo6502bbc | TODO |
 | F-73 | P3 | Interception d'adresses dans la boucle bus (soft switches Apple `$C0xx`, VIA Oric `$0300`) : table d'adresses → gestionnaire côté RP2040 ; coût mesuré (cf. R9). | EPIC-02 | TODO |
 
+### Épopée F9 — Télécom : série USB CDC (Neo6502drive EPIC-02 / EPIC-04)
+
+| ID | Prio | Story | Origine | État |
+|---|---|---|---|---|
+| F-90 | P1 | **Modems et adaptateurs USB-série CDC-ACM** sur le port hôte : classe TinyUSB `cdc_host` (+ FTDI, CP210x), API groupe 14 (statut, octet/bloc en lecture et écriture, line coding), 2 périphériques ; hôtes PC sur tty/pty (`NEO_CDC_TTY`), co-sim avec le modem émulé de libemul. | bmarty « ajouter la prise en charge des modems CDC » | **DONE** 2026-09-15 (carte non testée, R15–R17) — `F-90-cdc.md` |
+| F-91 | P2 | Le Neo6502 **lui-même** en périphérique CDC (câble USB vers un PC : console série, transfert) — impossible en même temps que le mode hôte sur l'unique port USB du RP2040 ; à étudier via l'UART GP28/29 (nxmit) ou un pont. | Neo6502drive EPIC-04 | TODO (étude) |
+
 ### Épopée F8 — Multi-boot RP2040 (sélecteur d'OS : firmware Neo ⇄ images reload-emulator)
 
 | ID | Prio | Story | Origine | État |

@@ -72,6 +72,7 @@
 #include "interface/editor.h"
 #include "interface/irq.h"
 #include "interface/multiboot.h"
+#include "interface/cdcserial.h"
 
 #endif
 

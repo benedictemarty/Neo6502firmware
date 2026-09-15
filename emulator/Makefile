@@ -23,7 +23,7 @@ COMMONOBJECTS = $(subst .cpp,.o,$(COMMONSOURCES))
 
 SOURCES = 	src$(S)core$(S)sys_processor.o src$(S)core$(S)hardware.o src$(S)framework$(S)beeper.o \
 			src$(S)framework$(S)main.o src$(S)framework$(S)gfx.o src$(S)framework$(S)debugger.o \
-			src$(S)core$(S)sys_debugger.o  \
+			src$(S)core$(S)sys_debugger.o src$(S)core$(S)cdc_host_tty.o \
 			src$(S)core$(S)6502.o \
 			src$(S)core$(S)serial_tcp.o \
 			$(COMMONOBJECTS)
