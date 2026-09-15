@@ -74,6 +74,15 @@ le coût de 480 encodages/trame (F-54).
 | F-60 | P3 | **Tick IRQ vers le 65C02** : fonction API « activer/désactiver un tick périodique » (50 Hz trame ou 100 Hz timer) sur IRQB (GPIO25, `wdc65C02cpu_set_irq()` existe mais **n'est appelé nulle part** aujourd'hui) + acquittement ; disponible dans `neo`/Phosphoneo (co-sim US-27 P4). | bmarty | **DONE** 2026-09-15 : API 1,12/1,13, IRQB relâchée à la lecture de `$FFFF` (pas d'acquittement), carte (timer matériel) écrite non testée, `neo` et Phosphoneo vérifiés (`irqtick.neo6502`) — `F-60-tick-irq.md` |
 | F-61 | P3 | **Noyau préemptif 6502** (bibliothèque côté 6502, pas firmware) : contexte par tâche (A/X/Y/P/PC/S, tranche de page zéro et de pile), commutation sur le tick, créer/terminer/dormir/sémaphore ; **l'API `$FF00` n'est pas réentrante** → tick masqué pendant un appel API ou mutex API dans le noyau. Côté RP2040, pas de RTOS préemptif (core0 sert le bus cycle par cycle, core1 rend le DVI) : coopératif seulement. | bmarty | **DONE** 2026-09-15 dans le noyau 6502 (`kernel/rtos.asm`, 10 vecteurs `$FFC1-$FFDC`) : 4 tâches, tourniquet, sommeil, sémaphores, verrou API, WAI si rien de prêt ; démos `rtos`/`rtos_idle` identiques neo ↔ Phosphoneo — `F-61-rtos.md` |
 
+### Épopée F7 — Modes vidéo « historiques » et interception d'adresses (sélecteur d'OS, Neo6502kbd EPIC-02)
+
+| ID | Prio | Story | Origine | État |
+|---|---|---|---|---|
+| F-70 | P3 | Rendu de la page texte Apple II (`$0400-$07FF`, entrelacée, 40×24, police Apple) depuis la RAM 6502, comme mode vidéo 5,9. | EPIC-02 | TODO |
+| F-71 | P3 | Rendu TEXT (`$BB80`, attributs série) et HIRES (`$A000`, 240×200) Oric. | EPIC-02 | TODO |
+| F-72 | P3 | Rendu MODE 7 télétexte BBC (`$7C00`, SAA5050) et MODE 0-6. | EPIC-02 / Neo6502bbc | TODO |
+| F-73 | P3 | Interception d'adresses dans la boucle bus (soft switches Apple `$C0xx`, VIA Oric `$0300`) : table d'adresses → gestionnaire côté RP2040 ; coût mesuré (cf. R9). | EPIC-02 | TODO |
+
 Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour
 F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 
