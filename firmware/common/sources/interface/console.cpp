@@ -13,6 +13,7 @@
 #include "common.h"
 
 #include "interface/font_5x7.h"
+#include "interface/font_8x14.h"  												// Hercules 9x14 text (F-52)
 #include <stdarg.h>
 
 struct GraphicsMode *graphMode;                                         
@@ -46,21 +47,25 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 // ***************************************************************************************
 
 //
-//		Packed modes (1/4 bpp) go through GFXWritePixelRaw. The built in font is 8 lines
-//		high ; in a taller cell (Hercules 9x14) the remaining lines are background until
-//		the real 9x14 font arrives (F-52). Colours beyond the mode depth are masked by
-//		GFXWritePixelRaw (1 bpp keeps bit 0 : any non black colour is "on").
+//		Packed modes (1/4 bpp) go through GFXWritePixelRaw. Colours beyond the mode depth
+//		are masked by GFXWritePixelRaw (1 bpp keeps bit 0 : any non black colour is "on").
+//		Cells of 14 lines (Hercules 9x14) use the 8x14 font for $20-$7F ; the 8 line
+//		glyphs ($80-$BF symbols, $C0-$FF UDG) are centred vertically. The 9th column is
+//		always background (no MDA style replication for $C0-$DF, the Neo charset differs).
 //
 static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fcol,uint8_t bcol) {
 	uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight;
 	int xOrg = x * cWidth + (graphMode->xGSize - graphMode->xCSize * cWidth) / 2;	// Horizontal centering.
 	int yOrg = y * cHeight;
+	int yPad = (cHeight > 8) ? (cHeight - 8) / 2 : 0;  							// Centring of 8 line glyphs in taller cells.
 	if (graphMode->bitsPerPixel == 1 && fcol != 0 && bcol != 0) bcol = 0;  		// Keep text readable in monochrome.
 	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
 		uint16_t b = 0;
-		if (y1 < 8) {
-			b = font_5x7[(ch-32)*8 + y1];
-			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1];
+		if (cHeight == 14 && ch < 128) {
+			b = font_8x14[(ch-32)*14 + y1];
+		} else if (y1 >= yPad && y1 < yPad + 8) {
+			b = font_5x7[(ch-32)*8 + y1 - yPad];
+			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
 		}
 		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
 			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);

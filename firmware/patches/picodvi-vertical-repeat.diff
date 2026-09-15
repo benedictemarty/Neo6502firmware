@@ -1,0 +1,53 @@
+diff --git a/software/libdvi/dvi.c b/software/libdvi/dvi.c
+index f66377f..4063266 100644
+--- a/software/libdvi/dvi.c
++++ b/software/libdvi/dvi.c
+@@ -28,6 +28,7 @@ void dvi_init(struct dvi_inst *inst, uint spinlock_tmds_queue, uint spinlock_col
+ 		inst->dma_cfg[i].dreq = pio_get_dreq(inst->ser_cfg.pio, inst->ser_cfg.sm_tmds[i], true);
+ 	}
+ 	inst->late_scanline_ctr = 0;
++	if (inst->vertical_repeat == 0) inst->vertical_repeat = DVI_VERTICAL_REPEAT;
+ 	inst->tmds_buf_release_next = NULL;
+ 	inst->tmds_buf_release = NULL;
+ 	queue_init_with_spinlock(&inst->q_tmds_valid,   sizeof(void*),  8, spinlock_tmds_queue);
+@@ -201,7 +202,7 @@ static void __dvi_func(dvi_dma_irq_handler)(struct dvi_inst *inst) {
+ 		tmdsbuf = NULL;
+ 	}
+ 	else if (queue_try_peek_u32(&inst->q_tmds_valid, &tmdsbuf)) {
+-		if (inst->timing_state.v_ctr % DVI_VERTICAL_REPEAT == DVI_VERTICAL_REPEAT - 1) {
++		if (inst->timing_state.v_ctr % inst->vertical_repeat == inst->vertical_repeat - 1) {
+ 			queue_remove_blocking_u32(&inst->q_tmds_valid, &tmdsbuf);
+ 			inst->tmds_buf_release_next = tmdsbuf;
+ 		}
+@@ -209,7 +210,7 @@ static void __dvi_func(dvi_dma_irq_handler)(struct dvi_inst *inst) {
+ 	else {
+ 		// No valid scanline was ready (generates solid red scanline)
+ 		tmdsbuf = NULL;
+-		if (inst->timing_state.v_ctr % DVI_VERTICAL_REPEAT == DVI_VERTICAL_REPEAT - 1)
++		if (inst->timing_state.v_ctr % inst->vertical_repeat == inst->vertical_repeat - 1)
+ 			++inst->late_scanline_ctr;
+ 	}
+ 
+@@ -222,7 +223,7 @@ static void __dvi_func(dvi_dma_irq_handler)(struct dvi_inst *inst) {
+ 			else {
+ 				_dvi_load_dma_op(inst->dma_cfg, &inst->dma_list_error);
+ 			}
+-			if (inst->scanline_callback && inst->timing_state.v_ctr % DVI_VERTICAL_REPEAT == DVI_VERTICAL_REPEAT - 1) {
++			if (inst->scanline_callback && inst->timing_state.v_ctr % inst->vertical_repeat == inst->vertical_repeat - 1) {
+ 				inst->scanline_callback();
+ 			}
+ 			break;
+diff --git a/software/libdvi/dvi.h b/software/libdvi/dvi.h
+index 73be66c..2daa868 100644
+--- a/software/libdvi/dvi.h
++++ b/software/libdvi/dvi.h
+@@ -25,6 +25,9 @@ struct dvi_inst {
+ 	struct dvi_serialiser_cfg ser_cfg;
+ 	// Called in the DMA IRQ once per scanline -- careful with the run time!
+ 	dvi_callback_t scanline_callback;
++	// Runtime vertical repeat (1 = native lines, 2 = each scanline shown twice).
++	// 0 at dvi_init() time selects the compile time DVI_VERTICAL_REPEAT.
++	uint vertical_repeat;
+ 
+ 	// State ---
+ 	struct dvi_scanline_dma_list dma_list_vblank_sync;

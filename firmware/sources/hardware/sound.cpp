@@ -13,6 +13,7 @@
 #include "common.h"
 #include "stdlib.h"
 #include "hardware/pwm.h"
+#include "hardware/clocks.h"
 #include "dvi.h"
 #include "system/dvi_video.h"
 
@@ -28,10 +29,18 @@ static int sampleFrequency = -1;
 // ***************************************************************************************
 
 int SNDGetSampleFrequency(void) {
-    if (sampleFrequency < 0) {
-        sampleFrequency = DVI_TIMING.bit_clk_khz * 1024 / SAMPLE_DIVIDER / 255;
+    if (sampleFrequency < 0) {  													// PWM runs from clk_sys : use the actual clock.
+        sampleFrequency = clock_get_hz(clk_sys) / SAMPLE_DIVIDER / 255;
     }
     return sampleFrequency;
+}
+
+//
+//		After a display mode switch clk_sys changes (252 <-> 270 MHz) : the PWM sample
+//		rate follows it, so the cached value is recomputed on next use.
+//
+void SNDClockChanged(void) {
+    sampleFrequency = -1;
 }
 
 // ***************************************************************************************

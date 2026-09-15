@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-52 (partiel) — police 8×14 (`font_8x14.h`, script `vga14.py`) pour la
+  console 80×25 en 9×14 ; renderer DVI multi-modes (`dvi_320x240x256.cpp` : timings
+  par mode, boucle d'encodage core1, 1 bpp `tmds_encode_1bpp`, bandes noires,
+  arrêt/redémarrage du DVI au changement de timing, `HWClockChanged` pour UART et
+  son) ; correctif PicoDVI « vertical repeat dynamique » appliqué par FetchContent ;
+  `DVI_1BPP_BIT_REVERSE=1`. **Non exécuté sur carte** : fiche `F-52-hercules.md`.
 - 2026-09-15 : épopée F6 multitâche 6502 (F-60 tick IRQ, F-61 noyau préemptif) inscrite, avec les contraintes constatées (IRQB jamais levée par le firmware, API non réentrante).
 - 2026-09-15 : F-51 — architecture multi-modes (ADR-02) : descripteur de mode et
   table (0 : 320×240×256 inchangé ; 1 : Hercules 720×350 1 bpp, texte 80×25 ;

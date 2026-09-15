@@ -13,9 +13,11 @@
 #ifndef _DVI_VIDEO_h
 #define _DVI_VIDEO_h
 
-void DVIStart(void);
+void HWClockChanged(void);  													// System clock changed (mode switch) : re-derive rates.
+void SERClockChanged(void);
+void SNDClockChanged(void);
 
-#define DVI_TIMING dvi_timing_640x480p_60hz
+#define DVI_TIMING dvi_timing_640x480p_60hz  										// Boot timing (mode 0)
 
 #endif
 

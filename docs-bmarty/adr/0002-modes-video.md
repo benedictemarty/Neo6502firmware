@@ -34,9 +34,9 @@ déjà réservés, sans mémoire supplémentaire.
    (mode, largeur, hauteur, bpp, colonnes, lignes). `GFXSetMode` réinitialise
    écran, palette (en monochrome, l'index 1 est blanc par défaut) et console.
 4. **Capacités par hôte** : `RNDModeSupported(mode)` — l'émulateur `neo` et
-   Phosphoneo affichent tout (rendu via `GFXReadPixelRaw`) ; le rendu DVI de la
-   carte n'accepte que le mode 0 tant que F-52/F-53 ne sont pas écrits (pas
-   d'affichage corrompu possible).
+   Phosphoneo affichent tout (rendu via `GFXReadPixelRaw`) ; la carte accepte les
+   trois modes depuis F-52 (renderer écrit, **non exécuté sur carte** — voir
+   `F-52-hercules.md` ; repasser à « mode 0 seul » si la carte se comporte mal).
 5. **Périmètre des modes compacts en v1** : console (texte, curseur, défilement),
    pixel, ligne, rectangle, ellipse, lecture pixel. **Sprites, tilemaps,
    images (5,7) sont refusés hors mode 0** (erreur) : ils reposent sur la couche
