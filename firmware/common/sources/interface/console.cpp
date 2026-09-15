@@ -53,12 +53,29 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 //		glyphs ($80-$BF symbols, $C0-$FF UDG) are centred vertically. The 9th column is
 //		always background (no MDA style replication for $C0-$DF, the Neo charset differs).
 //
+//		Monochrome (Hercules) attributes, MDA style, carried by the colour nibbles (F-52) :
+//		ink bit 0 = ink on, bit 1 = underline, bit 2 = bright (bold), bit 3 = blink ;
+//		paper bit 0 = paper on (inverse video when the ink is off).
+//
+#define MDA_INK 		(0x01)
+#define MDA_UNDERLINE 	(0x02)
+#define MDA_BRIGHT 		(0x04)
+#define MDA_BLINK 		(0x08)
+static uint8_t blinkHidden = 0;  												// Blink phase : 1 = blinking text hidden.
+static void CONPaintCharacter(uint16_t x,uint16_t y);
+
 static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fcol,uint8_t bcol) {
 	uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight;
 	int xOrg = x * cWidth + (graphMode->xGSize - graphMode->xCSize * cWidth) / 2;	// Horizontal centering.
 	int yOrg = y * cHeight;
 	int yPad = (cHeight > 8) ? (cHeight - 8) / 2 : 0;  							// Centring of 8 line glyphs in taller cells.
-	if (graphMode->bitsPerPixel == 1 && fcol != 0 && bcol != 0) bcol = 0;  		// Keep text readable in monochrome.
+	uint8_t attr = 0;
+	if (graphMode->bitsPerPixel == 1) {  											// Monochrome : decode the attributes.
+		attr = fcol;
+		fcol = attr & MDA_INK;bcol = bcol & MDA_INK;
+		if (fcol == bcol) fcol = !bcol;  											// Keep text readable.
+		if ((attr & MDA_BLINK) && blinkHidden) fcol = bcol;  						// Hidden phase of blinking text.
+	}
 	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
 		uint16_t b = 0;
 		if (cHeight == 14 && ch < 128) {
@@ -67,9 +84,29 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 			b = font_5x7[(ch-32)*8 + y1 - yPad];
 			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
 		}
+		if (attr & MDA_BRIGHT) b |= (b >> 1);  										// Bold : double strike.
+		if ((attr & MDA_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  				// Underline row (MDA : row 12 of 14).
 		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
 			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);
 			b = b << 1;
+		}
+	}
+}
+
+//
+//		Blink (monochrome only) : called from DSPSync / the host frame sync. Phase from
+//		the 100 Hz timer (half a second on, half a second off) ; repaints the blinking
+//		cells when the phase changes, except the cursor cell (its reversal is kept).
+//
+void CONBlinkSync(void) {
+	if (graphMode == NULL || graphMode->bitsPerPixel != 1) return;
+	uint8_t hidden = (TMRRead() / 50) & 1;
+	if (hidden == blinkHidden) return;
+	blinkHidden = hidden;
+	for (int y = 0;y < graphMode->yCSize;y++) {
+		for (int x = 0;x < graphMode->xCSize;x++) {
+			if (x == graphMode->xCursor && y == graphMode->yCursor) continue;
+			if (graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH] & (MDA_BLINK << 8)) CONPaintCharacter(x,y);
 		}
 	}
 }
@@ -184,6 +221,8 @@ void CONGetScreenSizeChars(uint8_t* width, uint8_t* height) {
 void CONInitialise(struct GraphicsMode *gMode) {
 	graphMode = gMode;	
 	graphMode->foreCol = 7;graphMode->backCol = 0; 	 							// Reset colours
+	if (gMode->bitsPerPixel == 1) graphMode->foreCol = MDA_INK;  				// Monochrome : plain ink, no attribute.
+	blinkHidden = 0;
 	CONWrite(12);  																// Clear screen / home cursor.
 }
 

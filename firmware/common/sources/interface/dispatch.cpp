@@ -64,6 +64,7 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 void TIMECRITICAL(DSPSync)(void) 
 {
 	KBDSync();
+	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 
 // ***************************************************************************************

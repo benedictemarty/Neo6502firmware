@@ -10,6 +10,13 @@ et documentée dans le `groupN.inc` concerné.
 | 5 Graphics | 11 Set Draw Page | P0 = page (0-1 ; mode 0 : 0 seulement) | erreur si la page n'existe pas | absente | F-55 |
 | 5 Graphics | 12 Set Display Page | P0 = page | erreur si la page n'existe pas ; effective à la trame suivante (attendre avec 5,37) | absente | F-55 |
 
+**Attributs MDA (mode 1, Hercules)** : les quartets encre/papier de la console
+(2,15 Set Text Color, codes `$80+encre`, `$90+papier`) portent les attributs :
+encre bit 0 = allumée, bit 1 = souligné (ligne 12 de 14), bit 2 = gras (double
+frappe), bit 3 = clignotant (0,5 s, phase du timer 100 Hz, repeint par
+`CONBlinkSync` depuis `DSPSync`) ; papier bit 0 = allumé → vidéo inverse quand
+l'encre est éteinte (`$80,$91`). Encre par défaut en mode 1 : 1.
+
 Comportements modifiés : en modes 1 et 2 les sprites (groupe 6, tortue groupe 9)
 sont **dessinés en XOR dans le tampon** (pas de couche séparée) : couleurs exactes
 sur fond noir, mélangées (XOR) sur fond coloré, inversion en monochrome ; un

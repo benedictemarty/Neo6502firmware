@@ -51,6 +51,7 @@ la première carte.
 | R8 | Moniteurs : 720×480p60 est un timing CEA (480p) — pixels non carrés, certains écrans l'affichent en 16:9 | essayer 2 moniteurs |
 
 ## Reste à faire dans F-52
-- Attributs MDA par caractère (souligné, brillant, clignotant) : non commencés ;
-  l'inverse est déjà obtenu par fond ≠ 0.
+- Attributs MDA par caractère : **faits** (encre bit 1 souligné, bit 2 gras par
+  double frappe, bit 3 clignotant 0,5 s ; papier bit 0 = inverse) — voir API-DELTA.
+  Le « brillant » MDA est rendu par un gras (un plan 1 bpp n'a pas d'intensité).
 - Mesure F-50 réelle sur carte (protocole dans `F-50-budget-rendu.md`).
