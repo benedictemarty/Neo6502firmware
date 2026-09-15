@@ -23,6 +23,7 @@
 #define MAX_CONTROLLERS (4)
 
 static SDL_Window *mainWindow = NULL;
+static int isFullScreen = 0;
 static SDL_Surface *mainSurface = NULL;
 static int controllerCount = 0;
 static SDL_Joystick *controllers[MAX_CONTROLLERS];
@@ -50,7 +51,8 @@ void GFXOpenWindow(const char *title,int width,int height,int colour) {
 	}
 
 	mainWindow = SDL_CreateWindow(title, SDL_WINDOWPOS_UNDEFINED, 					// Try to create a window
-							SDL_WINDOWPOS_UNDEFINED, width,height, SDL_WINDOW_SHOWN );
+							SDL_WINDOWPOS_UNDEFINED, width,height, 
+							SDL_WINDOW_SHOWN | (isFullScreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0));
 	if (mainWindow == NULL) {
 		exit(printf( "Window could not be created! SDL_Error: %s\n", SDL_GetError() ));
 	}
@@ -66,7 +68,6 @@ void GFXOpenWindow(const char *title,int width,int height,int colour) {
 	SOUNDPlay();
 
 	SDL_ShowCursor(SDL_DISABLE);                                                    // Hide mouse cursor
-	if (GFXIsFullScreen()) GFXSetFullScreen(1);  									// fullscreen argument given.
 }
 
 // *******************************************************************************************************************************
@@ -74,8 +75,6 @@ void GFXOpenWindow(const char *title,int width,int height,int colour) {
 //						Window size / full screen (bmarty : scale 1-4 for every video mode, full screen)
 //
 // *******************************************************************************************************************************
-
-static int isFullScreen = 0;
 
 void GFXSetWindowSize(int width,int height) {
 	if (isFullScreen) return;
@@ -149,6 +148,7 @@ static void _GFXMainLoop(void *arg) {
 			isRunning = 0;
 		}
 	}
+	mainSurface = SDL_GetWindowSurface(mainWindow);									// The surface changes on resize / full screen (asynchronous).
 	SDL_FillRect(mainSurface, NULL, 												// Draw the background.
 						SDL_MapRGB(mainSurface->format, RED(background),GREEN(background),BLUE(background)));
 	int render = GFXXRender(mainSurface);											// Ask app to render state
