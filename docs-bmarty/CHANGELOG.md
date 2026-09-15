@@ -1,6 +1,8 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-50 — analyse du budget de rendu (PicoDVI : encodeurs, exemples,
+  timings), verdict par mode, protocole de mesure sur carte.
 - 2026-09-15 : épopée F5 « modes vidéo et pages écran » (F-50..F-57) avec le bilan
   mémoire par mode ; F-15 absorbée.
 - 2026-09-15 : ADR-01 Toolbox (groupes 32–39 : QuickDraw, Event, Window, Menu,

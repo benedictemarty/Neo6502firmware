@@ -51,7 +51,7 @@ Bilan mémoire 256 couleurs : 320×256 = 81,9 Ko ✓, 400×240 = 96 Ko ✓ (timi
 
 | ID | P | Story | Origine | État |
 |----|---|-------|---------|------|
-| F-50 | P1 | **Mesure du budget de rendu** : coût par ligne de core1 (conversion + TMDS) pour 320, 640 et 720 pixels, à 60 Hz, sur carte (F-00 partie ARM faite) — et à quelles fréquences (252 MHz, 372 MHz). Décide de la faisabilité de tout le reste. | question PO | TODO |
+| F-50 | P1 | **Mesure du budget de rendu** : coût par ligne de core1 (conversion + TMDS) pour 320, 640 et 720 pixels, à 60 Hz, sur carte (F-00 partie ARM faite) — et à quelles fréquences (252 MHz, 372 MHz). Décide de la faisabilité de tout le reste. | question PO | WIP : analyse sur sources faite (`docs-bmarty/F-50-budget-rendu.md`) — 640×480 1 bpp et 2 bpp prouvés par PicoDVI, 16/256 couleurs pleine largeur exclus, 320×256 à trancher par mesure ; protocole de mesure sur carte rédigé, en attente d'une carte |
 | F-51 | P1 | **Architecture multi-modes** : descripteur de mode (largeur, hauteur, bits/pixel, doublage H/V, timing DVI), `GFXSetMode(n)` effectif, console adaptée (largeur/hauteur en caractères, police 6×8 ou 8×8), émulateur `neo` et Phosphoneo (`neo_host`) alignés ; ADR-02. | | TODO |
 | F-52 | P2 | **Mode 640×480 × 1 bpp** (texte 80 colonnes, « Hercules/VGA mono ») : 38,4 Ko, double tampon possible ; blitter avec source 1 bit vers ce mode. | Télémon, Neo6502bbc, civ | TODO |
 | F-53 | P2 | **Mode 640×480 × 2 bpp (4 couleurs)** ou **640×240 × 4 bpp (16 couleurs)** : 76,8 Ko ; choix par mesure F-50 ; blitter 2 bpp (F-11) associé. | Neo6502bbc (MODE 4/5) | TODO |
