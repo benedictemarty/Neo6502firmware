@@ -52,6 +52,11 @@ exécuté sur carte**.
    dans `neo`/Phosphoneo.
 6. **Télémon** (Neo6502kbd) : le menu `O` liste `F1..F3 <nom>` (slots occupés seulement) et `Fn` redémarre sur l'image.
 
+## Produire l'image complète
+`make -C multiboot image` → `multiboot/neo6502-multi.uf2` (sélecteur + Neo à jour + reload BBC
+et Oric si `~/reload-emulator` est présent ; 669 Ko sur 2 Mo). `make -C multiboot check` la
+vérifie sur libemul. À flasher : BOOTSEL enfoncé, glisser le fichier sur `RPI-RP2`.
+
 ## Côté reload-emulator (fork `benedictemarty`, branche `bbc`)
 `cmake -DNEO_MULTIBOOT_DIR=~/Neo6502firmware/multiboot -DNEO_SLOT_BBC=1 -DNEO_SLOT_ORIC=2`
 (`platforms/rp2040/build_mb`) → `bbc.uf2` (257 Ko) et `oric.uf2` (186 Ko) liés pour leurs

@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : `make -C multiboot image` produit `neo6502-multi.uf2` (Neo 194 Ko + reload BBC 279 Ko + Oric 187 Ko, 669 Ko) ; `make -C multiboot check` (libemul).
 - 2026-09-15 : F-92 — API 2,20 Console Debug Echo : l'affichage console est recopié sur le port de débogage (UART carte / stderr émulateurs) pour capturer l'écran d'une vraie carte depuis le PC ; F-91 (Neo en périphérique CDC) : étude close — un seul contrôleur USB, le lien PC passe par l'UART.
 - 2026-09-15 : émulateur `neo` — option de test `mouse:C:X,Y,B` (position et boutons planifiés), pour le différentiel Phosphoneo.
 - 2026-09-15 : F-90 vérifiée avec le vrai Pico W modem (Neo6502drive) sur `/dev/ttyACM0`, en comportemental et sur le vrai firmware en co-sim.
