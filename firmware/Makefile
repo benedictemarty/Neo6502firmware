@@ -73,6 +73,13 @@ build: prelim always
 	$(CCOPY) build$(S)sources$(S)$(BINARY).elf .
 	$(CCOPY) build$(S)sources$(S)$(BINARY).uf2 .
 
+# bmarty F-80 : same firmware linked for slot 0 of the multi-boot layout -> firmware_slot0.uf2
+# (build_mb is a separate build directory so that the normal image is kept)
+build-multiboot: prelim always
+	cmake --fresh -B build_mb -DSTORAGE_TYPE=$(STORAGE) -DNEO_MULTIBOOT_SLOT=0
+	$(MAKE) -C build_mb
+	$(CCOPY) build_mb$(S)sources$(S)$(BINARY).uf2 $(BINARY)_slot0.uf2
+
 # ***************************************************************************************
 #
 #								Clean build directories

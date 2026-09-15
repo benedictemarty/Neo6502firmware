@@ -87,8 +87,8 @@ le coût de 480 encodages/trame (F-54).
 
 | ID | Prio | Story | Origine | État |
 |---|---|---|---|---|
-| F-80 | P2 | **Étude** : plusieurs images firmware en flash (Neo ≈ 190 Ko, reload BBC/Oric/Apple //e avec ROM et images disque, 2 Mo au total), étage de démarrage qui lit le choix (registre scratch du watchdog / secteur de flash) et saute à l'image ; relocalisation des images (éditeur de liens Pico SDK, `boot2`) ; comportement PicoDVI/TinyUSB après saut. | Neo6502kbd EPIC-02, reload fork `bbc` | TODO |
-| F-81 | P2 | API **1,14 Reboot Image** : P0 = image (0 = Neo) → mémorise le choix et redémarre (watchdog) ; le Télémon `O` liste les images. | EPIC-02 | TODO |
+| F-80 | P2 | **Étude** : plusieurs images firmware en flash (Neo ≈ 190 Ko, reload BBC/Oric/Apple //e avec ROM et images disque, 2 Mo au total), étage de démarrage qui lit le choix (registre scratch du watchdog / secteur de flash) et saute à l'image ; relocalisation des images (éditeur de liens Pico SDK, `boot2`) ; comportement PicoDVI/TinyUSB après saut. | Neo6502kbd EPIC-02, reload fork `bbc` | **DONE** 2026-09-15 : `multiboot/` (sélecteur `neoboot`, `memmap_slot_N.ld`, `mkimage.py`), `make -C firmware build-multiboot`, vérifié sur libemul (Phosphoneo `test-multiboot`) ; carte non testée (R11–R14, `F-80-multiboot.md`) |
+| F-81 | P2 | API **1,14 Reboot Image** : P0 = image (0 = Neo) → mémorise le choix et redémarre (watchdog) ; le Télémon `O` liste les images. | EPIC-02 | **DONE** 2026-09-15 : 1,14 Reboot Image, 1,15 Get Image Name (`multiboot.cpp`, annuaire en flash) ; Télémon `O` → `F1..F3` |
 | F-82 | P3 | Retour : une touche au reset (ou un délai) pour revenir au firmware Neo depuis une image reload (dans reload : `hid_app` F12 ?). | EPIC-02 | TODO |
 
 Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour

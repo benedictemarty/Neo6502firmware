@@ -71,6 +71,7 @@
 #include "interface/gamepad.h"
 #include "interface/editor.h"
 #include "interface/irq.h"
+#include "interface/multiboot.h"
 
 #endif
 

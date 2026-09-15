@@ -111,6 +111,9 @@ void HWReset(void) {
 //
 // *******************************************************************************************************************************
 
+uint8_t HWRebootImage(uint8_t slot) { return 1; }  									// No multi-boot in the emulator (F-81).
+uint8_t HWGetImageName(uint8_t slot, char *name, int maxLen) { return 1; }
+
 void HWSync(void) {
 	TICKProcess();
 	frameCount++;

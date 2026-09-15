@@ -33,7 +33,7 @@ target_sources(firmware PRIVATE main.cpp
     #
     hardware/dvi_320x240x256.cpp  hardware/usbdriver.cpp  hardware/timer.cpp  hardware/sound.cpp
     hardware/fileimplementation.cpp hardware/tick.cpp hardware/serial.cpp hardware/ports.cpp
-    hardware/GamepadController.cpp ${PADSOURCES}
+    hardware/GamepadController.cpp hardware/multiboot.cpp ${PADSOURCES}
 
     #
     #       CPU type (pretty much permanently PIO now)
@@ -54,6 +54,12 @@ elseif(STORAGE_TYPE STREQUAL "SDCARD")
     add_subdirectory(${no-os-fatfs-sd-spi-rpi-pico_SOURCE_DIR}/FatFs_SPI ${no-os-fatfs-sd-spi-rpi-pico_BINARY_DIR})
 else()
     message(FATAL_ERROR "You need to set STORAGE_TYPE!")
+endif()
+
+# bmarty F-80 : -DNEO_MULTIBOOT_SLOT=0 links the firmware for slot 0 of the multi-boot layout
+if (DEFINED NEO_MULTIBOOT_SLOT)
+    pico_set_linker_script(firmware ${CMAKE_CURRENT_LIST_DIR}/../../multiboot/memmap_slot_${NEO_MULTIBOOT_SLOT}.ld)
+    message(STATUS "Neo6502 firmware linked for multi-boot slot ${NEO_MULTIBOOT_SLOT}")
 endif()
 
 target_compile_definitions(firmware

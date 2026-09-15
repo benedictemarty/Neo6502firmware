@@ -82,6 +82,23 @@ GROUP 1 System
     DOCUMENTATION
         Return the current interrupt tick rate in Parameters:0,1 (0 = off).
 
+    FUNCTION 14 Reboot Image
+        *DERROR = HWRebootImage(DPARAMS[0]);
+    DOCUMENTATION
+        Multi-boot (F-80/F-81) : restart the RP2040 on the firmware image in flash slot Parameter:0 (0 = this Neo6502 firmware,
+        1-3 = other images such as reload-emulator machines). Does not return when it succeeds ; sets the error flag if the
+        slot is empty or if multi-boot is not installed (emulators).
+
+    FUNCTION 15 Get Image Name
+        {
+            char name[32];
+            *DERROR = HWGetImageName(DPARAMS[0], name, sizeof(name));
+            if (*DERROR == 0) DSPSetStdString(DPARAMS, 1, std::string(name));
+        }
+    DOCUMENTATION
+        Multi-boot : Parameter:0 = slot, Parameters:1,2 = length-prefixed buffer (byte 0 = its size) receiving the image name.
+        Sets the error flag if the slot is empty or if multi-boot is not installed.
+
     FUNCTION 10 Write character to debug
         FDBWrite(DPARAMS[0]);
     DOCUMENTATION
