@@ -1,6 +1,8 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F-00 partie PC — prelim + NeoBASIC + émulateur compilés ; correctif
+  `__time_critical_func` (branche `feat/emulator-build-fix`, candidat PR amont).
 - 2026-09-15 : F-01 précisée (options de test type Phosphoric sur `neo`) ; golden
   model complet confié au projet Phosphoneo.
 - 2026-09-15 : création du fork (`upstream` = neo6502-firmware `v1.0.0-14-gdc70908`),
