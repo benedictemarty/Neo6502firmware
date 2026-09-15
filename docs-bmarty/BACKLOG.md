@@ -53,12 +53,18 @@ Bilan mémoire 256 couleurs : 320×256 = 81,9 Ko ✓, 400×240 = 96 Ko ✓ (timi
 |----|---|-------|---------|------|
 | F-50 | P1 | **Mesure du budget de rendu** : coût par ligne de core1 (conversion + TMDS) pour 320, 640 et 720 pixels, à 60 Hz, sur carte (F-00 partie ARM faite) — et à quelles fréquences (252 MHz, 372 MHz). Décide de la faisabilité de tout le reste. | question PO | WIP : analyse sur sources faite (`docs-bmarty/F-50-budget-rendu.md`) — 640×480 1 bpp et 2 bpp prouvés par PicoDVI, 16/256 couleurs pleine largeur exclus, 320×256 à trancher par mesure ; protocole de mesure sur carte rédigé, en attente d'une carte |
 | F-51 | P1 | **Architecture multi-modes** : descripteur de mode (largeur, hauteur, bits/pixel, doublage H/V, timing DVI), `GFXSetMode(n)` effectif, console adaptée (largeur/hauteur en caractères, police 6×8 ou 8×8), émulateur `neo` et Phosphoneo (`neo_host`) alignés ; ADR-02. | | TODO |
-| F-52 | P2 | **Mode 640×480 × 1 bpp** (texte 80 colonnes, « Hercules/VGA mono ») : 38,4 Ko, double tampon possible ; blitter avec source 1 bit vers ce mode. | Télémon, Neo6502bbc, civ | TODO |
-| F-53 | P2 | **Mode 640×480 × 2 bpp (4 couleurs)** ou **640×240 × 4 bpp (16 couleurs)** : 76,8 Ko ; choix par mesure F-50 ; blitter 2 bpp (F-11) associé. | Neo6502bbc (MODE 4/5) | TODO |
-| F-54 | P2 | **Mode 320×256 × 8 bits** (lignes non doublées, image centrée) pour les portages PAL 256 lignes. | scumm/bbc | TODO |
-| F-55 | P2 | **Pages écran** : deux framebuffers en 320×240 × 4 bpp (ou 640×480 × 1 bpp), page visible / page de travail, bascule à la trame (API groupe 5 : fonctions « set display page / set draw page / wait vsync »). | question PO (« plusieurs screens ») | TODO |
-| F-56 | P3 | **Hercules 720×348 × 1 bpp** centré dans un timing 800×480 (ou réduit) ; **400×240 × 8 bits** en 800×480. | question PO | TODO |
-| F-57 | P3 | Modes texte : 80×30 / 80×60 sur les modes 1 bpp, police 8×8 chargeable. | Télémon | TODO |
+| F-52 | **P1** | **Mode Hercules** (décision PO 2026-09-15) : 720×350 × 1 bpp (31,5 Ko) dans le timing 720×480p60 (270 MHz), 350 lignes centrées ; **mode texte 80×25 en cellules 9×14** (police MDA/Hercules 9×14 : 8 colonnes de glyphe + 1 d'espacement, prolongée pour les caractères graphiques `$C0-$DF` comme sur MDA), attributs par caractère (normal, inverse, souligné, brillant, clignotant), curseur ; **mode graphique 720×348** (Hercules) sur le même tampon ; encre au choix (blanc, ambre, vert = même plan sur les canaux R/G/B choisis), fond noir ; double tampon possible. Console 2,x et éditeur adaptés (80 colonnes). | PO | TODO |
+| F-53 | **P1** | **Mode 320×256 × 16 couleurs** (décision PO) : 4 bpp (41 Ko), palette RGB565 (16 parmi 65 536), doublage horizontal, `VERTICAL_REPEAT=1` (256 lignes utiles + bandes) ; **mode texte 40×32 en 8×8** (encre/papier 16 couleurs par caractère) et variante 53×32 en 6×8 (police actuelle) ; sprites/blitter/primitives du groupe 5 opérant en 4 bpp ; **double tampon** (2 × 41 Ko) → F-55. Repli si la mesure F-50 refuse 480 encodages : 320×240 × 16 couleurs (texte 40×30). | PO | TODO |
+| F-54 | P2 | Mesure F-50 spécifique au 320×256 (`VERTICAL_REPEAT=1`, encodeur palette 4 bpp) ; décision 256 vs 240 lignes. | F-53 | TODO |
+| F-55 | P2 | **Pages écran** pour F-53 (page visible / page de travail, bascule à la trame, « wait vsync ») et pour le mode Hercules. | PO (« plusieurs screens ») | TODO |
+| F-56 | P3 | Variantes ultérieures : 640×256 × 1 bpp (encre au choix) et 640×256 × 8 couleurs (3 plans, 61 Ko) ; 400×240 × 8 bits en 800×480. | | TODO |
+| F-57 | P3 | Police 9×14 et 8×8 chargeables (fichiers), jeu de caractères graphiques ; modes texte 80×43 (9×8) sur Hercules. | Télémon | TODO |
+
+Modes v1 retenus : **mode 0** 320×240 × 256 couleurs (actuel) · **mode 1** Hercules
+720×350 (texte 80×25 9×14) / 720×348 graphique · **mode 2** 320×256 × 16
+couleurs (texte 40×32 8×8). Faits : 1 bpp pleine largeur prouvé par PicoDVI
+(`terminal` 720×480) ; 4 bpp doublé = chemin palette existant ; l'inconnue est
+le coût de 480 encodages/trame (F-54).
 
 Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour
 F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.

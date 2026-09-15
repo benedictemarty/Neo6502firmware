@@ -1,6 +1,9 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-15 : F5 recadrée par le PO — modes v1 : Hercules 720×350 (texte 80×25 en
+  9×14, graphique 720×348) et 320×256 × 16 couleurs (texte 40×32 en 8×8), pages
+  écran ; 640×256 et 400×240 en variantes ultérieures.
 - 2026-09-15 : F-50 — analyse du budget de rendu (PicoDVI : encodeurs, exemples,
   timings), verdict par mode, protocole de mesure sur carte.
 - 2026-09-15 : épopée F5 « modes vidéo et pages écran » (F-50..F-57) avec le bilan
