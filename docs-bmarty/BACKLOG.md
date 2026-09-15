@@ -83,6 +83,14 @@ le coût de 480 encodages/trame (F-54).
 | F-72 | P3 | Rendu MODE 7 télétexte BBC (`$7C00`, SAA5050) et MODE 0-6. | EPIC-02 / Neo6502bbc | TODO |
 | F-73 | P3 | Interception d'adresses dans la boucle bus (soft switches Apple `$C0xx`, VIA Oric `$0300`) : table d'adresses → gestionnaire côté RP2040 ; coût mesuré (cf. R9). | EPIC-02 | TODO |
 
+### Épopée F8 — Multi-boot RP2040 (sélecteur d'OS : firmware Neo ⇄ images reload-emulator)
+
+| ID | Prio | Story | Origine | État |
+|---|---|---|---|---|
+| F-80 | P2 | **Étude** : plusieurs images firmware en flash (Neo ≈ 190 Ko, reload BBC/Oric/Apple //e avec ROM et images disque, 2 Mo au total), étage de démarrage qui lit le choix (registre scratch du watchdog / secteur de flash) et saute à l'image ; relocalisation des images (éditeur de liens Pico SDK, `boot2`) ; comportement PicoDVI/TinyUSB après saut. | Neo6502kbd EPIC-02, reload fork `bbc` | TODO |
+| F-81 | P2 | API **1,14 Reboot Image** : P0 = image (0 = Neo) → mémorise le choix et redémarre (watchdog) ; le Télémon `O` liste les images. | EPIC-02 | TODO |
+| F-82 | P3 | Retour : une touche au reset (ou un délai) pour revenir au firmware Neo depuis une image reload (dans reload : `hid_app` F12 ?). | EPIC-02 | TODO |
+
 Dépendances : F-50 avant tout ; F-51 est le socle ; F-11 (blit 2 bpp) pour
 F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 
