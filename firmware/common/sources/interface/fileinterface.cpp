@@ -259,6 +259,26 @@ uint8_t FIOGetCurrentDirectory(char *target,int maxSize) {
 
 // ***************************************************************************************
 //
+//							Volumes (bmarty F-102 : 3,24 / 3,25 / 3,26)
+//
+// ***************************************************************************************
+
+uint8_t FIOGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs) {
+	if (volume >= FIO_MAX_VOLUMES) return FIOERROR_INVALID_DRIVE;
+	return FISGetVolumeInfo(volume,name,attribs);
+}
+
+uint8_t FIOSelectVolume(uint8_t volume) {
+	if (volume >= FIO_MAX_VOLUMES) return FIOERROR_INVALID_DRIVE;
+	return FISSelectVolume(volume);
+}
+
+uint8_t FIOGetCurrentVolume(uint8_t* volume) {
+	return FISGetCurrentVolume(volume);
+}
+
+// ***************************************************************************************
+//
 //									Stat file
 //
 // ***************************************************************************************

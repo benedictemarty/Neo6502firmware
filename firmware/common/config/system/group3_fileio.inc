@@ -311,6 +311,48 @@ GROUP 3 File I/O
     DOCUMENTATION
         Copies the current working directory into the String at address Parameters:0,1. which is of maximum length Parameters:2
 
+    FUNCTION 24 Volume Info
+        {
+            std::string name;
+            uint8_t attribs;
+            *DERROR = FIOGetVolumeInfo(DPARAMS[0], name, &attribs);
+            if (*DERROR == 0) {
+                DSPSetStdString(DPARAMS, 1, name);
+                DPARAMS[3] = attribs;
+            }
+        }
+    DOCUMENTATION
+        Retrieves information about a storage volume (bmarty fork, F-102). On input:
+
+        Parameter:0 is the volume number (0-3);
+        Parameters:1,2 points to a length-prefixed buffer for returning the volume name.
+
+        On output, the buffer contains the length-prefixed volume name (e.g. "USB1", "SD0", "HOST") and
+        Parameter:3 contains the volume attributes: bit 0 present, bit 1 read only, bit 2 network.
+
+        An error (Invalid Drive) is flagged if no volume with that number is mounted. Volumes are
+        addressed in any path of this group by the prefix "n:" (e.g. "1:/games/tetris.neo"); a path without
+        prefix refers to the current volume. Enumerate volumes by calling this function for 0 to 3.
+
+    FUNCTION 25 Select Volume
+        *DERROR = FIOSelectVolume(DPARAMS[0]);
+    DOCUMENTATION
+        Makes a volume the current one (bmarty fork, F-102), like Function 3,15 "Change Directory" for
+        directories: paths without a "n:" prefix then refer to it. On input:
+
+        Parameter:0 is the volume number (0-3).
+
+        An error is flagged if the volume is not mounted. Each volume keeps its own current directory.
+
+    FUNCTION 26 Get Current Volume
+        {
+            uint8_t v;
+            *DERROR = FIOGetCurrentVolume(&v);
+            DPARAMS[0] = v;
+        }
+    DOCUMENTATION
+        Returns the current volume number in Parameter:0 (bmarty fork, F-102).
+
     FUNCTION 32 List Filtered
         FIODirectory(DSPGetString(DCOMMAND,4));
     DOCUMENTATION

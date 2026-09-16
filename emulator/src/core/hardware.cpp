@@ -41,18 +41,69 @@ static std::filesystem::path currentPath = storagePath;
 //
 // *******************************************************************************************************************************
 
+// bmarty F-102 : volumes. Volume 0 is the storage directory ; volumes 1..3 are the
+// sibling directories "<storage>1".."<storage>3" when they exist (paths "n:..." select them).
+
+static int currentVolume = 0;
+static std::filesystem::path volumeCurrentPath[FIO_MAX_VOLUMES];
+
+static std::filesystem::path volumeRoot(int volume) {
+	if (volume == 0) return storagePath;
+	return std::filesystem::path(storagePath.string() + std::to_string(volume));
+}
+
+static bool volumePresent(int volume) {
+	return volume >= 0 && volume < FIO_MAX_VOLUMES && std::filesystem::is_directory(volumeRoot(volume));
+}
+
 void HWSetDefaultPath(const char *defaultPath) {
 	storagePath = defaultPath;
 	currentPath = defaultPath;
+	currentVolume = 0;
+	for (int i = 0;i < FIO_MAX_VOLUMES;i++) volumeCurrentPath[i] = volumeRoot(i);
+}
+
+static int pathVolume(const std::string& path) {										// volume addressed by a path
+	if (path.size() >= 2 && path[1] == ':' && isdigit((unsigned char)path[0])) return path[0] - '0';
+	return currentVolume;
 }
 
 static std::string getAbspath(const std::string& path) {
 	std::filesystem::path newPath;
-	if (!path.empty() && (path[0] == '/'))
-		newPath = storagePath / path.substr(1);
+	int volume = currentVolume;
+	std::string rest = path;
+	if (rest.size() >= 2 && rest[1] == ':' && isdigit((unsigned char)rest[0])) {	// "n:" prefix (FatFs style)
+		volume = rest[0] - '0';
+		rest = rest.substr(2);
+		if (!volumePresent(volume)) return (volumeRoot(volume) / "?").string();	// -> not found
+	}
+	std::filesystem::path root = volumeRoot(volume);
+	std::filesystem::path cwd = (volume == currentVolume) ? currentPath : volumeCurrentPath[volume];
+	if (!rest.empty() && (rest[0] == '/'))
+		newPath = root / rest.substr(1);
 	else
-		newPath = currentPath / path;
+		newPath = cwd / rest;
 	return newPath.string();
+}
+
+uint8_t FISGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs) {
+	if (!volumePresent(volume)) return FIOERROR_INVALID_DRIVE;
+	name = "HOST" + std::to_string(volume);
+	*attribs = FIOVOL_PRESENT;
+	return FIOERROR_OK;
+}
+
+uint8_t FISSelectVolume(uint8_t volume) {
+	if (!volumePresent(volume)) return FIOERROR_INVALID_DRIVE;
+	volumeCurrentPath[currentVolume] = currentPath;									// each volume keeps its cwd
+	currentVolume = volume;
+	currentPath = volumeCurrentPath[volume];
+	return FIOERROR_OK;
+}
+
+uint8_t FISGetCurrentVolume(uint8_t* volume) {
+	*volume = currentVolume;
+	return FIOERROR_OK;
 }
 
 static uint8_t getAttributes(const std::string& filename) {
@@ -294,7 +345,8 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 
 	if (!ec && (status.type() == std::filesystem::file_type::directory)) {
 		printf("OK\n");
-		currentPath = abspath;
+		int volume = pathVolume(filename);												// "n:" : that volume's cwd, as FatFs does
+		if (volume == currentVolume) currentPath = abspath; else volumeCurrentPath[volume] = abspath;
 		return FIOERROR_OK;
 	} else {
 		return convertError(ec);
@@ -308,9 +360,14 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 // ***************************************************************************************
 
 uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
-	strcpy(target,(const char *)currentPath.c_str()+strlen(DEFAULT_STORAGE)-1);
-	*target = '/';
-	printf("FISGetCurrentDirectory() ->\n");
+	std::string root = volumeRoot(currentVolume).string();							// cwd relative to the volume root
+	std::string cwd = currentPath.string();
+	std::string rel = (cwd.compare(0, root.size(), root) == 0) ? cwd.substr(root.size()) : cwd;
+	if (rel.empty() || rel[0] != '/') rel = "/" + rel;
+	if (maxSize <= 0) return FIOERROR_INVALID_PARAMETER;
+	strncpy(target, rel.c_str(), maxSize);
+	target[maxSize-1] = '\0';
+	printf("FISGetCurrentDirectory() -> %s\n", target);
 	return FIOERROR_OK;
 }
 

@@ -68,6 +68,9 @@ uint8_t FISDeleteFile(const std::string& filename);
 uint8_t FISCreateDirectory(const std::string& filename);
 uint8_t FISChangeDirectory(const std::string& filename);
 uint8_t FISGetCurrentDirectory(char *target,int maxSize);
+uint8_t FISGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs);
+uint8_t FISSelectVolume(uint8_t volume);
+uint8_t FISGetCurrentVolume(uint8_t* volume);
 uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attribs);
 uint8_t FISOpenDir(const std::string& dirname);
 uint8_t FISReadDir(std::string& filename, uint32_t* size, uint8_t* attribs);
@@ -86,6 +89,12 @@ uint8_t FISSetFileAttributes(const std::string& filename, uint8_t attribs);
 typedef uint8_t (* FILEREADBYTE)(uint8_t *);
 
 #define FIO_NUM_FILES  8
+
+// bmarty F-102 : volumes (FatFs logical drives 0..3, "n:" prefix in paths)
+#define FIO_MAX_VOLUMES  4
+#define FIOVOL_PRESENT   (1<<0)
+#define FIOVOL_READONLY  (1<<1)
+#define FIOVOL_NETWORK   (1<<2)
 #define FIOMODE_RDONLY   0
 #define FIOMODE_WRONLY  1
 #define FIOMODE_RDWR   2
@@ -101,6 +110,9 @@ uint8_t FIODeleteFile(const std::string& filename);
 uint8_t FIOCreateDirectory(const std::string& filename);
 uint8_t FIOChangeDirectory(const std::string& filename);
 uint8_t FIOGetCurrentDirectory(char *target,int maxSize);
+uint8_t FIOGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs);
+uint8_t FIOSelectVolume(uint8_t volume);
+uint8_t FIOGetCurrentVolume(uint8_t* volume);
 uint8_t FIOStatFile(const std::string& filename, uint32_t* length, uint8_t* attribs);
 uint8_t FIOExistsFile(const std::string& filename,uint8_t *pExistsFlag);
 uint8_t FIOOpenDir(const std::string& dirname);

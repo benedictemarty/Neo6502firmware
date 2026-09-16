@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : F-102 — volumes du groupe 3 : **3,24 Volume Info**, **3,25 Select Volume**,
+  **3,26 Get Current Volume**, préfixe `n:` dans les chemins (`FISGetVolumeInfo/SelectVolume/
+  GetCurrentVolume` : carte = lecteurs logiques FatFs, `f_chdrive` ; `neo` = `<storage>` et
+  `<storage>1..3`, 3,23 relatif à la racine du volume) ; `group3_fileio.inc`, `API-DELTA.md`.
+  Vérifié dans `neo` et Phosphoneo (`volumes.neo6502`, golden + différentiel), firmware USB et
+  SDCARD compilés, non testé sur carte. Note : dans les émulateurs, 3,4 sur un fichier absent
+  renvoie 1 (errno non converti, comportement amont) au lieu de $11.
 - 2026-09-16 : décision bmarty — plus de pull request vers l'amont ; CLAUDE.md et politique
   amont du backlog mis à jour. La branche `pr/emulator-build-fix` reste sur origin, sans suite.
 - 2026-09-16 : dépôt distant `origin` = fork GitHub `benedictemarty/Neo6502firmware`

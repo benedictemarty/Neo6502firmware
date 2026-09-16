@@ -12,6 +12,10 @@ et documentée dans le `groupN.inc` concerné.
 | 10 UExt, fn 13-19 | 13-18 routées vers un modem USB CDC selon 10,19 ; **19 Route UART to CDC** (P0 : 0 matériel, 1 CDC, 2 AUTO — défaut) | AUTO = CDC si un modem est branché | fn 19 nouvelle ; 13-18 étendues | routage absent | F-93 |
 | 14 USB Serial (CDC) | 1 Status, 2 Read Byte, 3 Write Byte, 4 Read Block, 5 Write Block, 6 Set Line Coding | P7 = périphérique (0/1) ; voir `F-90-cdc.md` | nouveau groupe | absent | F-90 |
 | 2 Console | 20 Console Debug Echo | P0 = 0 arrêt, 1 texte imprimable + CR/LF, 2 aussi $C0-$FF | — | absente | F-92 |
+| 3 File I/O | 24 Volume Info | P0 = volume (0-3), P1-2 = tampon préfixé | nom (`USBn`/`SDn` carte, `HOSTn` émulateurs), P3 attributs (bit 0 présent, 1 lecture seule, 2 réseau) ; erreur Invalid Drive ($13) si absent | absente | F-102 |
+| 3 File I/O | 25 Select Volume | P0 = volume | erreur si absent ; chaque volume garde son répertoire courant | absente | F-102 |
+| 3 File I/O | 26 Get Current Volume | — | P0 = volume courant | absente | F-102 |
+| 3 File I/O (tous chemins) | préfixe `n:` (`1:/jeux/tetris.neo`) = volume n ; sans préfixe = volume courant | — | déjà compris par FatFs sur la carte (clés USB montées à leur adresse USB, SD en `0:`) ; émulateurs : `<storage>` = 0, `<storage>1..3` = 1..3 | extension | F-102 |
 | 5 Graphics | 9 Set Graphics Mode | P0 = mode (0 : 320×240×256, 1 : Hercules 720×350 1 bpp, 2 : 320×256×16) | erreur si mode inconnu ou non supporté par l'hôte | absente | F-51 (ADR-02) |
 | 5 Graphics | 10 Get Graphics Mode | — | P0 mode, P1-2 largeur, P3-4 hauteur, P5 bpp, P6 colonnes, P7 lignes | absente | F-51 (ADR-02) |
 | 5 Graphics | 11 Set Draw Page | P0 = page (0-1 ; mode 0 : 0 seulement) | erreur si la page n'existe pas | absente | F-55 |
