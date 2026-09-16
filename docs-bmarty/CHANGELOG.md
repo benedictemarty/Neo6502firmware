@@ -1,6 +1,10 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : F-00 partie RP2040 — firmware compilé (USB, SDCARD, slot 0 multi-boot) avec
+  le Pico SDK 1.5.1 ; `firmware/sources/CMakeLists.txt` accepte le `boot2` des SDK 1.x et 2.x ;
+  `multiboot/Makefile` prend `PICO_SDK_PATH` ; procédure dans `docs-bmarty/BUILD.md`.
+  Le SDK 2.2.0 est écarté (PicoDVI amont : `tcr`). Phosphoneo `make test` : 0 échec.
 - 2026-09-16 : épopée F10 (F-100..F-103) — périphérique réseau `N:` et API volumes
   (`3,24 Volume List` / `3,25 Volume Select` proposés, montage SD + USB), d'après le
   mémo du projet Neo6502Prophet (`MEMO-PROPHET-N-DEVICE-2026-09-16.md`) ; constat

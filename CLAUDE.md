@@ -32,9 +32,9 @@ l'émulateur `neo` (qui partage `firmware/common/`).
    jamais de Co-Authored-By ni de mention d'IA. Le `CHANGELOG`/`README`
    amont ne sont modifiés que dans les PR.
 
-## Chaîne de build (à installer, US-00)
+## Chaîne de build (installée, voir docs-bmarty/BUILD.md)
 
 `arm-none-eabi-gcc` + newlib, `cmake`, `64tass`, `python3` (pillow,
 gitpython), `libsdl2-dev` ; dépendances Pico SDK / TinyUSB / PicoDVI /
 pico-fatfs via variables d'environnement (voir `README.md` amont).
-`make -C emulator` pour l'émulateur, `make -C firmware build STORAGE=sd|usb`.
+`make -C emulator emulator` ; `PICO_SDK_PATH=~/pico-sdk-1.5.1 make -C firmware build STORAGE=USB|SDCARD`.

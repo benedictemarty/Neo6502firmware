@@ -69,7 +69,12 @@ target_compile_definitions(firmware
     PRIVATE DVI_1BPP_BIT_REVERSE=1              # bmarty : 1 bpp framebuffer is MSB first (Hercules mode)
 )
 
-pico_define_boot_stage2(firmware_boot2 ${PICO_SDK_PATH}/src/rp2_common/boot_stage2/boot2_generic_03h.S)
+# bmarty : boot_stage2 lives in src/rp2_common (SDK 1.x) or src/rp2040 (SDK 2.x)
+set(NEO_BOOT2_SRC ${PICO_SDK_PATH}/src/rp2_common/boot_stage2/boot2_generic_03h.S)
+if (NOT EXISTS ${NEO_BOOT2_SRC})
+    set(NEO_BOOT2_SRC ${PICO_SDK_PATH}/src/rp2040/boot_stage2/boot2_generic_03h.S)
+endif()
+pico_define_boot_stage2(firmware_boot2 ${NEO_BOOT2_SRC})
 
 target_compile_definitions(firmware_boot2 PRIVATE
 	PICO_FLASH_SPI_CLKDIV=4

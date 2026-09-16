@@ -3,7 +3,7 @@
 #   make -C multiboot check        -> vérifie sur libemul (Phosphoneo test-multiboot)
 # Les images reload viennent du fork (~/reload-emulator, branche bbc), configuré avec
 #   cmake -S platforms/rp2040 -B platforms/rp2040/build_mb -DNEO_MULTIBOOT_DIR=$(CURDIR) -DNEO_SLOT_BBC=1 -DNEO_SLOT_ORIC=2 -DNEO_SLOT_BBC_MASTER=3
-SDK      ?= $(CURDIR)/../firmware/build/_deps/pico_sdk-src
+SDK      ?= $(if $(PICO_SDK_PATH),$(PICO_SDK_PATH),$(CURDIR)/../firmware/build/_deps/pico_sdk-src)
 RELOAD   ?= $(HOME)/reload-emulator/platforms/rp2040
 RL_BUILD  = $(RELOAD)/build_mb
 BBC_UF2   = $(RL_BUILD)/systems/bbc/bbc.uf2
