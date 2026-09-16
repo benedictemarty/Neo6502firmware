@@ -117,6 +117,7 @@ static uint8_t getAttributes(const std::string& filename) {
 static uint8_t convertError(const std::error_code& errcode) {
 	static const std::vector<std::pair<std::errc, FIOErrno>> errorsList = {
 		{ std::errc::no_such_device, FIOERROR_INVALID_NAME },
+		{ std::errc::no_such_file_or_directory, FIOERROR_NO_FILE },		// bmarty : as FatFs FR_NO_FILE on the board
 		{ std::errc::file_exists, FIOERROR_EXIST },
 		{ std::errc::permission_denied, FIOERROR_DENIED },
 		{ std::errc::is_a_directory, FIOERROR_DENIED },
