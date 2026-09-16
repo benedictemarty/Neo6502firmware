@@ -28,4 +28,15 @@ uint8_t CDCReadBlock(uint8_t *params, uint8_t *cpuMem);
 uint8_t CDCWriteBlock(uint8_t *params, uint8_t *cpuMem);
 uint8_t CDCSetLineCoding(uint8_t *params);
 
+// UART <-> CDC routing (F-93) : used by group 10 functions 13-19.
+void    UARTRouteSet(uint8_t mode);   // 0 hardware UART, 1 CDC device 0, 2 AUTO
+uint8_t UARTRouteGet(void);
+void    UARTRSetFormat(uint32_t baud, uint32_t protocol);
+int     UARTRWriteBlock(uint8_t *data, size_t size);
+int     UARTRReadBlock(uint8_t *data, size_t size);
+void    UARTRWriteByte(uint8_t b);
+bool    UARTRByteAvailable(void);
+uint8_t UARTRReadByte(uint8_t *out);
+
 #endif
+

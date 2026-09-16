@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : F-93 — routage UART UEXT (10,13-10,18) vers un modem USB CDC ;
+  nouvelle fonction 10,19 (0 matériel / 1 CDC / 2 AUTO, défaut AUTO) ;
+  `cdcserial.cpp` (UARTRoute*/UARTR*), `group10_uext.inc`. netconfig/prophet
+  peuvent parler à un modem Wi-Fi USB sans modification. Vérifié en co-sim
+  (Phosphoneo, vrai code firmware) avec le Pico W réel via un programme
+  n'utilisant que l'API UART.
 - 2026-09-15 : image multi-boot à 4 slots : + BBC Master 128 (`bbc_master`, slot 3, 359 Ko) → 1 028 Ko ; sélection du slot 3 vérifiée sur libemul.
 - 2026-09-15 : `make -C multiboot image` produit `neo6502-multi.uf2` (Neo 194 Ko + reload BBC 279 Ko + Oric 187 Ko, 669 Ko) ; `make -C multiboot check` (libemul).
 - 2026-09-15 : F-92 — API 2,20 Console Debug Echo : l'affichage console est recopié sur le port de débogage (UART carte / stderr émulateurs) pour capturer l'écran d'une vraie carte depuis le PC ; F-91 (Neo en périphérique CDC) : étude close — un seul contrôleur USB, le lien PC passe par l'UART.

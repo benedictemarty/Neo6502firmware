@@ -60,3 +60,66 @@ uint8_t CDCSetLineCoding(uint8_t *p) {  										// P0-3 baud, P4 data bits, P5
 	if (!HWCDCConnected(d)) return 1;
 	return HWCDCSetLineCoding(d, baud, p[4] ? p[4] : 8, p[5], p[6] ? p[6] : 1);
 }
+
+// ---------------------------------------------------------------------------
+// Routage UART <-> CDC (F-93) : les fonctions 10,13-10,18 (UART UEXT) peuvent
+// viser le premier périphérique CDC (modem USB) au lieu du matériel UART, afin
+// que les programmes série existants (netsetup.neo, prophet.neo) fonctionnent
+// avec un modem USB sans modification. Mode : 0 = UART matériel, 1 = CDC, 2 =
+// AUTO (CDC si un modem est présent, sinon matériel). Défaut AUTO.
+// ---------------------------------------------------------------------------
+#define UART_ROUTE_HW    0
+#define UART_ROUTE_CDC   1
+#define UART_ROUTE_AUTO  2
+
+static uint8_t sUARTRoute = UART_ROUTE_AUTO;
+
+void UARTRouteSet(uint8_t mode) { sUARTRoute = (mode <= UART_ROUTE_AUTO) ? mode : UART_ROUTE_AUTO; }
+uint8_t UARTRouteGet(void) { return sUARTRoute; }
+
+// Le CDC est-il la cible effective ? (device 0)
+static bool UARTUseCDC(void) {
+	if (sUARTRoute == UART_ROUTE_CDC) return true;
+	if (sUARTRoute == UART_ROUTE_AUTO) return HWCDCConnected(0) != 0;
+	return false;
+}
+
+void UARTRSetFormat(uint32_t baud, uint32_t protocol) {
+	if (UARTUseCDC()) HWCDCSetLineCoding(0, baud, 8, 0, 1);   // 8N1 ; les modems l'ignorent souvent
+	else IOUARTInitialise(baud, protocol);
+}
+
+int UARTRWriteBlock(uint8_t *data, size_t size) {
+	if (!UARTUseCDC()) return IOUARTWriteBlock(data, size);
+	while (size) { uint16_t n = HWCDCWrite(0, data, size > 0xFFFF ? 0xFFFF : size); if (!n) return 1; data += n; size -= n; }
+	return 0;
+}
+
+int UARTRReadBlock(uint8_t *data, size_t size) {
+	if (!UARTUseCDC()) return IOUARTReadBlock(data, size);
+	while (size) {
+		uint32_t timeOut = TMRRead() + 500;                  // 5 s, comme l'UART matériel
+		uint16_t n = 0;
+		while ((n = HWCDCRead(0, data, size > 0xFFFF ? 0xFFFF : size)) == 0) {
+			if (TMRRead() > timeOut) return 1;
+		}
+		data += n; size -= n;
+	}
+	return 0;
+}
+
+void UARTRWriteByte(uint8_t b) {
+	if (UARTUseCDC()) HWCDCWrite(0, &b, 1); else SERWriteByte(b);
+}
+
+bool UARTRByteAvailable(void) {
+	return UARTUseCDC() ? (HWCDCReadAvailable(0) != 0) : SERIsByteAvailable();
+}
+
+// Lit un octet (P0) ; renvoie 1 si rien n'est disponible.
+uint8_t UARTRReadByte(uint8_t *out) {
+	if (UARTUseCDC()) { return HWCDCRead(0, out, 1) == 1 ? 0 : 1; }
+	if (!SERIsByteAvailable()) return 1;
+	*out = SERReadByte();
+	return 0;
+}

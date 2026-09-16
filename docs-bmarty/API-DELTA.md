@@ -9,6 +9,7 @@ et documentée dans le `groupN.inc` concerné.
 | 1 System | 13 Get Interrupt Tick | — | P0-1 = Hz courant | absente | F-60 |
 | 1 System | 14 Reboot Image | P0 = slot flash (0-3) | ne revient pas ; erreur si slot vide ou multi-boot absent | absente | F-81 |
 | 1 System | 15 Get Image Name | P0 = slot, P1-2 = tampon préfixé | nom ASCII ; erreur si vide | absente | F-81 |
+| 10 UExt, fn 13-19 | 13-18 routées vers un modem USB CDC selon 10,19 ; **19 Route UART to CDC** (P0 : 0 matériel, 1 CDC, 2 AUTO — défaut) | AUTO = CDC si un modem est branché | fn 19 nouvelle ; 13-18 étendues | routage absent | F-93 |
 | 14 USB Serial (CDC) | 1 Status, 2 Read Byte, 3 Write Byte, 4 Read Block, 5 Write Block, 6 Set Line Coding | P7 = périphérique (0/1) ; voir `F-90-cdc.md` | nouveau groupe | absent | F-90 |
 | 2 Console | 20 Console Debug Echo | P0 = 0 arrêt, 1 texte imprimable + CR/LF, 2 aussi $C0-$FF | — | absente | F-92 |
 | 5 Graphics | 9 Set Graphics Mode | P0 = mode (0 : 320×240×256, 1 : Hercules 720×350 1 bpp, 2 : 320×256×16) | erreur si mode inconnu ou non supporté par l'hôte | absente | F-51 (ADR-02) |
