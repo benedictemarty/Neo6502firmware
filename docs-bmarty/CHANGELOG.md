@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : mémo Prophet « USB sur carte » versionné, story F-94 (validation carte F-90/F-93 avec le Pico W, ProphetGui) au backlog.
 - 2026-09-16 : F-102 — volumes du groupe 3 : **3,24 Volume Info**, **3,25 Select Volume**,
   **3,26 Get Current Volume**, préfixe `n:` dans les chemins (`FISGetVolumeInfo/SelectVolume/
   GetCurrentVolume` : carte = lecteurs logiques FatFs, `f_chdrive` ; `neo` = `<storage>` et
