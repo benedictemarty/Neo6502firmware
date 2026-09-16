@@ -134,5 +134,6 @@ F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 | F-47 | P2 | **Vitrine** : le Télémon (Neo6502kbd) utilise fenêtres + menus + événements ; documentation `api.tex` complète ; proposition amont. | | TODO |
 
 ## Politique amont
-Ordre de proposition : F-01 → F-02 → F-11 → F-10 → F-13 → F-14. Les épopées
-F2/F3 restent dans le fork tant qu'elles ne sont pas stabilisées et mesurées.
+**Décision bmarty 2026-09-16 : pas de pull request vers l'amont.** Le fork est
+publié sur `origin` ; `upstream` n'est suivi que pour rebaser. (Ancien ordre de
+proposition F-01 → F-02 → F-11 → F-10 → F-13 → F-14, abandonné.)

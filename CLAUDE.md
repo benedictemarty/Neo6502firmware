@@ -8,9 +8,10 @@ MIT ; remote `upstream`, base `v1.0.0-14-gdc70908`). Il regroupe **toutes les
 (Neo6502kbd/Télémon, Neo6502drive, Neo6502bbc, Neo6502oric2, Neo6502scumm,
 Neo6502civ), afin qu'aucun projet applicatif ne porte de fork privé.
 
-Objectif : **chaque évolution est conçue pour être proposée en amont** (pull
-request), petite, documentée dans `dispatch.config`/`api.tex`, testée dans
-l'émulateur `neo` (qui partage `firmware/common/`).
+Objectif : chaque évolution reste petite, documentée dans `dispatch.config`/`api.tex`, testée dans
+l'émulateur `neo` (qui partage `firmware/common/`). **Décision bmarty 2026-09-16 :
+aucune pull request vers l'amont** ; le fork vit sur `origin`
+(`benedictemarty/Neo6502firmware`), `upstream` sert seulement au rebase.
 
 ## Règles
 

@@ -1,6 +1,8 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : décision bmarty — plus de pull request vers l'amont ; CLAUDE.md et politique
+  amont du backlog mis à jour. La branche `pr/emulator-build-fix` reste sur origin, sans suite.
 - 2026-09-16 : dépôt distant `origin` = fork GitHub `benedictemarty/Neo6502firmware`
   (fork de `paulscottrobson/neo6502-firmware`) ; `bmarty/main` et les branches `feat/*`
   poussées ; branche `pr/emulator-build-fix` (un commit sur `upstream/main`, émulateur
