@@ -1,6 +1,10 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : dépôt distant `origin` = fork GitHub `benedictemarty/Neo6502firmware`
+  (fork de `paulscottrobson/neo6502-firmware`) ; `bmarty/main` et les branches `feat/*`
+  poussées ; branche `pr/emulator-build-fix` (un commit sur `upstream/main`, émulateur
+  recompilé : 0 erreur) prête pour la PR amont ; `firmware/build_mb/` ignoré.
 - 2026-09-16 : F-00 partie RP2040 — firmware compilé (USB, SDCARD, slot 0 multi-boot) avec
   le Pico SDK 1.5.1 ; `firmware/sources/CMakeLists.txt` accepte le `boot2` des SDK 1.x et 2.x ;
   `multiboot/Makefile` prend `PICO_SDK_PATH` ; procédure dans `docs-bmarty/BUILD.md`.

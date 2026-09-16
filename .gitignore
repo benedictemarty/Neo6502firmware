@@ -74,3 +74,4 @@ basic/tests/__pycache__/testutils.cpython-311.pyc
 documents/release/source/api.tex
 *.sublime-*
 firmware/build_mb/
+firmware/build_mb/
