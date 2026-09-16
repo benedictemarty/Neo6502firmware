@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : F-02 — doc 2,2 Console Status corrigée ($FF = touche disponible, comme le code) ; nettoyage des 3 avertissements amont (`unused variable`) ; carte : 3,11 File Set Size conserve la position du fichier (comme `ftruncate` dans l'émulateur, `oldPos` enfin utilisé) — non testé sur carte.
 - 2026-09-16 : émulateur `neo` (et Phosphoneo) — un fichier absent renvoie désormais `$11` No File comme FatFs sur la carte (ENOENT n'était pas converti : erreur 1 Unknown). Fidélité carte ; le test api-log de Phosphoneo attend 17.
 - 2026-09-16 : mémo Prophet « USB sur carte » versionné, story F-94 (validation carte F-90/F-93 avec le Pico W, ProphetGui) au backlog.
 - 2026-09-16 : F-102 — volumes du groupe 3 : **3,24 Volume Info**, **3,25 Select Volume**,

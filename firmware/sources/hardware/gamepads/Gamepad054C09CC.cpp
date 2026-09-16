@@ -52,8 +52,6 @@ uint32_t Gamepad054C09CC::getState() {
 uint8_t old_report5;
 
 void Gamepad054C09CC::update(uint8_t dev_addr, uint8_t instance, uint8_t const *report, uint16_t len) {
-    int i;
-
     if (len != 64) { // sanity check
         return;
         };

@@ -34,7 +34,7 @@ GROUP 2 Console
     FUNCTION 2 Console Status
         *(DPARAMS) = KBDIsKeyAvailable() ? 0xFF: 0;
     DOCUMENTATION // Function 2 is key available in queue
-        Check to see if the keyboard queue is empty. If it is, Parameter:0 will be $FF, otherwise it will be $00
+        Check to see if a key is available in the keyboard queue. If one is, Parameter:0 will be $FF, otherwise (queue empty) it will be $00
 
     FUNCTION 3 Read Line
         CONGetScreenLine(DSPGetInt16(DCOMMAND,4));

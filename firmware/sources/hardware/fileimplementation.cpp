@@ -486,6 +486,8 @@ uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size) {
 	FRESULT result = f_lseek(f, size);
 	if (result == FR_OK)
 		result = f_truncate(f);
+	if (result == FR_OK)													// bmarty : keep the file position, as the emulator (ftruncate) does
+		result = f_lseek(f, oldPos < size ? oldPos : size);
 	// CONWriteString("%d\r", result);
 
 	return convertError(result);

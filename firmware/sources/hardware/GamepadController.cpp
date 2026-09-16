@@ -144,7 +144,6 @@ uint8_t GamepadController::getCount() {
 // ***************************************************************************************
 
 uint32_t GamepadController::readDigital(uint8_t index) {
-	uint32_t state = 0;
 	for (const auto& [key, gamepad] : m_gamepads) {
 		if (index == 0) return gamepad->getState();
 		index--;
