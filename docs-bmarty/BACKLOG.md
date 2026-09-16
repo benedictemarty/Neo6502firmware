@@ -93,6 +93,21 @@ le coût de 480 encodages/trame (F-54).
 
 | F-92 | P1 | **Écho console → port de débogage** (API 2,20) : le texte affiché part aussi sur l'UART GP28/GP29 (stderr dans les émulateurs) pour capturer l'écran d'une **vraie carte** depuis le PC (`nxmit`/adaptateur USB-série) et rejouer les tests golden sur le matériel. | validation carte | **DONE** 2026-09-15 (vérifié dans Phosphoneo : stderr) |
 
+### Épopée F10 — Stockage : volumes et périphérique réseau `N:` (mémo Prophet 2026-09-16)
+
+Origine : `MEMO-PROPHET-N-DEVICE-2026-09-16.md` (projet Neo6502Prophet, pour le
+fork et Neo6502drive US-T3). Constat vérifié : un seul stockage monté à la
+compilation (`STORAGE_TYPE = USB | SDCARD`, `usb_storage.cpp`/`sdcard_storage.cpp`
+exclusifs), aucune notion de volume dans le groupe 3 (fonctions 3,1-3,23 et 3,32 ;
+3,24-3,31 libres), aucun préfixe `N:` (`fileinterface.cpp`, `FISOpenFileHandle`).
+
+| ID | Prio | Story | Origine | État |
+|---|---|---|---|---|
+| F-100 | P2 | **Périphérique réseau `N:` en lecture** dans le groupe 3 : un nom commençant par `N:` (insensible à la casse) dans 3,2 Load, 3,4 Open (mode 0), 3,8 Read, 3,5 Close, 3,16 Stat est routé vers le **proxy du modem** (Neo6502drive US-T3, mode « flux HTTP » : `open(url)` fait le GET, `read(n)` sert le corps) via le lien série routé par 10,19 ; lecture bloquante avec délai (le chargeur `.neo` lit sans reprise) ; nouveau code d'erreur « réseau ». Dépend de US-T3 côté modem. Test : Phosphoneo + faux modem ProphetGui (`tools/fake_modem.py`). | Prophet (LOAD "N:HTTP://…") | TODO — attend US-T3 (modem) |
+| F-101 | P2 | **Montage multiple** SD **et** USB quand les deux sont présents (aujourd'hui exclusifs à la compilation), préfixe de volume dans les chemins du groupe 3 (`SD:/`, `USB:/`, `N:` — ou `0:`/`1:` FatFs), chemin sans préfixe = volume courant (compatibilité totale). Pico : deux instances FatFs (`FF_VOLUMES 2`), stockage USB MSC et SD SPI cohabitant avec l'hôte USB. | Prophet (explorateur) | TODO |
+| F-102 | P2 | **API volumes** : `3,24 Volume List` (tampon longueur‑préfixé : nom + octet d'attributs présent / lecture seule / réseau) et `3,25 Volume Select` (volume courant, à l'image de 3,15) ; 3,17 Open Directory `""` à la racine d'un volume liste ce volume ; 3,16/3,18 inchangés. Numéros 3,24/3,25 **proposés**, à confirmer avant implémentation. | Prophet (explorateur) | TODO |
+| F-103 | P1 | **Sécurité `N:`** (prérequis de F-100 en écriture) : jamais d'écriture vers un hôte non prévu sans consentement — liste d'hôtes autorisés dans le modem (`AT+NHOSTS=`) ou journal ; l'audit `neo-sandbox` signale tout appel 3,x avec un nom `N:`. Lecture seule tant que ce point n'est pas traité. | Prophet | TODO |
+
 ### Épopée F8 — Multi-boot RP2040 (sélecteur d'OS : firmware Neo ⇄ images reload-emulator)
 
 | ID | Prio | Story | Origine | État |

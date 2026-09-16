@@ -16,6 +16,12 @@ API 1,14/1,15, images reload liées par slot, touche Pause). Vérifié dans `neo
 Phosphoneo et sur libemul (co-sim, sonde multi-boot) ; timer et boucle bus **non
 exécutés sur carte** (R9–R14).
 
+## Sprint 4 — 2026-09-15/16 — « Télécom » (F9 : F-90..F-93)
+Série USB CDC (groupe 14), routage UART → CDC (10,19), écho console (2,20), étude
+F-91 close ; F-83 (install `.uf2` depuis USB) conçue. Vérifié en co-sim avec le
+Pico W réel ; carte non testée (R15–R21).
+
 ## À planifier
+F10 (`N:` et volumes, F-100..F-103, quand US-T3 du modem existe) ; F-83 ;
 Validation sur carte (dès qu'un Neo6502 est disponible : protocoles F-50, F-52, F-60,
 F-80) ; Toolbox F-40 (ADR-01 à ratifier) ; F7 modes historiques (optionnel).

@@ -1,6 +1,10 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-16 : épopée F10 (F-100..F-103) — périphérique réseau `N:` et API volumes
+  (`3,24 Volume List` / `3,25 Volume Select` proposés, montage SD + USB), d'après le
+  mémo du projet Neo6502Prophet (`MEMO-PROPHET-N-DEVICE-2026-09-16.md`) ; constat
+  vérifié : stockage unique à la compilation, 3,24-3,31 libres. Pas de code.
 - 2026-09-16 : F-93 — routage UART UEXT (10,13-10,18) vers un modem USB CDC ;
   nouvelle fonction 10,19 (0 matériel / 1 CDC / 2 AUTO, défaut AUTO) ;
   `cdcserial.cpp` (UARTRoute*/UARTR*), `group10_uext.inc`. netconfig/prophet
