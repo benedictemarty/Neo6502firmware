@@ -1,6 +1,8 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : R22 — console dimensionnée aux modes conservés (`MAXCONSOLEHEIGHT` 32, −1 760 o) ; tas USB 3 804 o,
+  SDCARD 5 052 o ; mémo `R22-budget-sram.md` mis à jour (modes 3/4 retirés).
 - 2026-09-18 : décision bmarty — **modes vidéo 3 (F-57, Hercules 80×43) et 4 (ADR-04 a, TEXT Oric) retirés**
   (revert de `13f6042` et `3236937`) pour rendre la SRAM au tas (R22) : le Control Manager ne tenait plus
   dans le firmware USB (2 220 o de tas sur cette base, minimum 2 048).

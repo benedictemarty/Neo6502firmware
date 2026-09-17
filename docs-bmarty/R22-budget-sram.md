@@ -29,6 +29,12 @@ firmware sous `HEAP_MIN` = 2 048 octets.
 
 Tas restant : **2 692 o avant la revue → 3 408 o après** (USB) ; SDCARD ≈ +1,2 Ko.
 
+Mise à jour du 2026-09-18 : le Control Manager (F-44, 432 o) ne tenait plus (2 220 o de
+tas sur la base avec les modes 3 et 4 de l'autre session). **Décision bmarty : modes vidéo
+3 (F-57) et 4 (ADR-04 a) retirés** (revert) et console dimensionnée aux modes conservés
+(`MAXCONSOLEHEIGHT` 43 → 32, −1 760 o) : tas USB **3 804 o**, SDCARD 5 052 o. Les
+options 1-4 ci-dessous restent ouvertes pour la suite (F-45 dialogues, F-46 ressources).
+
 ## Qui utilise le tas ?
 `std::string` du groupe 3 (chemins > 15 caractères : allocations transitoires
 ≤ 256 o), TinyUSB (statique, hors tas), FatFs (statique), pas de `iostream`.
