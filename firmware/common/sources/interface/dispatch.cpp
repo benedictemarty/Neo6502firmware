@@ -80,6 +80,7 @@ void DSPReset(void) {
 	CURInitialise();
 	IRQSetTick(0);                                                              // No interrupt tick (F-60)
 	BNKReset();                                                                 // No bank mapped (F-23)
+	EVTReset();                                                                 // Event manager off (F-42)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo

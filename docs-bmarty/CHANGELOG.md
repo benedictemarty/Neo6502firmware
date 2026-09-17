@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-42 — **Event Manager (groupe 33)** : file unique de 32 EventRecord (8 o) alimentée par
+  `KBDEvent`/`KBDCheckTimer` (key down/up/auto) et `MSE*` (down/up avec double clic, move fusionnés, wheel) ;
+  33,1-33,6 (Init, Get Next Event avec masque, Available, Flush, Set Timer ×4 en ticks 10 ms générés à la
+  scrutation, Status avec débordement). Pas d'attente bloquante (choix documenté : appels synchrones, hôtes
+  qui lisent leurs entrées entre deux appels ; sommeil par 1,12 + WAI). Tests `events.asm` (souris + touches
+  injectées : neo, Phosphoneo golden/diff, co-sim) et `evtimer.asm` (timers/masque/flush : Phosphoneo et
+  co-sim seulement, `TMRRead` de `neo` = horloge murale). USB/SDCARD compilés, non testé sur carte.
 - 2026-09-17 : F-12 — **8,9 Set Channel Volume** / **8,10 Get Channel Volume** : volume (0-100) de la note
   en cours d'un canal, immédiat ou atteint par rampe linéaire en P2-3 centièmes de seconde (tick 50 Hz de
   `SNDManager`, champs `fadeTarget`/`fadeStep`), appliqué au générateur sans réinitialiser la phase

@@ -72,7 +72,9 @@ void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers) {
 				KBDInsertQueue(ascii);  										// Push in the queue
 				nextRepeat = TMRRead()+KBD_REPEAT_START;
 			}
+			EVTPostKey(EVT_KEYDOWN,ascii,keyCode,modifiers);  					// F-42 : event manager
 		} else {
+			EVTPostKey(EVT_KEYUP,KBDMapToASCII(keyCode,keyboardModifiers),keyCode,keyboardModifiers);
 			keyboardState[keyCode] = 0x00; 										// Clear flag
 			keyboardModifiers = 0x00;											// Clear Modifiers
 			if (keyCode == currentKeyCode) currentASCII = 0; 					// Autorepeat off, key released.
@@ -91,6 +93,7 @@ void __time_critical_func(KBDCheckTimer)(void) {
 		if (TMRRead() >= nextRepeat) {  										// Time up ?
 			KBDInsertQueue(currentASCII);  										// Put in queue
 			nextRepeat = TMRRead()+KBD_REPEAT_AFTER; 							// Quicker repeat after first time.
+			EVTPostKey(EVT_AUTOKEY,currentASCII,currentKeyCode,keyboardModifiers);  // F-42
 		}
 	}
 
