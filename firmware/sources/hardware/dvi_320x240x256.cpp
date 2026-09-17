@@ -65,7 +65,6 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 0
 	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
 	{ &dvi_timing_640x480p_60hz, 1, 480, 112 },  									// Mode 2 : 256 lines centred in 480
-	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 3 : as mode 1 (80x43 text, F-57)
 };
 
 // ***************************************************************************************

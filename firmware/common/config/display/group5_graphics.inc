@@ -67,8 +67,7 @@ GROUP 5 Graphics
     DOCUMENTATION
         Select the display mode in Parameter:0 and reinitialise the screen, palette and console (F5 / ADR-02).
         0 is the standard 320x240 256 colour mode. 1 is the Hercules mode (720x350 monochrome, 80x25 text in 9x14 cells).
-        2 is 320x256 in 16 colours (40x32 text in 8x8 cells). 3 is the Hercules bitmap of mode 1 with an 80x43 text
-        console in 9x8 cells (8 line font, bmarty fork F-57). Sprites, tilemaps and images are only available in mode 0.
+        2 is 320x256 in 16 colours (40x32 text in 8x8 cells). Sprites, tilemaps and images are only available in mode 0.
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
     FUNCTION 10 Get Graphics Mode

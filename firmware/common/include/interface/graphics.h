@@ -29,7 +29,7 @@ extern uint8_t gfxLineScratch[MAXSCREENWIDTH];  										// One shared scratch 
 #define GFX_MODE_320x240x256	(0)
 #define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
 #define GFX_MODE_320x256x16		(2)												// 320x256, 4 bpp, text 40x32 in 8x8
-#define GFX_MODE_COUNT 			(4)
+#define GFX_MODE_COUNT 			(3)
 
 struct GraphicsModeDescriptor {
 	uint16_t xGSize,yGSize;														// Pixels

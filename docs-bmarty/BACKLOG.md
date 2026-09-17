@@ -61,7 +61,7 @@ Bilan mémoire 256 couleurs : 320×256 = 81,9 Ko ✓, 400×240 = 96 Ko ✓ (timi
 | F-54 | P2 | Mesure F-50 spécifique au 320×256 (`VERTICAL_REPEAT=1`, encodeur palette 4 bpp) ; décision 256 vs 240 lignes. | F-53 | TODO |
 | F-55 | P2 | **Pages écran** pour F-53 (page visible / page de travail, bascule à la trame, « wait vsync ») et pour le mode Hercules. | PO (« plusieurs screens ») | **DONE** 2026-09-15 : `MAXGRAPHICSMEMORY` = 2 × 40 960 (2 pages en modes 1 et 2, 1 en mode 0), API 5,11 Set Draw Page / 5,12 Set Display Page, bascule à la trame sur carte (`pendingDisplayMemory`), immédiate dans `neo`/Phosphoneo ; attente par 5,37 ; démo `pages.neo6502` identique neo ↔ Phosphoneo. Rendu carte non testé (F-52) |
 | F-56 | P3 | Variantes ultérieures : 640×256 × 1 bpp (encre au choix) et 640×256 × 8 couleurs (3 plans, 61 Ko) ; 400×240 × 8 bits en 800×480. | | TODO |
-| F-57 | P3 | Police 9×14 et 8×8 chargeables (fichiers), jeu de caractères graphiques ; modes texte 80×43 (9×8) sur Hercules. | Télémon | **DONE** 2026-09-17 : polices chargeables = F-95 (2,21, depuis la RAM 6502 ; un fichier se charge par 3,2) ; **mode 3** = bitmap Hercules 720×350 avec console **80×43 en 9×8** (police 8 lignes, même timing DVI que le mode 1), test `mode3.asm` (`neo`) ; USB compilé, non testé sur carte. Jeu de caractères graphiques : non fait |
+| F-57 | P3 | Police 9×14 et 8×8 chargeables (fichiers), jeu de caractères graphiques ; modes texte 80×43 (9×8) sur Hercules. | Télémon | TODO |
 
 Modes v1 retenus : **mode 0** 320×240 × 256 couleurs (actuel) · **mode 1** Hercules
 720×350 (texte 80×25 9×14) / 720×348 graphique · **mode 2** 320×256 × 16
