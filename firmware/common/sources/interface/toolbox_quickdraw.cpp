@@ -18,6 +18,7 @@
 static struct QDRect clipRect;                                                  // Current clip (inside the screen)
 static int16_t penX = 0,penY = 0;                                               // Pen position
 static uint8_t penColour = 15;                                                  // Pen colour (palette index)
+static uint8_t pattern[8] = { 0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF };       // 8x8 fill pattern, bit 7 = left
 
 // ***************************************************************************************
 //
@@ -81,6 +82,7 @@ void QDInitGraf(void) {
     clipRect = _QDScreenRect();
     penX = penY = 0;
     penColour = 15;
+    memset(pattern,0xFF,sizeof(pattern));
 }
 
 // ***************************************************************************************
@@ -146,4 +148,88 @@ uint8_t QDInvertRect(uint16_t rectAddr) {
     if (!_QDReadRect(rectAddr,&r)) return QD_ERR_PARAM;
     _QDFill(&r,-1);
     return QD_ERR_OK;
+}
+
+// ***************************************************************************************
+//
+//      32,11 LineTo : Bresenham from the pen, every pixel clipped ; pen moves
+//
+// ***************************************************************************************
+
+static inline bool _QDInClip(int x,int y) {
+    return x >= clipRect.left && x < clipRect.right && y >= clipRect.top && y < clipRect.bottom;
+}
+
+uint8_t QDLineTo(int16_t x,int16_t y) {
+    int x0 = penX,y0 = penY,x1 = x,y1 = y;
+    int dx = abs(x1-x0),sx = x0 < x1 ? 1 : -1;
+    int dy = -abs(y1-y0),sy = y0 < y1 ? 1 : -1;
+    int err = dx + dy;
+    while (true) {
+        if (_QDInClip(x0,y0)) GFXWritePixelRaw(x0,y0,penColour);
+        if (x0 == x1 && y0 == y1) break;
+        int e2 = 2 * err;
+        if (e2 >= dy) { err += dy;x0 += sx; }
+        if (e2 <= dx) { err += dx;y0 += sy; }
+    }
+    penX = x;penY = y;
+    return QD_ERR_OK;
+}
+
+// ***************************************************************************************
+//
+//      32,12 / 32,13 pattern fill : bit set = pen colour, clear = background colour
+//
+// ***************************************************************************************
+
+uint8_t QDSetPattern(uint16_t patAddr) {
+    if (patAddr > 0xFF00 - 8) return QD_ERR_PARAM;
+    memcpy(pattern,cpuMemory + patAddr,8);
+    return QD_ERR_OK;
+}
+
+uint8_t QDFillRect(uint16_t rectAddr,uint8_t backColour) {
+    struct QDRect r;
+    if (!_QDReadRect(rectAddr,&r)) return QD_ERR_PARAM;
+    struct QDRect c = _QDIntersect(&r,&clipRect);
+    for (int y = c.top;y < c.bottom;y++) {
+        uint8_t row = pattern[y & 7];                                           // Pattern aligned on screen coordinates
+        for (int x = c.left;x < c.right;x++) {
+            GFXWritePixelRaw(x,y,(row & (0x80 >> (x & 7))) ? penColour : backColour);
+        }
+    }
+    return QD_ERR_OK;
+}
+
+// ***************************************************************************************
+//
+//      32,14 CopyBits : blit a 12,3 source area at (x,y) of the draw page, clipped to
+//      the clip rectangle (left clip rounds up to the source byte boundary, as 12,4).
+//
+// ***************************************************************************************
+
+uint8_t QDCopyBits(uint8_t action,uint16_t areaAddr,int16_t x,int16_t y) {
+    if (areaAddr > 0xFF00 - 12 || action > BLTACT_SOLID) return QD_ERR_PARAM;
+    struct BlitterArea src;
+    BLTLoadArea(areaAddr,&src);
+    if (src.flags & BLTFLAG_DOUBLE) return QD_ERR_PARAM;
+    int unit = (src.format == BLTFMT_BYTE) ? 1 : (src.format == BLTFMT_PAIR) ? 2 : (src.format == BLTFMT_QUAD) ? 4 : (src.format == BLTFMT_BITS) ? 8 : 0;
+    if (unit == 0) return QD_ERR_PARAM;
+    int w = src.width,h = src.height;
+    if (x < clipRect.left) {                                                    // Left : skip whole source bytes
+        int adj = ((clipRect.left - x) + unit - 1) / unit * unit;
+        src.address += adj / unit;w -= adj;x += adj;
+    }
+    if (x + w > clipRect.right) w = clipRect.right - x;
+    if (y < clipRect.top) { int adj = clipRect.top - y;h -= adj;y += adj;src.address += adj * src.stride; }
+    if (y + h > clipRect.bottom) h = clipRect.bottom - y;
+    if (w <= 0 || h <= 0) return QD_ERR_OK;                                     // Fully clipped
+    src.width = w;src.height = h;
+    if (gMode.bitsPerPixel != 8) return QD_ERR_NOGFX;                          // Blitter targets are byte pixels (mode 0)
+    uint32_t offset = (uint32_t)y * gMode.stride + x + (uint32_t)(gMode.graphicsMemory - graphicsMemory);
+    struct BlitterArea target;
+    target.address = (uint16_t)(offset & 0xFFFF);target.page = (uint8_t)(0x80 + (offset >> 16));
+    target.flags = 0;target.stride = gMode.stride;target.format = BLTFMT_BYTE;
+    target.transparent = 0;target.solid = 0;target.height = 0;target.width = 0;
+    return BLTCopyArea(action,&src,&target) ? QD_ERR_PARAM : QD_ERR_OK;
 }

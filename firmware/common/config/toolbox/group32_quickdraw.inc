@@ -72,3 +72,29 @@ GROUP 32 QuickDraw
         Inverts every pixel of the Rect at Parameters:0,1 (colour index XOR $FF, $0F or 1 depending on the mode),
         clipped.
 
+    FUNCTION 11 Line To
+        *DERROR = QDLineTo((int16_t)DSPGetInt16(DPARAMS,0),(int16_t)DSPGetInt16(DPARAMS,2));
+    DOCUMENTATION
+        Draws a line from the pen to Parameters:0,1 (X) and Parameters:2,3 (Y) in the pen colour, clipped, and
+        moves the pen there.
+
+    FUNCTION 12 Set Pattern
+        *DERROR = QDSetPattern(DSPGetInt16(DPARAMS,0));
+    DOCUMENTATION
+        Loads the 8x8 fill pattern from the 8 bytes at Parameters:0,1 (one byte per row, bit 7 = left pixel).
+        Init Graf resets it to solid. The pattern is aligned on screen coordinates.
+
+    FUNCTION 13 Fill Rect
+        *DERROR = QDFillRect(DSPGetInt16(DPARAMS,0),DPARAMS[2]);
+    DOCUMENTATION
+        Fills the Rect at Parameters:0,1 with the pattern : set bits in the pen colour, clear bits in the colour
+        of Parameter:2. Clipped.
+
+    FUNCTION 14 Copy Bits
+        *DERROR = QDCopyBits(DPARAMS[0],DSPGetInt16(DPARAMS,1),(int16_t)DSPGetInt16(DPARAMS,3),(int16_t)DSPGetInt16(DPARAMS,5));
+    DOCUMENTATION
+        Blits the source area described at Parameters:1,2 (the 12 byte structure of Function 12,3, any source
+        format, no doubling) at Parameters:3,4 (X) and Parameters:5,6 (Y) of the draw page, with the blit action of
+        Parameter:0 (0 copy, 1 masked, 2 solid), clipped to the clip rectangle. As Function 12,4, the left clip is
+        rounded up to a whole source byte. Error 2 outside mode 0 (the blitter writes byte pixels).
+

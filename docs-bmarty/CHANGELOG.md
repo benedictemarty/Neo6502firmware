@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-41 incrément 1 — QuickDraw : **32,11 Line To** (Bresenham clippé pixel à pixel),
+  **32,12 Set Pattern** / **32,13 Fill Rect** (motif 8×8 aligné écran, plume / fond), **32,14 Copy Bits**
+  (structure source de 12,3 blittée sur la page de travail, clippée au clip — `BLTCopyArea`/`BLTLoadArea`
+  exportés du blitter ; mode 0 seul). Test `quickdraw2.asm` identique dans `neo`, Phosphoneo et co-sim.
+  Reste pour l'incrément 2 : fontes proportionnelles (format, outil PC), Draw String / Text Width, régions.
 - 2026-09-17 : F-95 — **2,21 Set Console Font** : la police 8 lignes des caractères `$20-$7F` de la
   console peut être remplacée par 96 glyphes lus **en place dans la RAM 6502** (P0-1 = adresse, MSB =
   pixel gauche, 6 colonnes utilisées en cellule 6×8, 8 en 8×8 ; 0 = police interne) : aucune SRAM

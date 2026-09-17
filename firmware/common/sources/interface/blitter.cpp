@@ -837,6 +837,16 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 	return 0;
 }
 
+// F-41 : area copy for firmware-side callers (QuickDraw CopyBits)
+uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target) {
+	return internalBLTComplexCopy(action, source, target);
+}
+
+// F-41 : load a source area from 6502 RAM (QuickDraw CopyBits)
+void BLTLoadArea(uint16_t addr,struct BlitterArea *b) {
+	_BLTLoadBlitterAreaObject(addr,b);
+}
+
 uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget) {
 	struct BlitterArea source, target;
 	_BLTLoadBlitterAreaObject(aSource,&source);

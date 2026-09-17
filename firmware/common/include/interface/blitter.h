@@ -39,6 +39,8 @@ struct BlitterArea {
 #define BLT_DOUBLE_MAXWIDTH 360	// Source values per line when doubling (720 px = widest mode, 720 bytes of RAM)
 
 uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (F-16 : shared with 3,27)
+uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target);	// F-41
+void BLTLoadArea(uint16_t addr,struct BlitterArea *b);													// F-41
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize);
 
 // Values for BLTComplexCopy and BLTImage action params

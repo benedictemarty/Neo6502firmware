@@ -31,3 +31,7 @@ uint8_t QDFrameRect(uint16_t rectAddr);                                         
 uint8_t QDPaintRect(uint16_t rectAddr);                                         // 32,8
 uint8_t QDEraseRect(uint16_t rectAddr,uint8_t colour);                          // 32,9
 uint8_t QDInvertRect(uint16_t rectAddr);                                        // 32,10
+uint8_t QDLineTo(int16_t x,int16_t y);                                          // 32,11
+uint8_t QDSetPattern(uint16_t patAddr);                                         // 32,12
+uint8_t QDFillRect(uint16_t rectAddr,uint8_t backColour);                       // 32,13
+uint8_t QDCopyBits(uint8_t action,uint16_t areaAddr,int16_t x,int16_t y);       // 32,14
