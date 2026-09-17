@@ -28,6 +28,11 @@ make -C ~/Phosphoneo test                 # suite de tests (golden, co-sim, diff
 `multiboot/Makefile` prend `PICO_SDK_PATH` s'il est défini, sinon le SDK téléchargé
 dans `firmware/build/_deps/pico_sdk-src`.
 
+Le `Makefile` de l'émulateur ne suit pas les en-têtes : après une modification d'un `.h`
+de `firmware/common/include` (ex. `GFX_MODE_COUNT`), supprimer les objets
+(`rm firmware/common/sources/interface/*.o emulator/src/core/*.o`) avant `make -C emulator emulator`,
+sinon `bin/neo` garde l'ancienne valeur (constaté le 2026-09-17, F-57).
+
 Le dossier `firmware/build` doit être **supprimé** quand on change de SDK
 (`cmake --fresh` ne suffit pas : les sous-projets pioasm/picotool gardent leur cache).
 

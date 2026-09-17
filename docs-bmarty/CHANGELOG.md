@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-14 (suite) — **horodatage FAT sur carte SD** : `HWClockSet` (`firmware/sources/hardware/clock.cpp`,
+  `hardware_rtc`) programme la RTC du RP2040 au réglage 1,21 et à la détection du PCF8563 ; la
+  bibliothèque SD (`rtc.c`, `get_fattime()`, `FF_FS_NORTC = 0`) horodate alors les fichiers. Stockage
+  USB : le FatFs de TinyUSB est compilé `FF_FS_NORTC = 1` (dépendance FetchContent) → pas d'horodatage.
+  No-op dans `neo`. USB et SDCARD compilés, **non testé sur carte**. `BUILD.md` : les objets de `neo`
+  ne suivent pas les en-têtes (suppression des `.o` après un changement de `.h`).
 - 2026-09-17 : R22 — **revue du budget SRAM** (`docs-bmarty/R22-budget-sram.md`) : tampon de ligne
   partagé `gfxLineScratch` (tilemap + doublage blitter, −720 o), rapport et **seuil de tas** au build
   (`make -C firmware build` refuse sous 2 048 o) ; tas USB 2 692 → 3 408 o. Options chiffrées à décider :

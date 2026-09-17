@@ -20,6 +20,7 @@
 #include "hardware.h"
 #include "common.h"
 #include "interface/kbdcodes.h"
+#include "interface/clock.h"
 
 // *******************************************************************************************************************************
 //
@@ -37,6 +38,9 @@ static bool traceMode = false;														// Dump each CPU instruction to stdo
 static LONG32 totalCycles = 0;  													// Cycles since reset.
 static LONG32 irqTickCycles = 0,irqTickNext = 0;  									// F-60 interrupt tick (cycles between ticks).
 static bool irqPending = false;  													// IRQB low (level), until vector fetch.
+
+void HWClockSet(const CLOCK_TIME *t) {  								// F-14 : RP2040 RTC has no equivalent here (the PCF8563 model is in hardware.cpp)
+}
 
 void HWIRQSetTick(uint16_t hz) {
 	irqTickCycles = (hz == 0) ? 0 : CYCLE_RATE / hz;
