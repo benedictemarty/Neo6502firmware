@@ -9,7 +9,8 @@
 //                    a probe at initialisation reads plausible BCD registers ;
 //                  - otherwise a software clock : seconds since 1970 set by 1,21, advanced
 //                    by the 100 Hz system timer (TMRRead). Unset until 1,21 is called.
-//                  Setting the time writes the RTC too when it is present.
+//                  Setting the time writes the RTC too when it is present, and the RP2040
+//                  RTC (HWClockSet) so FatFs timestamps files on the SD card (get_fattime).
 //
 // ***************************************************************************************
 // ***************************************************************************************
@@ -114,6 +115,7 @@ void CLKInitialise(void) {
 	swSource = CLK_SOURCE_UNSET;
 	swWraps = 0;swLastTick = TMRRead();
 	rtcPresent = CLKReadRTC(&t);
+	if (rtcPresent) HWClockSet(&t);  											// RP2040 RTC follows the PCF8563 (FAT timestamps on SD).
 }
 
 static uint32_t CLKSeconds(void) {  												// Elapsed seconds since the timer started, 64 bit safe.
@@ -143,6 +145,7 @@ uint8_t CLKSet(const CLOCK_TIME *t) {
 	swBaseTick = CLKSeconds();
 	swSource = CLK_SOURCE_SOFTWARE;
 	if (rtcPresent) CLKWriteRTC(t);
+	HWClockSet(t);  																// RP2040 RTC : FatFs get_fattime() on SD (USB : FF_FS_NORTC).
 	return 0;
 }
 

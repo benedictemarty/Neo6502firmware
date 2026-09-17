@@ -12,6 +12,8 @@
 
 #include "common.h"
 
+uint8_t gfxLineScratch[MAXSCREENWIDTH];  											// Shared scratch line (R22 : one buffer instead of one per user)
+
 #include "interface/palette.h"  												// Default palette.
 
 struct GraphicsMode gMode;														// Info about current mode.

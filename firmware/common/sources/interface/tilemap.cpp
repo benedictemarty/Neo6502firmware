@@ -99,7 +99,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	xTrailer = todo - xLeader - xBlock16 * tileSize;  						// Pixels to display to edge.
 
 	gDraw = gMode.graphicsMemory + x + yWindow * gMode.xGSize;				// Start drawing here.
-	static uint8_t lineBuffer[MAXSCREENWIDTH];  							// Packed modes : render each line here, then pack it.
+	uint8_t *lineBuffer = gfxLineScratch;  									// Packed modes : render each line here, then pack it (shared scratch, R22).
 	int packed = GFXIsPackedMode();
 
 //	printf("TD:%d,%d %d,%d\n",xWindow,yWindow,wWindow,hWindow);	

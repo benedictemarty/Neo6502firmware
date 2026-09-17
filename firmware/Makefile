@@ -72,6 +72,16 @@ build: prelim always
 	$(MAKE) -C build
 	$(CCOPY) build$(S)sources$(S)$(BINARY).elf .
 	$(CCOPY) build$(S)sources$(S)$(BINARY).uf2 .
+	$(MAKE) heap-report
+
+# bmarty R22 : SRAM budget. The heap is what is left between __end__ (bss) and the top of RAM (core0 stack is
+# in SCRATCH_Y). Below HEAP_MIN bytes the build is refused : TinyUSB / FatFs / std::string need some.
+HEAP_MIN = 2048
+heap-report:
+	@e=$$(arm-none-eabi-nm build/sources/$(BINARY).elf | awk '/ __end__$$/ {print $$1}'); \
+	 t=$$(arm-none-eabi-nm build/sources/$(BINARY).elf | awk '/ __StackLimit$$/ {print $$1}'); \
+	 h=$$(( 0x$$t - 0x$$e )); echo "R22 : heap $$h bytes (__end__ 0x$$e, RAM top 0x$$t, minimum $(HEAP_MIN))"; \
+	 [ $$h -ge $(HEAP_MIN) ] || { echo "R22 : heap below $(HEAP_MIN) bytes, refusing the build"; exit 1; }
 
 # bmarty F-80 : same firmware linked for slot 0 of the multi-boot layout -> firmware_slot0.uf2
 # (build_mb is a separate build directory so that the normal image is kept)

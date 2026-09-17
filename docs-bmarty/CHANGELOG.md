@@ -1,6 +1,10 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : R22 — **revue du budget SRAM** (`docs-bmarty/R22-budget-sram.md`) : tampon de ligne
+  partagé `gfxLineScratch` (tilemap + doublage blitter, −720 o), rapport et **seuil de tas** au build
+  (`make -C firmware build` refuse sous 2 048 o) ; tas USB 2 692 → 3 408 o. Options chiffrées à décider :
+  `FF_FS_TINY` (−4 Ko, patch de dépendance), 1 banque (−8 Ko), 2 volumes (−1,4 Ko), 1 page en modes 1/2.
 - 2026-09-17 : F-43 — **Window Manager (groupe 34)** : 8 fenêtres (cadre, barre de titre 10 lignes, case de
   fermeture, case de taille), ordre Z, 34,1-34,12 (New/Dispose/Show/Select/Move/Size/Find/Get Content Rect/
   Set Title/Front/End Update/Set Port) ; le firmware dessine les cadres et efface les contenus, le 6502 dessine

@@ -33,7 +33,7 @@ target_sources(firmware PRIVATE main.cpp
     #
     hardware/dvi_320x240x256.cpp  hardware/usbdriver.cpp  hardware/timer.cpp  hardware/sound.cpp
     hardware/fileimplementation.cpp hardware/tick.cpp hardware/serial.cpp hardware/ports.cpp
-    hardware/GamepadController.cpp hardware/multiboot.cpp hardware/cdc.cpp ${PADSOURCES}
+    hardware/GamepadController.cpp hardware/multiboot.cpp hardware/cdc.cpp hardware/clock.cpp ${PADSOURCES}
 
     #
     #       CPU type (pretty much permanently PIO now)
@@ -90,6 +90,7 @@ target_link_libraries(firmware
     pico_util
     pico_mem_ops
     hardware_i2c
+    hardware_rtc
     hardware_adc
     hardware_spi
     libdvi

@@ -737,7 +737,7 @@ static solidMaskedFn pickSolidMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 
 // F-11 : horizontal doubling. Each source line is unpacked to one byte per value, every
 // value is written twice, and the line is then blitted as a BYTE source of twice the width.
-static uint8_t doubledLine[BLT_DOUBLE_MAXWIDTH * 2];
+#define doubledLine gfxLineScratch  													// Shared scratch line (R22) : 2 x 360 = 720 = MAXSCREENWIDTH
 
 static uint8_t doubledBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
 	if (source->width > BLT_DOUBLE_MAXWIDTH) return 1;

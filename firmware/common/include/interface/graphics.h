@@ -17,6 +17,7 @@
 #define MAXCONSOLEHEIGHT  	(43)												// (80x43 in 9x8 on Hercules, 40x32 on 320x256)
 #define MAXGRAPHICSMEMORY 	(2 * 160 * 256)  									// Graphics memory : 1 page of mode 0, 2 pages of modes 1 and 2 (F-55)
 #define MAXSCREENWIDTH 		(720)  												// Widest mode (line buffers)
+extern uint8_t gfxLineScratch[MAXSCREENWIDTH];  										// One shared scratch line (tilemap, blitter doubling) : never reentrant (R22)
 
 //
 //		Display modes (F5 / ADR-02). Mode 0 is the original 320x240x256 and is byte for byte

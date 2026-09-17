@@ -28,3 +28,4 @@ void CLKGet(CLOCK_TIME *t);
 uint8_t CLKSet(const CLOCK_TIME *t);  												// 1 if the fields are out of range.
 void CLKGetParams(uint8_t *p);  													// P0-7 layout of 1,20
 uint8_t CLKSetParams(const uint8_t *p);  											// P0-6 layout of 1,21
+void HWClockSet(const CLOCK_TIME *t);  												// Implementation specific : RP2040 RTC (FAT timestamps), no-op in the emulator

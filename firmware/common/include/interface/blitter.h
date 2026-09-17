@@ -36,7 +36,7 @@ struct BlitterArea {
 
 // Source flags (byte 3 of the source area, was padding)
 #define BLTFLAG_DOUBLE 0x01	// Horizontal doubling : each source value written twice (12,3 only)
-#define BLT_DOUBLE_MAXWIDTH 360	// Source values per line when doubling (720 px = widest mode, 720 bytes of RAM)
+#define BLT_DOUBLE_MAXWIDTH 360	// Source values per line when doubling (2 x 360 = MAXSCREENWIDTH : uses gfxLineScratch)
 
 uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (F-16 : shared with 3,27)
 uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target);	// F-41
