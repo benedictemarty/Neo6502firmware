@@ -138,7 +138,7 @@ GROUP 2 Console
         Lets a PC capture the screen text of a real board over the serial link (F-92, board validation without a monitor).
 
     FUNCTION 21 Set Console Font
-        *DERROR = CONSetFont(DSPGetInt16(DPARAMS,0));
+        *DERROR = CONSetFont(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2));
     DOCUMENTATION
         Selects the font used by the console for the characters $20-$7F (bmarty fork, F-95). On input:
 
@@ -146,8 +146,12 @@ GROUP 2 Console
         the console draws the 6 leftmost columns in 6x8 cells and all 8 in 8x8 cells), in ASCII order from $20 to $7F ;
         $0000 restores the built in font.
 
+        Parameters:2,3 is likewise the address of 96 glyphs of 14 bytes (8 columns) used by the 9x14 cells of the
+        Hercules mode 1 ; $0000 keeps the built in 8x14 font. Each address is checked and applied on its own.
+
         The glyphs are read in place at every repaint (no copy) : the program must keep them intact while the font is
-        selected. The whole console is repainted. Cells of 14 lines (Hercules mode 1) keep their 8x14 font for $20-$7F.
+        selected. The whole console is repainted. The 8 line font is used by 6x8 and 8x8 cells, the 14 line font by
+        9x14 cells.
         Characters $80-$BF keep the built in symbols and $C0-$FF the user defined characters (Function 2,5).
         The built in font is restored by a mode change (5,9) and at reset. Sets the error flag if the glyphs would
         run past the end of memory.

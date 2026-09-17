@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-95 (2/2) — **2,21 Set Console Font, 2e adresse** (P2-3) : police 14 lignes des cellules
+  9×14 du mode Hercules (96 × 14 octets, 8 colonnes, lue en place ; 0 = 8×14 interne), contrôle de
+  bornes séparé, repeint ; `CONSetFont(addr, addr14)`. Test `docs-bmarty/tests/confont14.asm`
+  (mode 1, 'A' = 8 colonnes × 14 lignes, 9e colonne éteinte, adresse hors RAM refusée) vérifié
+  dans `neo` (capture 720×350) ; USB compilé, **non testé sur carte**.
 - 2026-09-17 : F-41 incrément 2 — QuickDraw **fontes proportionnelles** : format **NF1** (en-tête 8 o :
   "NF", 1, hauteur, premier, nombre, espacement, octets/ligne ; glyphes = largeur + lignes), **32,15 Set Font**
   (page:adresse du blitter, lue en place ; 0:0 = police système 6×8), **32,16 Draw String** (transparent,

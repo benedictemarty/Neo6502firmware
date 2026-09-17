@@ -25,7 +25,7 @@ void CONWriteString(const char *s, ...);
 void CONClearScreen();
 void CONGetScreenLine(uint16_t addr);
 uint8_t CONUpdateUserFont(uint8_t *data);
-uint8_t CONSetFont(uint16_t addr);  												// F-95 : 8 line font for $20-$7F from 6502 RAM (0 = default)
+uint8_t CONSetFont(uint16_t addr,uint16_t addr14);  								// F-95 : 8 line / 14 line fonts for $20-$7F from 6502 RAM (0 = default)
 uint8_t CONSetCursorPosition(uint8_t x,uint8_t y);
 void CONGetCursorPosition(uint8_t* x, uint8_t* y);
 void CONGetScreenSizeChars(uint8_t* width, uint8_t* height);
