@@ -12,6 +12,8 @@ et documentée dans le `groupN.inc` concerné.
 | 10 UExt, fn 13-19 | 13-18 routées vers un modem USB CDC selon 10,19 ; **19 Route UART to CDC** (P0 : 0 matériel, 1 CDC, 2 AUTO — défaut) | AUTO = CDC si un modem est branché | fn 19 nouvelle ; 13-18 étendues | routage absent | F-93 |
 | 14 USB Serial (CDC) | 1 Status, 2 Read Byte, 3 Write Byte, 4 Read Block, 5 Write Block, 6 Set Line Coding | P7 = périphérique (0/1) ; voir `F-90-cdc.md` | nouveau groupe | absent | F-90 |
 | 2 Console | 20 Console Debug Echo | P0 = 0 arrêt, 1 texte imprimable + CR/LF, 2 aussi $C0-$FF | — | absente | F-92 |
+| 1 System | 18 Select Bank | P0 = banque (0-1, `$FF` = démonter), P1-2 = adresse de la fenêtre (8 Ko, alignée page, < `$FF00`) | write-back de la banque courante puis copie de la banque demandée dans la fenêtre, pendant l'appel ; erreur 1 si banque/adresse invalide | absente | F-23 |
+| 1 System | 19 Get Bank Info | — | P0 banque courante (`$FF` aucune), P1-2 adresse, P3 nombre de banques (2), P4-5 taille (`$2000`) | absente | F-23 |
 | 3 File I/O | 24 Volume Info | P0 = volume (0-3), P1-2 = tampon préfixé | nom (`USBn`/`SDn` carte, `HOSTn` émulateurs), P3 attributs (bit 0 présent, 1 lecture seule, 2 réseau) ; erreur Invalid Drive ($13) si absent | absente | F-102 |
 | 3 File I/O | 25 Select Volume | P0 = volume | erreur si absent ; chaque volume garde son répertoire courant | absente | F-102 |
 | 3 File I/O | 26 Get Current Volume | — | P0 = volume courant | absente | F-102 |

@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-23 — **banques mémoire 6502** (ADR-03) : `banks.cpp` (2 banques de 8 Ko hors RAM
+  6502, commutation par copie pendant l'appel API avec write-back), **1,18 Select Bank**, **1,19 Get
+  Bank Info**, oubli au DSP Reset. 4 banques débordaient la SRAM du RP2040 de 10,5 Ko ; à 2 banques
+  il reste 5,8 Ko de tas (USB) — R22, à valider sur carte. Test `docs-bmarty/tests/banks.asm`
+  identique dans `neo`, Phosphoneo (golden + différentiel) et en co-sim du vrai firmware ;
+  USB et SDCARD compilés, **non testé sur carte**.
 - 2026-09-17 : F-16 — **3,27 File Read Paged** : lecture d'un fichier ouvert directement dans une
   page du blitter (`$00` RAM 6502, `$80`/`$81` VRAM, `$90` RAM graphique) ; `FIOReadFileHandlePaged`
   (commun, bornes par `BLTGetRealAddress` désormais exporté), `FISReadFileHandleBuffer` (carte FatFs,

@@ -99,6 +99,29 @@ GROUP 1 System
         Multi-boot : Parameter:0 = slot, Parameters:1,2 = length-prefixed buffer (byte 0 = its size) receiving the image name.
         Sets the error flag if the slot is empty or if multi-boot is not installed.
 
+    FUNCTION 18 Select Bank
+        *DERROR = BNKSelect(DPARAMS[0],DSPGetInt16(DPARAMS,1));
+    DOCUMENTATION
+        Memory banks (bmarty fork, F-23). Copies bank Parameter:0 into the 8k window at Parameters:1,2 of 6502 RAM,
+        after writing the bank currently mapped (if any) back to its storage. The window address is page aligned and
+        the window must end below $FF00. Bank $FF only writes the current bank back and unmaps it. Sets the error flag
+        if the bank or the address is invalid. Bank storage lives outside 6502 RAM (see Function 1,19 for the bank
+        count and size) and is preserved across mappings, so a program can keep code or data in several banks and
+        swap them through one window : the copy takes place while the 65C02 waits for the call (no wait is needed
+        afterwards, the window is complete when the call returns). The window must not hold the code executing the
+        call, its stack or its zero page. The banks are zeroed at start-up and the mapping is forgotten on DSP Reset.
+
+    FUNCTION 19 Get Bank Info
+        {
+            uint8_t b;uint16_t a;
+            BNKGetState(&b,&a);
+            DPARAMS[0] = b;DSPSetInt16(DPARAMS,1,a);
+            DPARAMS[3] = BANK_COUNT;DSPSetInt16(DPARAMS,4,BANK_SIZE);
+        }
+    DOCUMENTATION
+        Returns the current bank in Parameter:0 ($FF if none) and its window address in Parameters:1,2, the number of
+        banks in Parameter:3 and the bank size in Parameters:4,5 (bmarty fork, F-23).
+
     FUNCTION 10 Write character to debug
         FDBWrite(DPARAMS[0]);
     DOCUMENTATION

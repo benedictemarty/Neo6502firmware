@@ -79,6 +79,7 @@ void DSPReset(void) {
 	MSEInitialise();  															// Mouse first, before starting graphics.
 	CURInitialise();
 	IRQSetTick(0);                                                              // No interrupt tick (F-60)
+	BNKReset();                                                                 // No bank mapped (F-23)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo
