@@ -1,6 +1,15 @@
 # ADR-01 — Toolbox Neo6502 : primitives « à la Apple IIgs » dans le firmware
 
-Statut : **proposée** (2026-09-15), à ratifier par bmarty.
+Statut : **ratifiée** le 2026-09-17 (bmarty : lancement de F-40) ; squelette
+du groupe 32 sur `feat/toolbox-skeleton`.
+
+Écart de mise en œuvre (F-40) : les sources sont dans
+`firmware/common/sources/interface/toolbox_*.cpp` (préfixe) et non dans un
+sous-répertoire `toolbox/`, parce que les trois chaînes de compilation (CMake
+carte, Makefile `neo`, Makefile Phosphoneo) prennent `interface/*.cpp` sans
+récursion ; la configuration est bien dans `config/toolbox/groupNN_*.inc`.
+Codes d'erreur communs à la famille : 0 ok, 1 paramètre invalide (adresse
+hors RAM ou structure incohérente), 2 pas d'écran graphique.
 
 ## Contexte
 L'API du firmware (13 groupes, mécanisme `$FF00` : groupe + fonction + 8 octets

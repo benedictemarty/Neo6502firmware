@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-40 — **ADR-01 ratifiée**, squelette de la Toolbox : groupe **32 QuickDraw**
+  (`config/toolbox/group32_quickdraw.inc`, `toolbox_quickdraw.cpp`, `toolbox.h`) avec les conventions
+  (structures en RAM 6502 par adresse, `Rect` int16 droite/bas exclus, erreurs 0/1/2) et 10 fonctions :
+  Init Graf, Set/Get Clip, Set Pen Colour, Move To, Get Pen, Frame/Paint/Erase/Invert Rect (clippés,
+  tout mode via `GFXWritePixelRaw`). Lignes, motifs, fontes, CopyBits → F-41. Test
+  `docs-bmarty/tests/quickdraw.asm` identique dans `neo`, Phosphoneo et en co-sim ; USB/SDCARD
+  compilés, non testé sur carte.
 - 2026-09-17 : F-11 — **blitter 2 bpp** : format source 5 (`BLTFMT_QUAD`, 4 valeurs de 2 bits, MSB
   en premier) dans 12,3 (copy / masked / solid, cibles octet et quartets) et 12,4 (clipping) ;
   **doublage horizontal** par le bit 0 de l'octet 3 de la source (ex-pad) dans 12,3 : ligne dépaquetée

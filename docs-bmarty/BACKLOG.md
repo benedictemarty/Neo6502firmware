@@ -127,7 +127,7 @@ F-53 ; la Toolbox (F4) s'appuie sur F-51/F-55 pour les surfaces hors écran.
 
 | ID | P | Story | Origine | État |
 |----|---|-------|---------|------|
-| F-40 | P2 | **Ratifier l'ADR-01** (numérotation ≥ 32, conventions de structures et d'erreurs, ordre) et créer le squelette `config/toolbox/group32_quickdraw.inc` + `sources/interface/toolbox/`. | Télémon, portages | TODO |
+| F-40 | P2 | **Ratifier l'ADR-01** (numérotation ≥ 32, conventions de structures et d'erreurs, ordre) et créer le squelette `config/toolbox/group32_quickdraw.inc` + `sources/interface/toolbox/`. | Télémon, portages | **DONE** 2026-09-17 (`feat/toolbox-skeleton`) : ADR-01 ratifiée ; groupe 32 avec 10 fonctions (port, clip, plume, rectangles) ; sources en `interface/toolbox_*.cpp` (glob non récursif des 3 builds) ; `quickdraw.asm` identique neo / Phosphoneo / co-sim |
 | F-41 | P2 | **QuickDraw (32)** : port courant + clipping, rectangles, lignes, motifs, `CopyBits` sur le blitter, fontes proportionnelles (format + outil PC de conversion), `DrawString/TextWidth` ; captures golden Phosphoneo. | | TODO |
 | F-42 | P2 | **Event Manager (33)** : file unifiée clavier/souris/fenêtre/timer, `GetNextEvent`, `WaitNextEvent` (timeout ; IRQ F-10 quand disponible). | | TODO |
 | F-43 | P2 | **Window Manager (34)** : fenêtres, ordre Z, cadres dessinés par le firmware, invalidation/`update`, drag/size, `FindWindow`. | | TODO |
