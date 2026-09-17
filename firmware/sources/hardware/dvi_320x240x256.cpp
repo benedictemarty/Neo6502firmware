@@ -85,7 +85,6 @@ static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green
 
 uint16_t buffer1[MAX_SCAN_WIDTH+32],buffer2[MAX_SCAN_WIDTH+32];               	// 2 x 16 bpp scanline buffers used alternatively
 static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
-static uint8_t memLine[320];  													// ADR-04 : line rendered from 6502 RAM (8 bpp indexes, 320 wide at most : SRAM budget R22)
 static uint32_t monoEncoded[MONO_LINE_WORDS+MONO_ENCODE_PAD]; 					// 1 bpp encode target (core 1 only)
 static uint32_t blackChannel[MONO_LINE_WORDS];  								// One channel of black symbols
 
@@ -145,10 +144,6 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	uint16_t *cursline,*scan;
 	cursline = scan = (lineCounter & 1) ? buffer1 : buffer2;
 	uint8_t *screenPos = screenMemory + y * currentMode->stride;          			// Data to use in screen memory.
-	if (currentMode->layout != LAYOUT_FRAMEBUFFER) {  								// ADR-04 : line rendered from the 6502 RAM.
-		MEMRenderLine(memLine,y);
-		screenPos = memLine;
-	}
 	if (currentMode->bitsPerPixel == 8) {
 		for (int i = 0;i < currentMode->xGSize;i++) {                             	// For each pixel
 			*scan++ = palette[*screenPos++];                              			// convert using palette => buffer.

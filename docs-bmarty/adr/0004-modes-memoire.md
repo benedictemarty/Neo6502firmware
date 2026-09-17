@@ -1,7 +1,7 @@
 # ADR-04 — Modes « mémoire » : rendu vidéo depuis la RAM 6502 (F-70, F-71, F-72, F-73)
 
-Statut : **proposée** (2026-09-18) ; tranche (a) Oric TEXT implémentée le même jour
-(« go » de bmarty), sans validation carte — à ratifier formellement (points ouverts ci-dessous).
+Statut : **proposée** (2026-09-18), aucun code ; à trancher par bmarty avant tout
+développement (stories P3 de l'épopée F7, « gros, décision par ADR »).
 
 ## Contexte
 Les projets Neo6502oric2, Neo6502bbc et l'EPIC-02 (Apple II) veulent faire tourner
@@ -83,19 +83,3 @@ Faits vérifiés :
 | R30 | Conversion par ligne trop lente sur core 1 (décrochage DVI) | mesure F-50 §4 sur carte avant merge ; repli : rendu par trame dans `graphicsMemory` à 30 Hz |
 | R31 | Déchirement d'image (core 0 écrit pendant le rendu) | acceptable (comportement des machines d'origine sans double tampon) |
 | R32 | Attributs série Oric incomplets (double hauteur, clignotement) | golden Phosphoric cellule par cellule sur les scènes de test de `~/Oric1` |
-
-## Réalisation — tranche (a) Oric TEXT (2026-09-18)
-- `graphics.h` : champ `layout` du descripteur et de `gMode` (`LAYOUT_FRAMEBUFFER`,
-  `LAYOUT_ORIC_TEXT`) ; **mode 4** = 320×224 × 8 bpp, timing du mode 0, `yOffset` 8, console
-  53×28 (dessine dans `graphicsMemory`, non affiché).
-- `memvideo.cpp` (commun) : `MEMRenderLine` (attributs série rejoués par ligne, inverse
-  XOR 7, double hauteur `(ligne>>1)+4` sur rangée impaire, clignotement sur le timer 100 Hz,
-  jeux de caractères `$B400`/`$B800` en RAM), `MEMReadPixel` (cache d'une ligne par trame
-  pour les émulateurs), `MEMSetPalette` (couleurs Oric 0-7).
-- Carte : `_scanline_callback` rend la ligne dans `memLine[320]` avant la conversion
-  palette ; `neo` : `GFXReadPixelRaw` → `MEMReadPixel`. Aucun changement de la boucle bus.
-- SRAM : deux tampons de 320 octets ; **marge de tas USB = 2 220 octets** après F-44 (R22
-  se resserre : les prochains ajouts devront libérer de la SRAM).
-- Test `docs-bmarty/tests/orictext.asm` (`neo`) : encres rouge/bleue, papier vert, inverse
-  (noir sur magenta), double hauteur haute/basse, marges noires ; règles conformes à
-  `~/Oric1/src/video/video.c`. **Non exécuté sur carte** (R30 : mesure F-50 à faire).

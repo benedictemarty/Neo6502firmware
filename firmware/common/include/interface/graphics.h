@@ -29,7 +29,7 @@ extern uint8_t gfxLineScratch[MAXSCREENWIDTH];  										// One shared scratch 
 #define GFX_MODE_320x240x256	(0)
 #define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
 #define GFX_MODE_320x256x16		(2)												// 320x256, 4 bpp, text 40x32 in 8x8
-#define GFX_MODE_COUNT 			(5)
+#define GFX_MODE_COUNT 			(4)
 
 struct GraphicsModeDescriptor {
 	uint16_t xGSize,yGSize;														// Pixels
@@ -39,10 +39,7 @@ struct GraphicsModeDescriptor {
 	uint8_t  fontWidth,fontHeight;												// Character cell
 	uint8_t  timing;															// 0 = 640x480p60 pixel doubled, 1 = 720x480p60 native
 	uint16_t yOffset;															// Vertical centring (lines) on the DVI frame
-	uint8_t  layout;  															// 0 = framebuffer ; else rendered from 6502 RAM (ADR-04, memvideo.cpp)
 };
-#define LAYOUT_FRAMEBUFFER 	(0)
-#define LAYOUT_ORIC_TEXT 	(1)  													// Oric TEXT 40x28, $BB80, serial attributes, charset $B400/$B800
 extern const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT];
 #define MAXCONSOLEMEMORY 	(MAXCONSOLEWIDTH * (MAXCONSOLEHEIGHT+1))			// Max byte memory, console text.
 																				// (extra line for scrolling.)
@@ -58,7 +55,6 @@ struct GraphicsMode {
 	uint8_t  isCursorVisible;													// True if cursor visible.
 	uint8_t  modeID;															// Current mode (GFX_MODE_*)
 	uint8_t  bitsPerPixel;														// 8, 4 or 1 (see descriptor)
-	uint8_t  layout;  															// LAYOUT_* (ADR-04)
 	uint16_t stride;															// Bytes per pixel line
 	uint32_t pageSize;															// Bytes per page (stride * yGSize)
 	uint8_t  pageCount;															// Pages available in this mode (F-55)
@@ -108,8 +104,3 @@ void GFXSetFlipBits(uint8_t flip);
 //		==== 		========
 //
 // ***************************************************************************************
-
-// ADR-04 : modes rendered from 6502 RAM (memvideo.cpp)
-void MEMRenderLine(uint8_t *dest,int y);  										// One line of gMode.xGSize palette indexes
-uint8_t MEMReadPixel(int x,int y);  												// Emulators : pixel of the rendered line (cached per line)
-void MEMSetPalette(void);  														// Palette of the emulated machine (indexes 0-7)

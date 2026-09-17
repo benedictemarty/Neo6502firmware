@@ -33,7 +33,6 @@ const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT] = {
 	{ 720,350, 1,  90, 80,25, 9,14, 1, 65 },  									// 1 : Hercules text 80x25 (9x14) / graphics 720x348, timing 720x480
 	{ 320,256, 4, 160, 40,32, 8,8,  0, 0 },  									// 2 : 320x256 x 16 colours, text 40x32 (8x8), vertical repeat 1
 	{ 720,350, 1,  90, 80,43, 9,8,  1, 65 },  									// 3 : Hercules text 80x43 (9x8, 8 line font) on the mode 1 bitmap (F-57)
-	{ 320,224, 8, 320, 53,28, 6,8,  0, 8, LAYOUT_ORIC_TEXT },  					// 4 : Oric TEXT from 6502 RAM ($BB80, 240x224 centred in 320) — ADR-04 (a)
 };
 
 static void GFXInitialiseMode(int mode) {
@@ -45,7 +44,6 @@ static void GFXInitialiseMode(int mode) {
 	gMode.consoleMemory = consoleMemory;
 	gMode.modeID = mode;
 	gMode.bitsPerPixel = d->bitsPerPixel;
-	gMode.layout = d->layout;  													// ADR-04
 	gMode.stride = d->stride;
 	gMode.pageSize = (uint32_t)d->stride * d->yGSize;  							// Pages (F-55) : as many as fit, at most 2.
 	gMode.pageCount = MAXGRAPHICSMEMORY / gMode.pageSize;
@@ -105,7 +103,6 @@ void GFXWritePixelRaw(int x,int y,uint8_t colour) {
 }
 
 uint8_t GFXReadPixelRaw(int x,int y) {
-	if (gMode.layout != LAYOUT_FRAMEBUFFER) return MEMReadPixel(x,y);  			// ADR-04 : rendered from 6502 RAM.
 	uint8_t *line = gMode.graphicsMemory + y * gMode.stride;
 	switch (gMode.bitsPerPixel) {
 		case 8: return line[x];
@@ -128,7 +125,6 @@ int GFXSetMode(int Mode) {
 	RNDSetDisplayPage(gMode.displayMemory);
 	GFXDefaultPalette();   														// Standard palette
 	if (gMode.bitsPerPixel == 1) GFXSetPalette(1,255,255,255); 					// Monochrome : "on" is white (changeable with 5,32)
-	if (gMode.layout != LAYOUT_FRAMEBUFFER) MEMSetPalette();  					// ADR-04 : palette of the emulated machine
 	CONInitialise(&gMode);  													// Initialise the console.
 	return 0;
 }
