@@ -1,6 +1,9 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : **revert** du mode vidéo 4 (ADR-04 tranche a, `3236937`) à la demande de bmarty : la tranche
+  avait été implémentée sur un « go » ambigu, sans demande explicite. L'ADR-04 reste une simple
+  proposition (statut « proposée », aucune tranche réalisée). Retour à 4 modes vidéo, SRAM rendue.
 - 2026-09-18 : F-44 (1/2) — **Menu Manager (groupe 35)** : barre de menus (12 lignes), 6 menus décrits en RAM
   6502 et lus en place (titre, items avec drapeaux inactif / coché / séparateur), menus déroulants suivis par
   35,3 Select / 35,4 Track / 35,5 Track End (pas d'appel bloquant), items en surbrillance, 35,6/35,8 drapeaux,
