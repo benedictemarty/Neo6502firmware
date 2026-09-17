@@ -15,6 +15,7 @@ et documentée dans le `groupN.inc` concerné.
 | 3 File I/O | 24 Volume Info | P0 = volume (0-3), P1-2 = tampon préfixé | nom (`USBn`/`SDn` carte, `HOSTn` émulateurs), P3 attributs (bit 0 présent, 1 lecture seule, 2 réseau) ; erreur Invalid Drive ($13) si absent | absente | F-102 |
 | 3 File I/O | 25 Select Volume | P0 = volume | erreur si absent ; chaque volume garde son répertoire courant | absente | F-102 |
 | 3 File I/O | 26 Get Current Volume | — | P0 = volume courant | absente | F-102 |
+| 3 File I/O | 27 File Read Paged | P0 = canal, P1 = page (`$00` RAM 6502, `$80`/`$81` VRAM, `$90` RAM graphique — pages du blitter 12,2), P2-3 = adresse dans la page, P4-5 = taille | P4-5 = octets lus ; position du fichier avancée comme 3,8 ; erreur Invalid Parameter ($15) si la plage dépasse la page (pas de retenue, pas de passage `$80`→`$81` : deux appels) ; EOF ($02) si rien lu | absente (3,8 avec `$FFFF` ne vise que la RAM graphique à l'offset 0) | F-16 |
 | 3 File I/O (tous chemins) | préfixe `n:` (`1:/jeux/tetris.neo`) = volume n ; sans préfixe = volume courant | — | déjà compris par FatFs sur la carte (clés USB montées à leur adresse USB, SD en `0:`) ; émulateurs : `<storage>` = 0, `<storage>1..3` = 1..3 | extension | F-102 |
 | 5 Graphics | 9 Set Graphics Mode | P0 = mode (0 : 320×240×256, 1 : Hercules 720×350 1 bpp, 2 : 320×256×16) | erreur si mode inconnu ou non supporté par l'hôte | absente | F-51 (ADR-02) |
 | 5 Graphics | 10 Get Graphics Mode | — | P0 mode, P1-2 largeur, P3-4 hauteur, P5 bpp, P6 colonnes, P7 lignes | absente | F-51 (ADR-02) |

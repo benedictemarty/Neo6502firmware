@@ -81,6 +81,7 @@ uint8_t FISCloseFileHandle(uint8_t fileno);
 uint8_t FISSeekFileHandle(uint8_t fileno, uint32_t offset);
 uint8_t FISTellFileHandle(uint8_t fileno, uint32_t* offset);
 uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
+uint8_t FISReadFileHandleBuffer(uint8_t fileno, uint8_t* dest, uint16_t* size);	// F-16 : read into any host buffer
 uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
 uint8_t FISGetSizeFileHandle(uint8_t fileno, uint32_t* size);
 uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size);
@@ -127,6 +128,7 @@ uint8_t FIOCloseFileHandle(uint8_t fileno);
 uint8_t FIOSeekFileHandle(uint8_t fileno, uint32_t offset);
 uint8_t FIOTellFileHandle(uint8_t fileno, uint32_t* offset);
 uint8_t FIOReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
+uint8_t FIOReadFileHandlePaged(uint8_t fileno, uint8_t page, uint16_t address, uint16_t* size);	// F-16 : 3,27
 uint8_t FIOWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
 uint8_t FIOGetSizeFileHandle(uint8_t fileno, uint32_t* size);
 uint8_t FIOSetSizeFileHandle(uint8_t fileno, uint32_t size);

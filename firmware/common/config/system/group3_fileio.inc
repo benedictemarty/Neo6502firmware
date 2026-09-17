@@ -353,6 +353,29 @@ GROUP 3 File I/O
     DOCUMENTATION
         Returns the current volume number in Parameter:0 (bmarty fork, F-102).
 
+    FUNCTION 27 File Read Paged
+    {
+        uint16_t size = DSPGetInt16(DPARAMS,4);
+        *DERROR = FIOReadFileHandlePaged(DPARAMS[0],DPARAMS[1],DSPGetInt16(DPARAMS,2),&size);
+        DSPSetInt16(DPARAMS,4,size);
+    }
+    DOCUMENTATION
+        Reads data from an opened file directly into any memory the blitter can address
+        (bmarty fork, F-16), avoiding a copy through 6502 RAM and Function 12,2. On input:
+
+        Parameter:0 contains the file channel to operate on.
+        Parameter:1 is the memory page : $00 6502 RAM, $80 and $81 video RAM (line 205 onwards is
+              in page $81), $90 graphics RAM (same pages as Function 12,2).
+        Parameters:2,3 is the 16 bit address within that page.
+        Parameters:4,5 contains the amount of data to read.
+
+        On output Parameters:4,5 is updated to contain the amount of data actually read.
+        Data is read from the current seek position, which is advanced after the read.
+
+        The whole range must fit in the page : an Invalid Parameter error is flagged if it does
+        not (no wrap-around, no crossing from $80 to $81 : use two calls). A full 320x240 frame
+        is read with 65536 bytes into page $80 then 11264 bytes into page $81.
+
     FUNCTION 32 List Filtered
         FIODirectory(DSPGetString(DCOMMAND,4));
     DOCUMENTATION

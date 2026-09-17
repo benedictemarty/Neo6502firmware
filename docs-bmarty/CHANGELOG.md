@@ -1,6 +1,16 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-16 — **3,27 File Read Paged** : lecture d'un fichier ouvert directement dans une
+  page du blitter (`$00` RAM 6502, `$80`/`$81` VRAM, `$90` RAM graphique) ; `FIOReadFileHandlePaged`
+  (commun, bornes par `BLTGetRealAddress` désormais exporté), `FISReadFileHandleBuffer` (carte FatFs,
+  `neo`, Phosphoneo + crochet co-sim). Test `docs-bmarty/tests/readpaged.asm` (VRAM page `$81`,
+  RAM graphique, RAM 6502, page inconnue, débordement, fin de VRAM, EOF) : sortie identique dans
+  `neo`, Phosphoneo (golden + différentiel) et le vrai firmware ARM en co-sim ; firmware USB et
+  SDCARD compilés, **non testé sur carte**. Constat : la console qui défile redessine tout l'écran.
+- 2026-09-17 : story F-23 au backlog — banques mémoire 6502 par copie pendant un appel API
+  (fenêtre 16 Ko, banques RAM en SRAM / ROM en flash, `1,18`/`1,19` proposés), F-21 rattachée ;
+  faits vérifiés dans `processor_pio.cpp` (lecture servie par `cpuMemory[a]`, 11 nop de marge).
 - 2026-09-17 : story F-16 au backlog — `3,27 File Read Paged` (lecture fichier directe vers une page blitter `00`/`80`/`81`/`90` + adresse 16 bits) pour supprimer l'aller-retour RAM 6502 → 12,2 du streaming d'images de Neo6502civ ; constat vérifié : 3,8 `$FFFF` lit en RAM graphique à l'offset 0 seulement. Pas de code.
 - 2026-09-16 : F-02 — doc 2,2 Console Status corrigée ($FF = touche disponible, comme le code) ; nettoyage des 3 avertissements amont (`unused variable`) ; carte : 3,11 File Set Size conserve la position du fichier (comme `ftruncate` dans l'émulateur, `oldPos` enfin utilisé) — non testé sur carte.
 - 2026-09-16 : émulateur `neo` (et Phosphoneo) — un fichier absent renvoie désormais `$11` No File comme FatFs sur la carte (ENOENT n'était pas converti : erreur 1 Unknown). Fidélité carte ; le test api-log de Phosphoneo attend 17.

@@ -33,6 +33,7 @@ struct BlitterArea {
 #define BLTFMT_HIGH 3		// High nibble (target only)
 #define BLTFMT_LOW  4		// Low nibble (target only)
 
+uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (F-16 : shared with 3,27)
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize);
 
 // Values for BLTComplexCopy and BLTImage action params

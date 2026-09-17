@@ -366,6 +366,17 @@ uint8_t FIOReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	return FISReadFileHandle(fileno, address, size);
 }
 
+// F-16 : read directly into a blitter page (00 CPU RAM, 80/81 video RAM, 90 graphics RAM).
+// The range must lie inside the page : no wrap, no page crossing (two calls for 80 then 81).
+uint8_t FIOReadFileHandlePaged(uint8_t fileno, uint8_t page, uint16_t address, uint16_t* size) {
+	if (*size == 0) return FIOERROR_OK;
+	uint32_t last = (uint32_t)address + *size - 1;
+	if (last > 0xFFFF) return FIOERROR_INVALID_PARAMETER;
+	uint8_t *dest = BLTGetRealAddress(page, address);
+	if (dest == NULL || BLTGetRealAddress(page, (uint16_t)last) == NULL) return FIOERROR_INVALID_PARAMETER;
+	return FISReadFileHandleBuffer(fileno, dest, size);
+}
+
 uint8_t FIOWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	if (address == 0xFFFF) return 1;
 	return FISWriteFileHandle(fileno, address, size);
