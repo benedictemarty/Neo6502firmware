@@ -29,6 +29,7 @@ GROUP 12 Blitter
     DOCUMENTATION
         Copy Parameters:6,7 bytes of internal memory from Parameter:0:Parameters:1,2 to Parameter:3:Parameters:4,5. Sets error flag if the transfer is not
         possible (e.g. illegal write addresses). The upper 8 bits of the address are : 6502 RAM (00) VideoRAM (80,81) Graphics RAM(90)
+        Memory bank storage (A0 = bank 0, A1 = bank 1 ; bmarty fork F-23 : fill or read a bank without mapping it, see 1,18).
 
         
     FUNCTION 3 Complex Blit Copy

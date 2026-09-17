@@ -32,6 +32,9 @@ uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address) {
 		case 0x90: 																	// Graphic storage RAM
 			if (address < GFX_MEMORY_SIZE) ptr = gfxObjectMemory + address;
 			break;
+		default:  																	// F-23 : bank storage $A0+n
+			if (page >= BANK_PAGE && page < BANK_PAGE + BANK_COUNT && address < BANK_SIZE) ptr = BNKStorage(page - BANK_PAGE) + address;
+			break;
 	}
 	return ptr;
 }

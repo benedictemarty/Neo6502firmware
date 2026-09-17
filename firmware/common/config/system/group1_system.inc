@@ -110,6 +110,9 @@ GROUP 1 System
         swap them through one window : the copy takes place while the 65C02 waits for the call (no wait is needed
         afterwards, the window is complete when the call returns). The window must not hold the code executing the
         call, its stack or its zero page. The banks are zeroed at start-up and the mapping is forgotten on DSP Reset.
+        The bank storage is also reachable as blitter pages $A0 (bank 0) and $A1 (bank 1) for Functions 3,27 and 12,2 :
+        a bank can be filled from disk, or copied to and from video RAM, without being mapped. The storage of the
+        mapped bank holds its content as of the mapping ; the window is written back to it when it is unmapped.
 
     FUNCTION 19 Get Bank Info
         {

@@ -65,3 +65,15 @@ void BNKGetState(uint8_t *bank,uint16_t *address) {
     *bank = currentBank;
     *address = (currentBank == BANK_NONE) ? 0 : currentAddress;
 }
+
+// ***************************************************************************************
+//
+//      Bank storage, for the blitter pages $A0.. (3,27 and 12,2 fill or read a bank
+//      without mapping it). A mapped bank's storage is the content at mapping time ;
+//      the window is written back to it when the bank is unmapped or replaced.
+//
+// ***************************************************************************************
+
+uint8_t *BNKStorage(uint8_t bank) {
+    return (bank < BANK_COUNT) ? bankStorage[bank] : NULL;
+}

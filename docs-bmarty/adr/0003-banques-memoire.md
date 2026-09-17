@@ -40,6 +40,11 @@ Faits vérifiés :
    appelle, ni la pile, ni la page zéro ; le contenu de la fenêtre est
    complet au retour de l'appel (pas d'attente).
 
+6. **Stockage visible du blitter** (décision bmarty 2026-09-17) : pages `$A0`
+   (banque 0) et `$A1` (banque 1) dans `BLTGetRealAddress`, donc pour 3,27 et
+   12,2 : charger une banque depuis le disque ou l'échanger avec la VRAM sans
+   la monter. Le stockage d'une banque montée n'est à jour qu'au démontage.
+
 ## Alternatives écartées
 - **Indirection dans la boucle bus** (`bankPtr[a>>13][a&0x1FFF]`) : commutation
   instantanée, mais surcoût sur chaque lecture ; à reconsidérer seulement si

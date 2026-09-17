@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-23 (suite, décision bmarty) — le stockage des banques est adressable par le blitter :
+  pages **`$A0`/`$A1`** dans `BLTGetRealAddress` (donc 3,27 et 12,2) ; une banque se charge depuis
+  le disque ou se copie depuis/vers la VRAM sans être montée. Test `bankblit.asm` (3,27 → `$A1`,
+  montage, write-back visible par 12,2, débordement et page inconnue refusés) identique dans `neo`,
+  Phosphoneo et en co-sim du vrai firmware ; USB/SDCARD compilés, non testé sur carte.
 - 2026-09-17 : F-23 — **banques mémoire 6502** (ADR-03) : `banks.cpp` (2 banques de 8 Ko hors RAM
   6502, commutation par copie pendant l'appel API avec write-back), **1,18 Select Bank**, **1,19 Get
   Bank Info**, oubli au DSP Reset. 4 banques débordaient la SRAM du RP2040 de 10,5 Ko ; à 2 banques

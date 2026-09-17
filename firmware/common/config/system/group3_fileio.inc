@@ -365,7 +365,8 @@ GROUP 3 File I/O
 
         Parameter:0 contains the file channel to operate on.
         Parameter:1 is the memory page : $00 6502 RAM, $80 and $81 video RAM (line 205 onwards is
-              in page $81), $90 graphics RAM (same pages as Function 12,2).
+              in page $81), $90 graphics RAM, $A0 and $A1 the storage of memory banks 0 and 1 (Function 1,18 ;
+              a bank is loaded from disk without mapping it) — the same pages as Function 12,2.
         Parameters:2,3 is the 16 bit address within that page.
         Parameters:4,5 contains the amount of data to read.
 
