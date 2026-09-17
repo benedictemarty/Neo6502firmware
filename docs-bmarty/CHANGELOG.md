@@ -1,6 +1,21 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-44 (2/2) — **Control Manager (groupe 36)** : 24 contrôles (bouton, case, radio, ascenseur
+  vertical/horizontal, champ de texte) attachés à une fenêtre (rect relatif au contenu), titres/tampons lus en
+  place, dessin sur demande (`Draw Controls` dans l'update), suivi par phases (`Track Control` : surbrillance
+  du bouton, bascule, flèches/pages/curseur d'ascenseur), `Key Control` pour la saisie ; `WMContentRectOf`,
+  `WMIsVisible`, `CTWindowDisposed`. Test `ctl.asm` identique dans `neo`, Phosphoneo et co-sim.
+- 2026-09-18 : ADR-04 tranche (a) — **mode vidéo 4 : écran TEXT Oric rendu depuis la RAM 6502**
+  (`$BB80`, 40×28 en 6×8, attributs série encre/papier/texte rejoués par ligne, inverse par XOR 7,
+  double hauteur, clignotement, jeux de caractères `$B400`/`$B800` lus en RAM, couleurs Oric en
+  palette 0-7, 240×224 centré dans 320×240). `memvideo.cpp` commun (`MEMRenderLine`,
+  `MEMReadPixel`, `MEMSetPalette`), champ `layout` des descripteurs (`graphics.h`), crochet dans
+  `_scanline_callback` (carte) et `GFXReadPixelRaw` (émulateurs) ; boucle bus intacte. Test
+  `docs-bmarty/tests/orictext.asm` vérifié pixel à pixel dans `neo` contre les règles de Phosphoric
+  (`video.c`) ; USB et SDCARD compilés (tampons ramenés à 320 octets : la RAM USB débordait après
+  F-44, marge restante 2 220 octets), **non testé sur carte** (mesure F-50 §4 à faire avant merge
+  définitif, R30).
 - 2026-09-18 : **revert** du mode vidéo 4 (ADR-04 tranche a, `3236937`) à la demande de bmarty : la tranche
   avait été implémentée sur un « go » ambigu, sans demande explicite. L'ADR-04 reste une simple
   proposition (statut « proposée », aucune tranche réalisée). Retour à 4 modes vidéo, SRAM rendue.

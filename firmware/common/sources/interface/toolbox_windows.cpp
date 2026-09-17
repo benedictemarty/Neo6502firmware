@@ -178,6 +178,7 @@ uint8_t WMNewWindow(uint16_t rectAddr,uint16_t titleAddr,uint8_t flags,uint8_t *
 uint8_t WMDisposeWindow(uint8_t id) {
     struct Window *w = _WMGet(id);
     if (w == NULL) return 1;
+    CTWindowDisposed(id);                                                       // F-44 : its controls go with it
     struct QDRect save;QDGetClipRaw(&save);
     struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
     QDSetClipRaw(&screen);QDFillRaw(&w->frame,WM_COL_CONTENT);QDSetClipRaw(&save);    // Clear what it covered
@@ -310,4 +311,16 @@ void WMInvalidate(const struct QDRect *r) {
         EVTPostWindow(EVT_UPDATE,zOrder[i],0);
     }
     QDSetClipRaw(&save);
+}
+
+bool WMContentRectOf(uint8_t id,struct QDRect *r) {
+    struct Window *w = _WMGet(id);
+    if (w == NULL) return false;
+    *r = _WMContentRect(w);
+    return true;
+}
+
+bool WMIsVisible(uint8_t id) {
+    struct Window *w = _WMGet(id);
+    return w != NULL && w->visible;
 }

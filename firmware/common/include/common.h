@@ -64,6 +64,7 @@
 #include "interface/events.h"
 #include "interface/windows.h"
 #include "interface/menus.h"
+#include "interface/controls.h"
 #include "interface/miscellany.h"
 #include "interface/mos.h"
 #include "interface/sprites.h"
