@@ -10,7 +10,7 @@
 //
 //      EventRecord (8 bytes in 6502 RAM) :
 //        0 what        0 null, 1 keyDown, 2 keyUp, 3 autoKey, 4 mouseDown, 5 mouseUp,
-//                      6 mouseMove, 7 wheel, 8 timer
+//                      6 mouseMove, 7 wheel, 8 timer, 9 update (window), 10 activate (window)
 //        1 message     key : ASCII (0 if none) ; mouse down/up : buttons after the change ;
 //                      wheel : delta (signed) ; timer : timer id
 //        2 message2    key : key code ; mouse down/up : the button that changed, bit 7 = double click
@@ -31,7 +31,9 @@
 #define EVT_MOUSEMOVE   6
 #define EVT_WHEEL       7
 #define EVT_TIMER       8
-#define EVT_COUNT       9
+#define EVT_UPDATE      9                                                       // message = window (F-43)
+#define EVT_ACTIVATE    10                                                      // message = window, message2 = 1 active / 0
+#define EVT_COUNT       11
 
 #define EVT_QUEUE_SIZE  32
 #define EVT_TIMERS      4
@@ -51,3 +53,4 @@ void EVTPostKey(uint8_t what,uint8_t ascii,uint8_t keyCode,uint8_t modifiers);  
 void EVTPostMouseButtons(uint8_t oldButtons,uint8_t newButtons);                // from mouse.cpp
 void EVTPostMouseMove(void);
 void EVTPostWheel(int8_t delta);
+void EVTPostWindow(uint8_t what,uint8_t window,uint8_t message2);              // from toolbox_windows.cpp

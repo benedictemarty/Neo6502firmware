@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-43 — **Window Manager (groupe 34)** : 8 fenêtres (cadre, barre de titre 10 lignes, case de
+  fermeture, case de taille), ordre Z, 34,1-34,12 (New/Dispose/Show/Select/Move/Size/Find/Get Content Rect/
+  Set Title/Front/End Update/Set Port) ; le firmware dessine les cadres et efface les contenus, le 6502 dessine
+  les contenus sur les événements **update (9)** / **activate (10)** ajoutés au groupe 33 ; `End Update`
+  repeint les cadres au-dessus. Primitives internes QuickDraw (`QDFillRaw`, `QDFrameRaw`, `QDTextRaw`…).
+  Test `wm.asm` (deux fenêtres, Find Window par partie, sélection, événements, déplacement, destruction,
+  Set Port → clip) identique dans `neo`, Phosphoneo et co-sim. USB/SDCARD compilés, non testé sur carte.
 - 2026-09-17 : F-57 — **mode vidéo 3** : bitmap Hercules 720×350 × 1 bpp du mode 1 (même timing
   720×480p60, 65 lignes de centrage) avec console **80×43 en cellules 9×8** (police 8 lignes interne ou
   2,21 ; 43 × 8 = 344 lignes), `gfxModes[3]`, `displayTimings[3]`, `GFX_MODE_COUNT = 4`. Test

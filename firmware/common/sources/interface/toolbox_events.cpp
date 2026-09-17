@@ -180,3 +180,7 @@ void EVTPostWheel(int8_t delta) {
     MSEGetState(&x,&y,&b,&w);
     _EVTPost(EVT_WHEEL,(uint8_t)delta,0,b);
 }
+
+void EVTPostWindow(uint8_t what,uint8_t window,uint8_t message2) {
+    _EVTPost(what,window,message2,0);
+}

@@ -40,6 +40,13 @@ uint8_t QDDrawString(uint16_t strAddr);                                         
 uint8_t QDTextWidth(uint16_t strAddr,uint16_t *width);                          // 32,17
 void QDGetFontInfo(uint8_t *height,uint8_t *first,uint8_t *count);              // 32,18
 
+// Firmware-side helpers (Window Manager) : draw with a temporary clip, system font
+void QDGetClipRaw(struct QDRect *r);
+void QDSetClipRaw(const struct QDRect *r);
+void QDFillRaw(const struct QDRect *r,int colour);                              // colour < 0 : invert
+void QDFrameRaw(const struct QDRect *r,uint8_t colour);
+void QDTextRaw(const uint8_t *text,uint8_t len,int x,int y,uint8_t colour);     // system 6x8 font
+
 // NF1 proportional font (docs-bmarty/tools/mkfont.py) : 8 byte header then count glyphs of
 // 1 + height * bytesPerRow bytes (width, then rows, bit 7 = left pixel).
 #define QD_FONT_MAGIC0  'N'

@@ -16,7 +16,8 @@ GROUP 33 Event Manager
         Toolbox (bmarty fork, ADR-01). Starts the event manager with an empty queue : keyboard, mouse and timer
         events are then collected in one queue of 32 records, polled by Get Next Event. Parameters:0,1 is the mask
         of event types to collect (bit n-1 for type n, 0 = all). Event types : 1 key down, 2 key up, 3 auto key
-        (repeat), 4 mouse down, 5 mouse up, 6 mouse move (consecutive moves are merged), 7 wheel, 8 timer.
+        (repeat), 4 mouse down, 5 mouse up, 6 mouse move (consecutive moves are merged), 7 wheel, 8 timer,
+        9 update (message = window to redraw, see group 34), 10 activate (message = window, message2 = 1 front / 0).
         An EventRecord is 8 bytes in 6502 RAM : what, message, message2, modifiers, X (2), Y (2) ; message is the
         ASCII code for keys (0 if none), the buttons after the change for mouse down/up, the signed delta for the
         wheel, the timer number for timers ; message2 is the key code for keys, the button that changed for mouse

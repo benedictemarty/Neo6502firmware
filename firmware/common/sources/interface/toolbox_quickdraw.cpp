@@ -314,3 +314,35 @@ uint8_t QDTextWidth(uint16_t strAddr,uint16_t *width) {
     *width = w;
     return QD_ERR_OK;
 }
+
+// ***************************************************************************************
+//
+//      Firmware-side helpers (Window Manager)
+//
+// ***************************************************************************************
+
+void QDGetClipRaw(struct QDRect *r) { *r = clipRect; }
+void QDSetClipRaw(const struct QDRect *r) { struct QDRect s = _QDScreenRect();clipRect = _QDIntersect(r,&s); }
+void QDFillRaw(const struct QDRect *r,int colour) { _QDFill(r,colour); }
+
+void QDFrameRaw(const struct QDRect *r,uint8_t colour) {
+    if (r->right <= r->left || r->bottom <= r->top) return;
+    struct QDRect e = { r->left,r->top,r->right,(int16_t)(r->top+1) };_QDFill(&e,colour);
+    e = { r->left,(int16_t)(r->bottom-1),r->right,r->bottom };_QDFill(&e,colour);
+    e = { r->left,r->top,(int16_t)(r->left+1),r->bottom };_QDFill(&e,colour);
+    e = { (int16_t)(r->right-1),r->top,r->right,r->bottom };_QDFill(&e,colour);
+}
+
+void QDTextRaw(const uint8_t *text,uint8_t len,int x,int y,uint8_t colour) {
+    uint8_t saveColour = penColour;penColour = colour;
+    for (int i = 0;i < len;i++) {
+        uint8_t ch = text[i];
+        if (ch < 32 || ch > 127) continue;
+        const uint8_t *save = fontGlyphs;uint8_t h = fontHeight,rb = fontRowBytes;
+        fontGlyphs = NULL;fontHeight = 8;fontRowBytes = 1;                        // System font, whatever is selected
+        _QDDrawGlyph(font_5x7 + (ch - 32) * 8,6,x,y);
+        fontGlyphs = save;fontHeight = h;fontRowBytes = rb;
+        x += 6;
+    }
+    penColour = saveColour;
+}
