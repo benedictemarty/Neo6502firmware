@@ -1,6 +1,9 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : décision bmarty — **modes vidéo 3 (F-57, Hercules 80×43) et 4 (ADR-04 a, TEXT Oric) retirés**
+  (revert de `13f6042` et `3236937`) pour rendre la SRAM au tas (R22) : le Control Manager ne tenait plus
+  dans le firmware USB (2 220 o de tas sur cette base, minimum 2 048).
 - 2026-09-18 : F-44 (2/2) — **Control Manager (groupe 36)** : 24 contrôles (bouton, case, radio, ascenseur
   vertical/horizontal, champ de texte) attachés à une fenêtre (rect relatif au contenu), titres/tampons lus en
   place, dessin sur demande (`Draw Controls` dans l'update), suivi par phases (`Track Control` : surbrillance
