@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : **ADR-04 proposée** (`docs-bmarty/adr/0004-modes-memoire.md`) pour F-70/71/72/73 — modes vidéo
+  rendus depuis la RAM 6502 (Oric TEXT/HIRES, Apple II texte, BBC MODE 7) : descripteur de mode
+  « mémoire », convertisseur de ligne commun aux trois backends, attributs série Oric rejoués par
+  ligne, **refus de l'interception d'adresses dans la boucle bus** (F-73 → scrutation par core 1),
+  ordre de réalisation et mesure F-50 obligatoire avant merge. Aucun code ; décisions attendues du PO.
 - 2026-09-18 : F-10 — **1,16 Set Frame Interrupt** / **1,17 Get Frame Interrupt** : interruption « sur
   trame » (vsync) du 65C02. Carte : `frameIrqOn` testé dans `_scanline_callback` (core 1, début de
   trame : `irqAsserted = true`, `wdc65C02cpu_set_irq(true)`, `gpio_put` sûr entre cœurs), relâchement

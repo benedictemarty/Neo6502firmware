@@ -80,10 +80,10 @@ le coût de 480 encodages/trame (F-54).
 
 | ID | Prio | Story | Origine | État |
 |---|---|---|---|---|
-| F-70 | P3 | Rendu de la page texte Apple II (`$0400-$07FF`, entrelacée, 40×24, police Apple) depuis la RAM 6502, comme mode vidéo 5,9. | EPIC-02 | TODO |
-| F-71 | P3 | Rendu TEXT (`$BB80`, attributs série) et HIRES (`$A000`, 240×200) Oric. | EPIC-02 | TODO |
-| F-72 | P3 | Rendu MODE 7 télétexte BBC (`$7C00`, SAA5050) et MODE 0-6. | EPIC-02 / Neo6502bbc | TODO |
-| F-73 | P3 | Interception d'adresses dans la boucle bus (soft switches Apple `$C0xx`, VIA Oric `$0300`) : table d'adresses → gestionnaire côté RP2040 ; coût mesuré (cf. R9). | EPIC-02 | TODO |
+| F-70 | P3 | Rendu de la page texte Apple II (`$0400-$07FF`, entrelacée, 40×24, police Apple) depuis la RAM 6502, comme mode vidéo 5,9. | EPIC-02 | TODO — **ADR-04 proposée** (2026-09-18, `adr/0004-modes-memoire.md`) : convertisseur de ligne commun depuis la RAM 6502, pas d'interception dans la boucle bus, ordre Oric TEXT → HIRES → Apple → MODE 7 ; à trancher |
+| F-71 | P3 | Rendu TEXT (`$BB80`, attributs série) et HIRES (`$A000`, 240×200) Oric. | EPIC-02 | TODO — **ADR-04 proposée** (2026-09-18, `adr/0004-modes-memoire.md`) : convertisseur de ligne commun depuis la RAM 6502, pas d'interception dans la boucle bus, ordre Oric TEXT → HIRES → Apple → MODE 7 ; à trancher |
+| F-72 | P3 | Rendu MODE 7 télétexte BBC (`$7C00`, SAA5050) et MODE 0-6. | EPIC-02 / Neo6502bbc | TODO — **ADR-04 proposée** (2026-09-18, `adr/0004-modes-memoire.md`) : convertisseur de ligne commun depuis la RAM 6502, pas d'interception dans la boucle bus, ordre Oric TEXT → HIRES → Apple → MODE 7 ; à trancher |
+| F-73 | P3 | Interception d'adresses dans la boucle bus (soft switches Apple `$C0xx`, VIA Oric `$0300`) : table d'adresses → gestionnaire côté RP2040 ; coût mesuré (cf. R9). | EPIC-02 | TODO — **ADR-04 proposée** (2026-09-18, `adr/0004-modes-memoire.md`) : convertisseur de ligne commun depuis la RAM 6502, pas d'interception dans la boucle bus, ordre Oric TEXT → HIRES → Apple → MODE 7 ; à trancher |
 
 ### Épopée F9 — Télécom : série USB CDC (Neo6502drive EPIC-02 / EPIC-04)
 
