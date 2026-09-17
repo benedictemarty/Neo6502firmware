@@ -25,6 +25,7 @@ struct GraphicsMode *graphMode;
 // ***************************************************************************************
 
 uint8_t userDefinedFont[64*8];
+static const uint8_t *consoleFont = font_5x7;  									// F-95 : 8 line glyphs $20-$7F (default or 6502 RAM)
 
 // ***************************************************************************************
 //
@@ -81,7 +82,7 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 		if (cHeight == 14 && ch < 128) {
 			b = font_8x14[(ch-32)*14 + y1];
 		} else if (y1 >= yPad && y1 < yPad + 8) {
-			b = font_5x7[(ch-32)*8 + y1 - yPad];
+			b = (ch < 128) ? consoleFont[(ch-32)*8 + y1 - yPad] : font_5x7[(ch-32)*8 + y1 - yPad];
 			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
 		}
 		if (attr & MDA_BRIGHT) b |= (b >> 1);  										// Bold : double strike.
@@ -123,7 +124,8 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  		} else if (graphMode->xGSize != 0) {  									// Only if graphics mode.
 			for (uint16_t y1 = 0;y1 < cHeight;y1++) {  							// Each line of font data
 
-				uint16_t b = font_5x7[(ch-32)*cHeight + y1]; 					// Bit pattern for that line.
+				uint16_t b = (ch < 128) ? consoleFont[(ch-32)*cHeight + y1] : 	// Bit pattern for that line (F-95 : user font for $20-$7F).
+														font_5x7[(ch-32)*cHeight + y1];
 				if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1]; 		// $C0-$FF UDG Memory.												
 
 				uint8_t *screen = graphMode->graphicsMemory+					// Where in memory it starts.
@@ -150,6 +152,26 @@ static void CONDrawCharacter(uint16_t x,uint16_t y,uint16_t ch,uint16_t fcol,uin
  												ch | (fcol << 8) | (bcol << 12);
 		CONPaintCharacter(x,y);  												// And repaint it. 												
 	}
+}
+
+// ***************************************************************************************
+//
+//		F-95 : select the 8 line font for $20-$7F. addr = 0 restores the built in font ;
+//		otherwise the glyphs live in 6502 RAM at addr (96 x 8 bytes, MSB = left pixel),
+//		which the program must keep intact. No copy : nothing taken from the RP2040 SRAM.
+//		Cells of 14 lines (Hercules) keep the 8x14 font for $20-$7F. The screen is repainted.
+//
+// ***************************************************************************************
+
+uint8_t CONSetFont(uint16_t addr) {
+	if (addr != 0 && addr > 0x10000 - 96*8) return 1;  							// Would run past the end of RAM.
+	consoleFont = (addr == 0) ? font_5x7 : cpuMemory + addr;
+	if (graphMode != NULL && graphMode->xGSize != 0) {  							// Repaint the whole console.
+		for (int y = 0;y < graphMode->yCSize;y++) {
+			for (int x = 0;x < graphMode->xCSize;x++) CONPaintCharacter(x,y);
+		}
+	}
+	return 0;
 }
 
 // ***************************************************************************************
@@ -220,6 +242,7 @@ void CONGetScreenSizeChars(uint8_t* width, uint8_t* height) {
 
 void CONInitialise(struct GraphicsMode *gMode) {
 	graphMode = gMode;	
+	consoleFont = font_5x7;  													// F-95 : built in font again.
 	graphMode->foreCol = 7;graphMode->backCol = 0; 	 							// Reset colours
 	if (gMode->bitsPerPixel == 1) graphMode->foreCol = MDA_INK;  				// Monochrome : plain ink, no attribute.
 	blinkHidden = 0;

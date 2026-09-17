@@ -1,6 +1,15 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-95 — **2,21 Set Console Font** : la police 8 lignes des caractères `$20-$7F` de la
+  console peut être remplacée par 96 glyphes lus **en place dans la RAM 6502** (P0-1 = adresse, MSB =
+  pixel gauche, 6 colonnes utilisées en cellule 6×8, 8 en 8×8 ; 0 = police interne) : aucune SRAM
+  RP2040 consommée, écran repeint, police interne rétablie par 5,9 et au reset, mode Hercules
+  (9×14) inchangé, `$80-$BF` et `$C0-$FF` (2,5) inchangés. `CONSetFont` (console.cpp). Test
+  `docs-bmarty/tests/confont.asm` (police de test : 'A' plein, 'B' damier ; adresse hors RAM refusée ;
+  retour à la police interne) identique dans `neo` et Phosphoneo (golden + différentiel + co-sim) ;
+  firmware USB compilé, **non testé sur carte**. Demande : Ozmoo/Neo6502 (équivalent des polices
+  `fonts/*.fnt` des cibles MEGA65/X16).
 - 2026-09-17 : F-40 — **ADR-01 ratifiée**, squelette de la Toolbox : groupe **32 QuickDraw**
   (`config/toolbox/group32_quickdraw.inc`, `toolbox_quickdraw.cpp`, `toolbox.h`) avec les conventions
   (structures en RAM 6502 par adresse, `Rect` int16 droite/bas exclus, erreurs 0/1/2) et 10 fonctions :

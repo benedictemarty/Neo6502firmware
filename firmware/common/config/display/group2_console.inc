@@ -136,3 +136,18 @@ GROUP 2 Console
         Parameter:0 non zero : every printable character written to the console (and Enter, as CR LF) is also sent to the debug port
         (UART GP28/GP29 on the board, stderr in the emulators) ; 2 also forwards the user defined characters $C0-$FF. 0 stops the echo.
         Lets a PC capture the screen text of a real board over the serial link (F-92, board validation without a monitor).
+
+    FUNCTION 21 Set Console Font
+        *DERROR = CONSetFont(DSPGetInt16(DPARAMS,0));
+    DOCUMENTATION
+        Selects the font used by the console for the characters $20-$7F (bmarty fork, F-95). On input:
+
+        Parameters:0,1 is the address, in 6502 RAM, of 96 glyphs of 8 bytes (one byte per row, bit 7 = leftmost pixel ;
+        the console draws the 6 leftmost columns in 6x8 cells and all 8 in 8x8 cells), in ASCII order from $20 to $7F ;
+        $0000 restores the built in font.
+
+        The glyphs are read in place at every repaint (no copy) : the program must keep them intact while the font is
+        selected. The whole console is repainted. Cells of 14 lines (Hercules mode 1) keep their 8x14 font for $20-$7F.
+        Characters $80-$BF keep the built in symbols and $C0-$FF the user defined characters (Function 2,5).
+        The built in font is restored by a mode change (5,9) and at reset. Sets the error flag if the glyphs would
+        run past the end of memory.
