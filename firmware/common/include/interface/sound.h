@@ -32,6 +32,8 @@ typedef struct _sound_channel {
 	int  currentFrequency;
 	int  currentSlide;
 	int  currentVolume;
+	int  fadeTarget;  															// F-12 : volume ramp (0-127), reached by fadeStep per 50 Hz tick
+	int  fadeStep;  															// 0 = no ramp in progress
 	bool isPlayingNote;
 	int  tick50Remaining;
 	int  queueCount;
@@ -58,6 +60,9 @@ void SNDMuteAllChannels(void);
 void SNDResetAll(void);
 uint8_t SNDResetChannel(int channel);
 uint8_t SNDPlay(int channelID,SOUND_UPDATE *u);
+uint8_t SNDSetChannelVolume(int channelID,int volume,int timeCS);  				// F-12 : volume 0-127 of the playing note, ramped over timeCS
+int SNDGetChannelVolume(int channelID);  											// F-12 : current volume 0-127, -1 if bad channel
+void SNDSetCreatorVolume(uint8_t channel,int volume);  								// F-12 : change the output level without restarting the wave
 void SNDStartup(void);
 int SNDGetNoteCount(int channelID);
 

@@ -75,3 +75,21 @@ GROUP 8 Sound
     DOCUMENTATION
         This returns the number of channels in Parameter #0
 
+    FUNCTION 9 Set Channel Volume
+        *DERROR = SNDSetChannelVolume(DPARAMS[0],DPARAMS[1] * 127 / 100,DSPGetInt16(DPARAMS,2));
+    DOCUMENTATION
+        Sets the volume of the note currently playing on the channel in Parameter:0 to Parameter:1 (0-100), reached
+        in Parameters:2,3 hundredths of a second (0 = at once) by a linear ramp (bmarty fork, F-12) : fade in, fade out
+        or release without restarting the wave. The notes still queued keep the volume given when they were queued,
+        and a new note cancels the ramp. Sets the error flag if the channel does not exist or is silent.
+
+    FUNCTION 10 Get Channel Volume
+        {
+            int v = SNDGetChannelVolume(DPARAMS[0]);
+            *DERROR = (v < 0) ? 1 : 0;
+            DPARAMS[1] = (v < 0) ? 0 : (v * 100 + 63) / 127;
+        }
+    DOCUMENTATION
+        Returns in Parameter:1 the current volume (0-100) of the channel in Parameter:0, 0 when silent (bmarty fork, F-12).
+        Sets the error flag if the channel does not exist.
+

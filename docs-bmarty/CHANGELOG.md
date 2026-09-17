@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-12 — **8,9 Set Channel Volume** / **8,10 Get Channel Volume** : volume (0-100) de la note
+  en cours d'un canal, immédiat ou atteint par rampe linéaire en P2-3 centièmes de seconde (tick 50 Hz de
+  `SNDManager`, champs `fadeTarget`/`fadeStep`), appliqué au générateur sans réinitialiser la phase
+  (`SNDSetCreatorVolume`, pas de clic) ; les notes en file gardent leur volume, une nouvelle note annule
+  la rampe. Test `docs-bmarty/tests/sndvol.asm` (note 3 s, 100 → 50 immédiat, 50 → 0 en 1 s : valeur
+  intermédiaire puis 0 ; canal inexistant et canal silencieux refusés) vérifié dans `neo` ; USB
+  compilé, **non testé sur carte** (niveau PWM réel non mesuré).
 - 2026-09-17 : F-95 (2/2) — **2,21 Set Console Font, 2e adresse** (P2-3) : police 14 lignes des cellules
   9×14 du mode Hercules (96 × 14 octets, 8 colonnes, lue en place ; 0 = 8×14 interne), contrôle de
   bornes séparé, repeint ; `CONSetFont(addr, addr14)`. Test `docs-bmarty/tests/confont14.asm`
