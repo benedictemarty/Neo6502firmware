@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : story F-16 au backlog — `3,27 File Read Paged` (lecture fichier directe vers une page blitter `00`/`80`/`81`/`90` + adresse 16 bits) pour supprimer l'aller-retour RAM 6502 → 12,2 du streaming d'images de Neo6502civ ; constat vérifié : 3,8 `$FFFF` lit en RAM graphique à l'offset 0 seulement. Pas de code.
 - 2026-09-16 : F-02 — doc 2,2 Console Status corrigée ($FF = touche disponible, comme le code) ; nettoyage des 3 avertissements amont (`unused variable`) ; carte : 3,11 File Set Size conserve la position du fichier (comme `ftruncate` dans l'émulateur, `oldPos` enfin utilisé) — non testé sur carte.
 - 2026-09-16 : émulateur `neo` (et Phosphoneo) — un fichier absent renvoie désormais `$11` No File comme FatFs sur la carte (ENOENT n'était pas converti : erreur 1 Unknown). Fidélité carte ; le test api-log de Phosphoneo attend 17.
 - 2026-09-16 : mémo Prophet « USB sur carte » versionné, story F-94 (validation carte F-90/F-93 avec le Pico W, ProphetGui) au backlog.
