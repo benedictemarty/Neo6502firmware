@@ -79,7 +79,7 @@ void _BLTAddAddress(struct BlitterArea *ba,uint32_t add) {
 void _BLTLoadBlitterAreaObject(uint16_t addr,struct BlitterArea *b) {
 	b->address = cpuMemory[addr] + (cpuMemory[addr+1] << 8);
 	b->page = cpuMemory[addr+2];
-	// 1 byte of padding
+	b->flags = cpuMemory[addr+3];  													// F-11 : source flags (was padding)
 	b->stride = cpuMemory[addr+4] + (cpuMemory[addr+5] << 8);
 	b->format = cpuMemory[addr+6];
 	// The rest are source-only.
@@ -201,6 +201,41 @@ static void copy_BitsToHigh(uint8_t *tgt, const uint8_t *src, size_t n) {
 	}
 }
 
+// F-11 : expand src 2-bit values (MSB first) into consecutive bytes / nibbles in target.
+static void copy_QuadToByte(uint8_t *tgt, const uint8_t *src, size_t n) {
+	n = n / 4;	// 4 values per byte.
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			*tgt++ = (*src >> i) & 0x03;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void copy_QuadToLow(uint8_t *tgt, const uint8_t *src, size_t n) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			*tgt = (*tgt & 0xF0) | ((*src >> i) & 0x03);
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void copy_QuadToHigh(uint8_t *tgt, const uint8_t *src, size_t n) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			*tgt = (*tgt & 0x0F) | (((*src >> i) & 0x03) << 4);
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
 
 static copyFn pickCopyFn(uint8_t srcFormat, uint8_t tgtFormat)
 {
@@ -224,6 +259,13 @@ static copyFn pickCopyFn(uint8_t srcFormat, uint8_t tgtFormat)
 				case BLTFMT_BYTE: return copy_BitsToByte;
 				case BLTFMT_HIGH: return copy_BitsToHigh;
 				case BLTFMT_LOW: return copy_BitsToLow;
+				default: return nullptr;
+			}
+		case BLTFMT_QUAD:
+			switch (tgtFormat) {
+				case BLTFMT_BYTE: return copy_QuadToByte;
+				case BLTFMT_HIGH: return copy_QuadToHigh;
+				case BLTFMT_LOW: return copy_QuadToLow;
 				default: return nullptr;
 			}
 		default: return nullptr;
@@ -379,6 +421,46 @@ static void copy_masked_BitsToHigh(uint8_t *tgt, const uint8_t *src, size_t n, u
 	}
 }
 
+// F-11 : 2-bit source values, masked.
+static void copy_masked_QuadToByte(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			uint8_t v = (*src >> i) & 0x03;
+			if (v != transparent) *tgt = v;
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void copy_masked_QuadToLow(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			uint8_t v = (*src >> i) & 0x03;
+			if (v != transparent) *tgt = (*tgt & 0xF0) | v;
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void copy_masked_QuadToHigh(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			uint8_t v = (*src >> i) & 0x03;
+			if (v != transparent) *tgt = (*tgt & 0x0F) | (v << 4);
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
 static copyMaskedFn pickCopyMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 {
 	switch (srcFormat) {
@@ -401,6 +483,13 @@ static copyMaskedFn pickCopyMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 				case BLTFMT_BYTE: return copy_masked_BitsToByte;
 				case BLTFMT_HIGH: return copy_masked_BitsToHigh;
 				case BLTFMT_LOW: return copy_masked_BitsToLow;
+				default: return nullptr;
+			}
+		case BLTFMT_QUAD:
+			switch (tgtFormat) {
+				case BLTFMT_BYTE: return copy_masked_QuadToByte;
+				case BLTFMT_HIGH: return copy_masked_QuadToHigh;
+				case BLTFMT_LOW: return copy_masked_QuadToLow;
 				default: return nullptr;
 			}
 		default: return nullptr;
@@ -564,6 +653,45 @@ static void solid_masked_BitsToHigh(uint8_t *tgt, const uint8_t *src, size_t n, 
 	}
 }
 
+// F-11 : 2-bit source values, solid fill where not transparent.
+static void solid_masked_QuadToByte(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent, uint8_t solid) {
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			if (((*src >> i) & 0x03) != transparent) *tgt = solid;
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void solid_masked_QuadToLow(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent, uint8_t solid) {
+	solid &= 0x0F;
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			if (((*src >> i) & 0x03) != transparent) *tgt = (*tgt & 0xF0) | solid;
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
+static void solid_masked_QuadToHigh(uint8_t *tgt, const uint8_t *src, size_t n, uint8_t transparent, uint8_t solid) {
+	solid <<= 4;
+	n = n / 4;
+	while(n > 0) {
+		for (int i = 6; i >= 0; i -= 2) {
+			if (((*src >> i) & 0x03) != transparent) *tgt = (*tgt & 0x0F) | solid;
+			++tgt;
+		}
+		++src;
+		--n;
+	}
+}
+
 static solidMaskedFn pickSolidMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 {
 	switch (srcFormat) {
@@ -588,6 +716,13 @@ static solidMaskedFn pickSolidMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 				case BLTFMT_LOW: return solid_masked_BitsToLow;
 				default: return nullptr;
 			}
+		case BLTFMT_QUAD:
+			switch (tgtFormat) {
+				case BLTFMT_BYTE: return solid_masked_QuadToByte;
+				case BLTFMT_HIGH: return solid_masked_QuadToHigh;
+				case BLTFMT_LOW: return solid_masked_QuadToLow;
+				default: return nullptr;
+			}
 		default: return nullptr;
 	}
 }
@@ -600,8 +735,51 @@ static solidMaskedFn pickSolidMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 //
 // ***************************************************************************************
 
+// F-11 : horizontal doubling. Each source line is unpacked to one byte per value, every
+// value is written twice, and the line is then blitted as a BYTE source of twice the width.
+static uint8_t doubledLine[BLT_DOUBLE_MAXWIDTH * 2];
+
+static uint8_t doubledBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
+	if (source->width > BLT_DOUBLE_MAXWIDTH) return 1;
+	copyFn unpack = pickCopyFn(source->format, BLTFMT_BYTE);  						// Unpacker for the source format
+	if (!unpack) return 1;
+	struct BlitterArea line = *source;  											// The doubled line, as a BYTE source
+	line.page = 0;line.address = 0;line.flags = 0;line.stride = 0;
+	line.format = BLTFMT_BYTE;line.height = 1;line.width = source->width * 2;
+	struct BlitterArea tgt = *target;
+	uint8_t *src = BLTGetRealAddress(source->page, source->address);
+	if (src == NULL || BLTGetRealAddress(target->page, target->address) == NULL) return 1;
+	uint8_t *end = doubledLine + line.width;
+	for (uint8_t l = source->height; l > 0; --l) {
+		(*unpack)(doubledLine, src, source->width);  								// Unpack values (packed formats round down to bytes)
+		uint8_t *in = doubledLine + source->width;
+		uint8_t *out = end;
+		while (in > doubledLine) { --in;*--out = *in;*--out = *in; }  				// Double in place, from the end
+		uint8_t *real = BLTGetRealAddress(tgt.page, tgt.address);
+		if (real == NULL) return 1;
+		switch (action) {
+			case BLTACT_COPY: memmove(real, doubledLine, line.width);break;
+			case BLTACT_MASK: {
+				copyMaskedFn fn = pickCopyMaskedFn(BLTFMT_BYTE, tgt.format);
+				if (!fn) return 1;
+				(*fn)(real, doubledLine, line.width, source->transparent);break;
+			}
+			case BLTACT_SOLID: {
+				solidMaskedFn fn = pickSolidMaskedFn(BLTFMT_BYTE, tgt.format);
+				if (!fn) return 1;
+				(*fn)(real, doubledLine, line.width, source->transparent, source->solid);break;
+			}
+			default: return 1;
+		}
+		src += source->stride;
+		_BLTAddAddress(&tgt, (uint32_t)(int32_t)tgt.stride);
+	}
+	return 0;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
 
+	if (source->flags & BLTFLAG_DOUBLE) return doubledBLTComplexCopy(action, source, target);
 	switch (action) {
 		case BLTACT_COPY:
 			{
@@ -688,6 +866,7 @@ uint8_t BLTImage(uint8_t action, uint16_t sourceArea, int16_t x, int16_t y, uint
 {
 	struct BlitterArea src;
 	_BLTLoadBlitterAreaObject(sourceArea, &src);
+	if (src.flags & BLTFLAG_DOUBLE) return 1;  // F-11 : doubling is for 12,3 only (clipping is in source units)
 
 	// Clip against left.
 	int16_t w = src.width;
@@ -711,6 +890,11 @@ uint8_t BLTImage(uint8_t action, uint16_t sourceArea, int16_t x, int16_t y, uint
 				src.address += (adj + 7) >> 3;
 				w -= (adj + 7) & ~7;
 				x += (adj + 7) & ~7;
+				break;
+			case BLTFMT_QUAD:  // F-11
+				src.address += (adj + 3) >> 2;
+				w -= (adj + 3) & ~3;
+				x += (adj + 3) & ~3;
 				break;
 			default: return 1;  // bad format.
 		}
@@ -756,7 +940,7 @@ uint8_t BLTImage(uint8_t action, uint16_t sourceArea, int16_t x, int16_t y, uint
 	struct BlitterArea target = {
 		.address = (uint16_t)(offset & 0xFFFF),
 		.page = (uint8_t)(0x80 + (offset >> 16)),
-		.padding = 0,
+		.flags = 0,
 		.stride = FRAME_WIDTH,
 		.format = destFmt,
 	};

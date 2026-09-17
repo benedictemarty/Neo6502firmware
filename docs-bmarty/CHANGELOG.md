@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-11 — **blitter 2 bpp** : format source 5 (`BLTFMT_QUAD`, 4 valeurs de 2 bits, MSB
+  en premier) dans 12,3 (copy / masked / solid, cibles octet et quartets) et 12,4 (clipping) ;
+  **doublage horizontal** par le bit 0 de l'octet 3 de la source (ex-pad) dans 12,3 : ligne dépaquetée
+  puis doublée (≤ 360 valeurs, 720 o de RAM), tous formats ; 12,4 le refuse. Test `docs-bmarty/tests/blit2bpp.asm`
+  identique dans `neo`, Phosphoneo et en co-sim du vrai firmware ; USB/SDCARD compilés, non testé sur
+  carte. Les dispositions entrelacées (BBC MODE 5, C64) restent à convertir en amont.
 - 2026-09-17 : F-23 (suite, décision bmarty) — le stockage des banques est adressable par le blitter :
   pages **`$A0`/`$A1`** dans `BLTGetRealAddress` (donc 3,27 et 12,2) ; une banque se charge depuis
   le disque ou se copie depuis/vers la VRAM sans être montée. Test `bankblit.asm` (3,27 → `$A1`,

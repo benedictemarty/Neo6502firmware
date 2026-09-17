@@ -57,7 +57,10 @@ GROUP 12 Blitter
 
                 0-2     24 bit address to copy from/to (address is address:page:0)
 
-                3       pad byte (must be zero)
+                3       Source flags (bmarty fork, F-11 ; was a pad byte, keep 0 when unused) :
+                        bit 0 = horizontal doubling, every source value is written twice (the target
+                        receives 2 x Width values ; at most 360 source values per line ; Function 12,4
+                        refuses it). Target : must be zero.
 
                 4-5     Stride, in bytes. This is the value to add to the address to get from one line to the next.
                         Used for both source and target.
@@ -72,6 +75,9 @@ GROUP 12 Blitter
                         2: 8 single-bit values. Source only.
                         3: high nibble. Target only.
                         4: low nibble. Target only.
+                        5: 4 2-bit values per byte, most significant pair first (bmarty fork, F-11). Source only.
+                           Linear packing, like formats 1 and 2 ; interleaved layouts (BBC MODE 5, C64 multicolour)
+                           must be converted first.
 
                 7       A constant to use as the "transparent" value for BLTACT_MASK and BLTACT_SOLID. Source only. Not used in target.
 

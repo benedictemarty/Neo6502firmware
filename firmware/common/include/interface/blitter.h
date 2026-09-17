@@ -16,7 +16,7 @@
 struct BlitterArea {
 	uint16_t	address;
 	uint8_t		page;
-    uint8_t     padding;     // unused. Should be zero.
+    uint8_t     flags;       // was padding (zero) ; source only : BLTFLAG_* (bmarty F-11)
 	int16_t		stride;		 // Number of bytes between start of each line in memory (in bytes).
 	uint8_t		format;      // one of BLTFMT_*
     // Everything below here is ignored for target.
@@ -32,6 +32,11 @@ struct BlitterArea {
 #define BLTFMT_BITS 2		// 8 1-bit values (src only)
 #define BLTFMT_HIGH 3		// High nibble (target only)
 #define BLTFMT_LOW  4		// Low nibble (target only)
+#define BLTFMT_QUAD 5		// 4 2-bit values, MSB first (src only ; bmarty F-11)
+
+// Source flags (byte 3 of the source area, was padding)
+#define BLTFLAG_DOUBLE 0x01	// Horizontal doubling : each source value written twice (12,3 only)
+#define BLT_DOUBLE_MAXWIDTH 360	// Source values per line when doubling (720 px = widest mode, 720 bytes of RAM)
 
 uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (F-16 : shared with 3,27)
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize);
