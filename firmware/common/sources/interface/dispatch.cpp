@@ -79,6 +79,7 @@ void DSPReset(void) {
 	MSEInitialise();  															// Mouse first, before starting graphics.
 	CURInitialise();
 	IRQSetTick(0);                                                              // No interrupt tick (F-60)
+	IRQSetFrame(0);                                                             // No frame interrupt (F-10)
 	BNKReset();                                                                 // No bank mapped (F-23)
 	EVTReset();                                                                 // Event manager off (F-42)
 	WMReset();                                                                  // No windows (F-43)

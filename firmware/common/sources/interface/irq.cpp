@@ -22,3 +22,23 @@ uint8_t IRQSetTick(uint16_t hz) {
 uint16_t IRQGetTick(void) {
 	return irqTickHz;
 }
+
+// ***************************************************************************************
+//
+//		F-10 : frame (vsync) interrupt : IRQB pulled low at the start of every frame of the
+//		display, same delivery/release as the tick (read of $FFFF). Both may be on at once :
+//		the handler cannot tell them apart (use 5,37 Frame Count / 1,1 Timer).
+//
+// ***************************************************************************************
+
+static uint8_t irqFrameOn = 0;  												// Global : read by the Phosphoneo co-sim
+
+uint8_t IRQSetFrame(uint8_t on) {
+	irqFrameOn = on ? 1 : 0;
+	HWIRQSetFrame(irqFrameOn);
+	return 0;
+}
+
+uint8_t IRQGetFrame(void) {
+	return irqFrameOn;
+}

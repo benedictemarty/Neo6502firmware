@@ -42,6 +42,12 @@ static bool irqPending = false;  													// IRQB low (level), until vector 
 void HWClockSet(const CLOCK_TIME *t) {  								// F-14 : RP2040 RTC has no equivalent here (the PCF8563 model is in hardware.cpp)
 }
 
+static bool irqFrame = false;  														// F-10 : one IRQ per emulated frame.
+void HWIRQSetFrame(uint8_t on) {
+	irqFrame = on != 0;
+	if (!on && irqTickCycles == 0) irqPending = false;
+}
+
 void HWIRQSetTick(uint16_t hz) {
 	irqTickCycles = (hz == 0) ? 0 : CYCLE_RATE / hz;
 	irqTickNext = totalCycles + irqTickCycles;
@@ -350,6 +356,7 @@ BYTE8 CPUExecuteInstruction(void) {
 	int cycleMax = CYCLES_PER_FRAME; 	
 	if (cycles < cycleMax && forceSync == 0) return 0;								// Not completed a frame.
 	cycles = 0;																		// Reset cycle counter.
+	if (irqFrame) irqPending = true;  												// F-10 : frame interrupt (level, taken when I=0).
 	HWSync();																		// Update any hardware
 	return FRAME_RATE;																// Return frame rate.
 }

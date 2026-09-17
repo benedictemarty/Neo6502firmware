@@ -1,6 +1,14 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-10 — **1,16 Set Frame Interrupt** / **1,17 Get Frame Interrupt** : interruption « sur
+  trame » (vsync) du 65C02. Carte : `frameIrqOn` testé dans `_scanline_callback` (core 1, début de
+  trame : `irqAsserted = true`, `wdc65C02cpu_set_irq(true)`, `gpio_put` sûr entre cœurs), relâchement
+  par la lecture de `$FFFF` comme F-60, sans toucher à la boucle bus de core 0 ; `HWIRQSetFrame` /
+  `HWIRQSetTick` ne relâchent IRQB que si l'autre source est inactive ; arrêt au DSP Reset. `neo` :
+  une IRQ par trame émulée (`irqFrame`). Test `docs-bmarty/tests/frameirq.asm` (`ON 00 01 FRAMES 003C
+  STOP 00 00 STILL 003C`) dans `neo` ; USB et SDCARD compilés, **non testé sur carte** (coût sur core 1
+  et comportement de la ligne IRQB à mesurer).
 - 2026-09-17 : F-14 (suite) — **horodatage FAT sur carte SD** : `HWClockSet` (`firmware/sources/hardware/clock.cpp`,
   `hardware_rtc`) programme la RTC du RP2040 au réglage 1,21 et à la détection du PCF8563 ; la
   bibliothèque SD (`rtc.c`, `get_fattime()`, `FF_FS_NORTC = 0`) horodate alors les fichiers. Stockage

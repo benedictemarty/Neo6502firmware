@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "system/dvi_video.h"
+#include "system/wdc65C02cpu.h"  											// wdc65C02cpu_set_irq (F-10)
 
 #include "pico/multicore.h"
 #include "hardware/vreg.h"
@@ -88,6 +89,7 @@ static uint32_t monoEncoded[MONO_LINE_WORDS+MONO_ENCODE_PAD]; 					// 1 bpp enco
 static uint32_t blackChannel[MONO_LINE_WORDS];  								// One channel of black symbols
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
+extern volatile bool frameIrqOn,irqAsserted;  									// tick.cpp (F-10, F-60)
 
 bool  isInitialised = false;                                      				// DVI running.
 
@@ -117,6 +119,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (lineCounter == currentTiming->logicalLines) {
 		frameCounter++;
 		lineCounter = 0;
+		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// F-10 : vsync IRQ (gpio_put is core safe ; ~10 cycles on core 1)
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
 		uint8_t xHit,yHit;
 		cursorEnabled = MSEGetCursorDrawInformation(&xCursor,&yCursor); 		// Get cursor info this frame.

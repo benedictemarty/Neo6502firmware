@@ -82,6 +82,20 @@ GROUP 1 System
     DOCUMENTATION
         Return the current interrupt tick rate in Parameters:0,1 (0 = off).
 
+    FUNCTION 16 Set Frame Interrupt
+        *DERROR = IRQSetFrame(DPARAMS[0]);
+    DOCUMENTATION
+        Parameter:0 non zero : an interrupt is delivered to the 65C02 at the start of every displayed frame (60 Hz vertical
+        sync of the DVI output), 0 stops it (bmarty fork, F-10). Same delivery as Function 1,12 : IRQB is held low until
+        the 65C02 fetches the vector at $FFFF, so the handler needs no acknowledge ; a frame arriving while interrupts are
+        disabled coalesces with the next. The tick (1,12) and the frame interrupt may both be on : the handler cannot tell
+        them apart (read Function 5,37 Frame Count or 1,1 Timer if needed). Stopped by DSP Reset (1,0).
+
+    FUNCTION 17 Get Frame Interrupt
+        DPARAMS[0] = IRQGetFrame();
+    DOCUMENTATION
+        Returns in Parameter:0 whether the frame interrupt (Function 1,16) is on (bmarty fork, F-10).
+
     FUNCTION 14 Reboot Image
         *DERROR = HWRebootImage(DPARAMS[0]);
     DOCUMENTATION

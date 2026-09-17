@@ -7,6 +7,8 @@ et documentée dans le `groupN.inc` concerné.
 |---|---|---|---|---|---|
 | 1 System | 12 Set Interrupt Tick | P0-1 = Hz (1..1000, 0 = arrêt) | erreur si > 1000 ; IRQB pulsée au tick, relâchée à la lecture de `$FFFF` | absente | F-60 |
 | 1 System | 13 Get Interrupt Tick | — | P0-1 = Hz courant | absente | F-60 |
+| 1 System | 16 Set Frame Interrupt | P0 = 1 actif / 0 arrêt | IRQB au début de chaque trame affichée (vsync 60 Hz), livrée/relâchée comme 1,12 ; cumulable avec le tick (non distinguables) ; arrêté par 1,0 | absente | F-10 |
+| 1 System | 17 Get Frame Interrupt | — | P0 = état | absente | F-10 |
 | 1 System | 14 Reboot Image | P0 = slot flash (0-3) | ne revient pas ; erreur si slot vide ou multi-boot absent | absente | F-81 |
 | 1 System | 15 Get Image Name | P0 = slot, P1-2 = tampon préfixé | nom ASCII ; erreur si vide | absente | F-81 |
 | 10 UExt, fn 13-19 | 13-18 routées vers un modem USB CDC selon 10,19 ; **19 Route UART to CDC** (P0 : 0 matériel, 1 CDC, 2 AUTO — défaut) | AUTO = CDC si un modem est branché | fn 19 nouvelle ; 13-18 étendues | routage absent | F-93 |

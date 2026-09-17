@@ -38,10 +38,16 @@ extern "C" bool IRQTickCallback(repeating_timer_t *rt) {  						// Global : Phos
 	return true;
 }
 
+volatile bool frameIrqOn = false;  												// F-10 : read by the DVI scanline callback (core 1)
+
+void HWIRQSetFrame(uint8_t on) {  												// F-10
+	frameIrqOn = on != 0;
+	if (!on && !tickActive) { irqAsserted = false;wdc65C02cpu_set_irq(false); }
+}
+
 void HWIRQSetTick(uint16_t hz) {
 	if (tickActive) { cancel_repeating_timer(&tickTimer);tickActive = false; }
-	irqAsserted = false;
-	wdc65C02cpu_set_irq(false);
+	if (!frameIrqOn) { irqAsserted = false;wdc65C02cpu_set_irq(false); }
 	if (hz == 0) return;
 	tickActive = add_repeating_timer_us(-(int64_t)(1000000 / hz), IRQTickCallback, NULL, &tickTimer);
 }
