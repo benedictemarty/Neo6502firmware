@@ -30,6 +30,7 @@ const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT] = {
 	{ 320,240, 8, 320, 53,30, 6,8,  0, 0 },  									// 0 : original 320x240x256
 	{ 720,350, 1,  90, 80,25, 9,14, 1, 65 },  									// 1 : Hercules text 80x25 (9x14) / graphics 720x348, timing 720x480
 	{ 320,256, 4, 160, 40,32, 8,8,  0, 0 },  									// 2 : 320x256 x 16 colours, text 40x32 (8x8), vertical repeat 1
+	{ 720,350, 1,  90, 80,43, 9,8,  1, 65 },  									// 3 : Hercules text 80x43 (9x8, 8 line font) on the mode 1 bitmap (F-57)
 };
 
 static void GFXInitialiseMode(int mode) {

@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-57 — **mode vidéo 3** : bitmap Hercules 720×350 × 1 bpp du mode 1 (même timing
+  720×480p60, 65 lignes de centrage) avec console **80×43 en cellules 9×8** (police 8 lignes interne ou
+  2,21 ; 43 × 8 = 344 lignes), `gfxModes[3]`, `displayTimings[3]`, `GFX_MODE_COUNT = 4`. Test
+  `docs-bmarty/tests/mode3.asm` (5,10 → 80×43, 'A' en (0,0), 'Z' en (78,42), capture 720×350) dans
+  `neo` ; USB compilé, **non testé sur carte**. Rappel : écrire la dernière cellule (79,42) fait
+  défiler la console (comportement de `CONWrite`).
 - 2026-09-17 : F-14 — **1,20 Get Date Time** / **1,21 Set Date Time** (`interface/clock.cpp`) : PCF8563
   (I2C UEXT, `$51`, registres BCD `$02-$08`, bit VL) sondé à la première utilisation, sinon horloge
   logicielle (secondes depuis 1970 réglées par 1,21, avancées par le timer 100 Hz, débordement 32 bits
