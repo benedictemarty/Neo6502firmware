@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-44 (1/2) — **Menu Manager (groupe 35)** : barre de menus (12 lignes), 6 menus décrits en RAM
+  6502 et lus en place (titre, items avec drapeaux inactif / coché / séparateur), menus déroulants suivis par
+  35,3 Select / 35,4 Track / 35,5 Track End (pas d'appel bloquant), items en surbrillance, 35,6/35,8 drapeaux,
+  35,7 Dispose ; fermeture = effacement + `WMInvalidate` (update des fenêtres recouvertes). Test `menu.asm`
+  identique dans `neo`, Phosphoneo et co-sim. Travail fait dans un worktree séparé (`feat/menu-manager`).
 - 2026-09-18 : **ADR-04 proposée** (`docs-bmarty/adr/0004-modes-memoire.md`) pour F-70/71/72/73 — modes vidéo
   rendus depuis la RAM 6502 (Oric TEXT/HIRES, Apple II texte, BBC MODE 7) : descripteur de mode
   « mémoire », convertisseur de ligne commun aux trois backends, attributs série Oric rejoués par

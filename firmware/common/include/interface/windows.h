@@ -47,3 +47,4 @@ uint8_t WMSetTitle(uint8_t id,uint16_t titleAddr);                              
 uint8_t WMFrontWindow(void);                                                    // 34,10
 uint8_t WMEndUpdate(uint8_t id);                                                // 34,11
 uint8_t WMSetPort(uint8_t id);                                                  // 34,12
+void WMInvalidate(const struct QDRect *r);                                      // Menus : windows under r redraw

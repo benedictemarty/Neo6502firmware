@@ -83,6 +83,7 @@ void DSPReset(void) {
 	BNKReset();                                                                 // No bank mapped (F-23)
 	EVTReset();                                                                 // Event manager off (F-42)
 	WMReset();                                                                  // No windows (F-43)
+	MNReset();                                                                  // No menus (F-44)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo

@@ -293,3 +293,21 @@ uint8_t WMSetPort(uint8_t id) {
     QDSetClipRaw(&c);
     return 0;
 }
+
+// An area of the screen was erased (a pull-down menu closed) : the visible windows it touched get their
+// content erased, their frame repainted and an update event, back to front.
+void WMInvalidate(const struct QDRect *r) {
+    struct QDRect save;QDGetClipRaw(&save);
+    uint8_t front = _WMVisibleFront();
+    for (int i = 0;i < zCount;i++) {
+        struct Window *w = &windows[zOrder[i]-1];
+        if (!w->visible || !_WMIntersects(&w->frame,r)) continue;
+        struct QDRect c = _WMContentRect(w);
+        struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
+        QDSetClipRaw(&screen);
+        QDFillRaw(&c,WM_COL_CONTENT);
+        _WMDrawFrame(w,zOrder[i] == front);
+        EVTPostWindow(EVT_UPDATE,zOrder[i],0);
+    }
+    QDSetClipRaw(&save);
+}
