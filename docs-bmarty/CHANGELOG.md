@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-41 incrément 2 — QuickDraw **fontes proportionnelles** : format **NF1** (en-tête 8 o :
+  "NF", 1, hauteur, premier, nombre, espacement, octets/ligne ; glyphes = largeur + lignes), **32,15 Set Font**
+  (page:adresse du blitter, lue en place ; 0:0 = police système 6×8), **32,16 Draw String** (transparent,
+  clippé, plume avancée), **32,17 Text Width**, **32,18 Get Font Info** ; outil PC
+  `docs-bmarty/tools/mkfont.py` (TTF → NF1 par Pillow, seuil de gris, débord gauche) ; police d'essai
+  `tests/dejavu9.nf1`. Test `qdfont.asm` (police système puis NF1 chargée par 3,27 en `$90`) identique dans
+  `neo`, Phosphoneo et co-sim. Régions : non faites (sans besoin exprimé).
 - 2026-09-17 : F-41 incrément 1 — QuickDraw : **32,11 Line To** (Bresenham clippé pixel à pixel),
   **32,12 Set Pattern** / **32,13 Fill Rect** (motif 8×8 aligné écran, plume / fond), **32,14 Copy Bits**
   (structure source de 12,3 blittée sur la page de travail, clippée au clip — `BLTCopyArea`/`BLTLoadArea`

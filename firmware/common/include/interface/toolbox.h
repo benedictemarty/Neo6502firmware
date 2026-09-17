@@ -35,3 +35,13 @@ uint8_t QDLineTo(int16_t x,int16_t y);                                          
 uint8_t QDSetPattern(uint16_t patAddr);                                         // 32,12
 uint8_t QDFillRect(uint16_t rectAddr,uint8_t backColour);                       // 32,13
 uint8_t QDCopyBits(uint8_t action,uint16_t areaAddr,int16_t x,int16_t y);       // 32,14
+uint8_t QDSetFont(uint8_t page,uint16_t addr);                                  // 32,15
+uint8_t QDDrawString(uint16_t strAddr);                                         // 32,16
+uint8_t QDTextWidth(uint16_t strAddr,uint16_t *width);                          // 32,17
+void QDGetFontInfo(uint8_t *height,uint8_t *first,uint8_t *count);              // 32,18
+
+// NF1 proportional font (docs-bmarty/tools/mkfont.py) : 8 byte header then count glyphs of
+// 1 + height * bytesPerRow bytes (width, then rows, bit 7 = left pixel).
+#define QD_FONT_MAGIC0  'N'
+#define QD_FONT_MAGIC1  'F'
+#define QD_FONT_VERSION 1

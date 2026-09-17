@@ -98,3 +98,39 @@ GROUP 32 QuickDraw
         Parameter:0 (0 copy, 1 masked, 2 solid), clipped to the clip rectangle. As Function 12,4, the left clip is
         rounded up to a whole source byte. Error 2 outside mode 0 (the blitter writes byte pixels).
 
+    FUNCTION 15 Set Font
+        *DERROR = QDSetFont(DPARAMS[0],DSPGetInt16(DPARAMS,1));
+    DOCUMENTATION
+        Selects the proportional font at page Parameter:0, address Parameters:1,2 (pages of Function 12,2 : $00 6502
+        RAM, $90 graphics RAM, $A0/$A1 bank storage ; load a font file there with Function 3,27). Page 0 address 0
+        restores the built in 6x8 font. The font is read in place at each call, without copy. NF1 format (made by
+        docs-bmarty/tools/mkfont.py) : "NF", version 1, height, first character, character count, spacing, bytes per
+        row (1 or 2), then one glyph per character of width byte plus height rows, bit 7 = left pixel. Error 1 if
+        the header or the size is invalid.
+
+    FUNCTION 16 Draw String
+        *DERROR = QDDrawString(DSPGetInt16(DPARAMS,0));
+    DOCUMENTATION
+        Draws the length-prefixed string at Parameters:0,1 with the current font, top left at the pen, set pixels in
+        the pen colour, other pixels untouched (transparent), clipped ; the pen advances by the width of each glyph
+        plus the font spacing. Characters absent from the font are skipped without advance.
+
+    FUNCTION 17 Text Width
+        {
+            uint16_t w;
+            *DERROR = QDTextWidth(DSPGetInt16(DPARAMS,0),&w);
+            DSPSetInt16(DPARAMS,2,w);
+        }
+    DOCUMENTATION
+        Returns in Parameters:2,3 the width in pixels the string at Parameters:0,1 would take with Draw String.
+
+    FUNCTION 18 Get Font Info
+        {
+            uint8_t h,f,c;
+            QDGetFontInfo(&h,&f,&c);
+            DPARAMS[0] = h;DPARAMS[1] = f;DPARAMS[2] = c;
+        }
+    DOCUMENTATION
+        Returns the height of the current font in Parameter:0, its first character in Parameter:1 and its character
+        count in Parameter:2.
+

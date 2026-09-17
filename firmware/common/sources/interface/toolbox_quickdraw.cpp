@@ -233,3 +233,84 @@ uint8_t QDCopyBits(uint8_t action,uint16_t areaAddr,int16_t x,int16_t y) {
     target.transparent = 0;target.solid = 0;target.height = 0;target.width = 0;
     return BLTCopyArea(action,&src,&target) ? QD_ERR_PARAM : QD_ERR_OK;
 }
+
+// ***************************************************************************************
+//
+//      32,15 .. 32,18 proportional fonts (NF1) ; default = the 6x8 system font
+//
+// ***************************************************************************************
+
+static const uint8_t *fontGlyphs = NULL;                                        // NULL : system font
+static uint8_t fontHeight = 8,fontFirst = 32,fontCount = 96,fontSpacing = 0,fontRowBytes = 1;
+
+static bool _QDGlyph(uint8_t ch,const uint8_t **rows,uint8_t *width) {         // Glyph rows and advance width
+    if (fontGlyphs == NULL) {
+        if (ch < 32 || ch > 127) return false;
+        *rows = font_5x7 + (ch - 32) * 8;*width = 6;                            // 6x8 cells, 8 rows, bit 7 left
+        return true;
+    }
+    if (ch < fontFirst || ch >= fontFirst + fontCount) return false;
+    const uint8_t *g = fontGlyphs + (ch - fontFirst) * (1 + fontHeight * fontRowBytes);
+    *width = g[0];*rows = g + 1;
+    return true;
+}
+
+uint8_t QDSetFont(uint8_t page,uint16_t addr) {
+    if (page == 0 && addr == 0) {                                               // Back to the system font
+        fontGlyphs = NULL;fontHeight = 8;fontFirst = 32;fontCount = 96;fontSpacing = 0;fontRowBytes = 1;
+        return QD_ERR_OK;
+    }
+    const uint8_t *h = BLTGetRealAddress(page,addr);
+    if (h == NULL || BLTGetRealAddress(page,addr + 7) == NULL) return QD_ERR_PARAM;
+    if (h[0] != QD_FONT_MAGIC0 || h[1] != QD_FONT_MAGIC1 || h[2] != QD_FONT_VERSION) return QD_ERR_PARAM;
+    uint8_t height = h[3],first = h[4],count = h[5],spacing = h[6],rowBytes = h[7];
+    if (height == 0 || count == 0 || (rowBytes != 1 && rowBytes != 2) || first + count > 256) return QD_ERR_PARAM;
+    uint32_t size = 8 + (uint32_t)count * (1 + height * rowBytes);
+    if (addr + size - 1 > 0xFFFF || BLTGetRealAddress(page,(uint16_t)(addr + size - 1)) == NULL) return QD_ERR_PARAM;
+    fontGlyphs = h + 8;fontHeight = height;fontFirst = first;fontCount = count;fontSpacing = spacing;fontRowBytes = rowBytes;
+    return QD_ERR_OK;
+}
+
+void QDGetFontInfo(uint8_t *height,uint8_t *first,uint8_t *count) {
+    *height = fontHeight;*first = fontFirst;*count = fontCount;
+}
+
+// Draw one glyph at (x,y) : set bits in the pen colour, transparent elsewhere, clipped.
+static void _QDDrawGlyph(const uint8_t *rows,uint8_t width,int x,int y) {
+    for (int r = 0;r < fontHeight;r++) {
+        int py = y + r;
+        if (py < clipRect.top || py >= clipRect.bottom) continue;
+        const uint8_t *row = rows + r * fontRowBytes;
+        for (int c = 0;c < width;c++) {
+            int px = x + c;
+            if (px < clipRect.left || px >= clipRect.right) continue;
+            if (row[c >> 3] & (0x80 >> (c & 7))) GFXWritePixelRaw(px,py,penColour);
+        }
+    }
+}
+
+uint8_t QDDrawString(uint16_t strAddr) {
+    if (strAddr > 0xFF00 - 1) return QD_ERR_PARAM;
+    uint8_t len = cpuMemory[strAddr];
+    if ((uint32_t)strAddr + len > 0xFF00 - 1) return QD_ERR_PARAM;
+    for (int i = 0;i < len;i++) {
+        const uint8_t *rows;uint8_t width;
+        if (!_QDGlyph(cpuMemory[strAddr + 1 + i],&rows,&width)) continue;      // Unknown : no advance
+        _QDDrawGlyph(rows,width,penX,penY);
+        penX += width + fontSpacing;
+    }
+    return QD_ERR_OK;
+}
+
+uint8_t QDTextWidth(uint16_t strAddr,uint16_t *width) {
+    if (strAddr > 0xFF00 - 1) return QD_ERR_PARAM;
+    uint8_t len = cpuMemory[strAddr];
+    if ((uint32_t)strAddr + len > 0xFF00 - 1) return QD_ERR_PARAM;
+    uint16_t w = 0;
+    for (int i = 0;i < len;i++) {
+        const uint8_t *rows;uint8_t gw;
+        if (_QDGlyph(cpuMemory[strAddr + 1 + i],&rows,&gw)) w += gw + fontSpacing;
+    }
+    *width = w;
+    return QD_ERR_OK;
+}
