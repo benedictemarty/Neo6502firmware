@@ -14,7 +14,7 @@
 #define _GRAPHICS_H
 
 #define MAXCONSOLEWIDTH  	(80) 	 											// Max console size 
-#define MAXCONSOLEHEIGHT  	(43)												// (80x43 in 9x8 on Hercules, 40x32 on 320x256)
+#define MAXCONSOLEHEIGHT  	(32)												// Largest console of the modes : 53x30, 80x25, 40x32 (R22 : sized to the modes kept)
 #define MAXGRAPHICSMEMORY 	(2 * 160 * 256)  									// Graphics memory : 1 page of mode 0, 2 pages of modes 1 and 2 (F-55)
 #define MAXSCREENWIDTH 		(720)  												// Widest mode (line buffers)
 extern uint8_t gfxLineScratch[MAXSCREENWIDTH];  										// One shared scratch line (tilemap, blitter doubling) : never reentrant (R22)
