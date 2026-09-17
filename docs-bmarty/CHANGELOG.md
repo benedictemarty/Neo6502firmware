@@ -1,6 +1,15 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-17 : F-14 — **1,20 Get Date Time** / **1,21 Set Date Time** (`interface/clock.cpp`) : PCF8563
+  (I2C UEXT, `$51`, registres BCD `$02-$08`, bit VL) sondé à la première utilisation, sinon horloge
+  logicielle (secondes depuis 1970 réglées par 1,21, avancées par le timer 100 Hz, débordement 32 bits
+  géré) ; conversion date civile ↔ jours (algorithmes de H. Hinnant), validation des champs ; source
+  dans P7. Émulateur `neo` : PCF8563 modélisé à `$51` sur l'heure de l'hôte (écriture = décalage).
+  Déclarations en portée de bloc dans `group1_system.inc` (common.h volontairement non touché : en
+  cours de modification par F-42). Test `docs-bmarty/tests/datetime.asm` (source 2 dans `neo`, réglage
+  2026-09-17 12:34:56 relu, mois 13 refusé) ; USB compilé, **RTC/I2C non testés sur carte** ;
+  horodatage FAT non fait.
 - 2026-09-17 : F-42 — **Event Manager (groupe 33)** : file unique de 32 EventRecord (8 o) alimentée par
   `KBDEvent`/`KBDCheckTimer` (key down/up/auto) et `MSE*` (down/up avec double clic, move fusionnés, wheel) ;
   33,1-33,6 (Init, Get Next Event avec masque, Available, Flush, Set Timer ×4 en ticks 10 ms générés à la

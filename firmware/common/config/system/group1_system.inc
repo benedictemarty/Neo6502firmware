@@ -125,6 +125,27 @@ GROUP 1 System
         Returns the current bank in Parameter:0 ($FF if none) and its window address in Parameters:1,2, the number of
         banks in Parameter:3 and the bank size in Parameters:4,5 (bmarty fork, F-23).
 
+    FUNCTION 20 Get Date Time
+        {
+            extern void CLKGetParams(uint8_t *p);  // interface/clock.h (block scope declaration : common.h left untouched, F-14)
+            CLKGetParams(DPARAMS);
+        }
+    DOCUMENTATION
+        Returns the date and time (bmarty fork, F-14) : Parameters:0,1 year (1970-2099), Parameter:2 month (1-12),
+        Parameter:3 day (1-31), Parameter:4 hour (0-23), Parameter:5 minute, Parameter:6 second and Parameter:7 the
+        source : 0 = not set (the value is then 1970-01-01 plus the time since power on), 1 = software clock set by
+        Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51).
+
+    FUNCTION 21 Set Date Time
+        {
+            extern uint8_t CLKSetParams(const uint8_t *p);
+            *DERROR = CLKSetParams(DPARAMS);
+        }
+    DOCUMENTATION
+        Sets the date and time (bmarty fork, F-14), same layout as Function 1,20 (Parameter:7 ignored) : the software
+        clock is set, and the PCF8563 too when present. Sets the error flag if a field is out of range (1970-2099,
+        valid day of month, 24 hour time).
+
     FUNCTION 10 Write character to debug
         FDBWrite(DPARAMS[0]);
     DOCUMENTATION
