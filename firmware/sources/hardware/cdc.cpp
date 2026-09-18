@@ -31,11 +31,16 @@ extern "C" void tuh_cdc_mount_cb(uint8_t idx) {  								// New CDC interface : 
 	cdc_line_coding_t lc = { 115200, CDC_LINE_CODING_STOP_BITS_1, CDC_LINE_CODING_PARITY_NONE, 8 };
 	tuh_cdc_set_line_coding(idx, &lc, NULL, 0);  									// Sane default ; DTR/RTS asserted so that modems talk.
 	tuh_cdc_set_control_line_state(idx, CDC_CONTROL_LINE_STATE_DTR | CDC_CONTROL_LINE_STATE_RTS, NULL, 0);
+	tuh_itf_info_t info;  														// Say so on the console, like the gamepad driver does.
+	uint16_t vid = 0, pid = 0;
+	if (tuh_cdc_itf_get_info(idx, &info)) tuh_vid_pid_get(info.daddr, &vid, &pid);
+	CONWriteString("USB serial modem found ");CONWriteHex(vid);CONWriteHex(pid);CONWrite('\r');
 }
 
 extern "C" void tuh_cdc_umount_cb(uint8_t idx) {
 	CDCInit();
 	for (int i = 0; i < CDC_MAX_DEVICES; i++) if (cdcItf[i] == idx) cdcItf[i] = 0xFF;
+	CONWriteString("USB serial modem removed\r");
 }
 
 int HWCDCConnected(uint8_t dev) {
