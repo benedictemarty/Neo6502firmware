@@ -6,5 +6,5 @@ un port USB-A de la carte — F-90 (groupe 14, `cdc.cpp`, `cdcserial.cpp`, TinyU
 (routage des fonctions UART 10,13-10,18 vers le modem, 10,19, AUTO par défaut). Rien d'autre du fork
 `bmarty/main` (toolbox, banques, modes vidéo, R22…).
 
-Bannière : `Trinity Firmware: v1.0.0-N-gXXXXXXX`. Compilation : comme l'amont
+Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags : `v0.0.1-N-gXXXXXXX`). Compilation : comme l'amont
 (`make -C firmware build STORAGE=USB`, SDK 1.5.1, TinyUSB 0.16.0, PicoDVI amont non modifié).

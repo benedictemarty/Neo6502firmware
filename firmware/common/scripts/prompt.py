@@ -19,6 +19,7 @@ import re
 try:
     repo = git.Repo(search_parent_directories=True)
     version = repo.git.describe("--tags", "--always")
+    version = version[8:] if version.startswith("trinity-") else version  # tags trinity-vX.Y.Z
     plainVersion = version
     if repo.is_dirty():
         version += " dirty"
