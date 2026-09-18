@@ -91,6 +91,7 @@ void DSPReset(void) {
 	SNDManager();                                                               // Initialise sound manager
 	CONWrite(0x80+6);
 	STOSynchronise();                                                           // Synchronise storage
+	if (MEMLoadBasicFromStorage()) CONWriteString("NeoBASIC from storage (neobasic.bin)\r");  // Trinity : decoupled BASIC
 	CONWrite(0x80+2);
 	IOInitialise(); 															// UEXT Initialise.
 }

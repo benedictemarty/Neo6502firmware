@@ -86,7 +86,13 @@ ROOTDIR =  $(dir $(realpath $(lastword $(MAKEFILE_LIST))))..$(S)
 BINDIR = $(ROOTDIR)bin$(S)
 SRCDIR = $(ROOTDIR)kernel$(S)
 COMDIR = $(ROOTDIR)firmware$(S)common$(S)
-CSCRIPTS = $(ROOTDIR)basic$(S)scripts
+#
+#		NeoBASIC vit dans le dépôt Neo6502Basic (surchargeable : make BASICDIR=/chemin/) ;
+#		ses produits (basic.bin, basic_binary.h, makebasic.zip...) sont lus dans $(BASICBIN).
+#
+BASICDIR ?= $(ROOTDIR)..$(S)Neo6502Basic$(S)
+BASICBIN = $(BASICDIR)bin$(S)
+CSCRIPTS = $(BASICDIR)basic$(S)scripts
 #
 #		Current applications.
 # 

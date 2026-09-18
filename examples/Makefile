@@ -39,8 +39,8 @@ BASDIR = basic-examples
 
 basicdemos: clearbuild $(DEMOBAS)
 	$(CCOPY) -R $(DEMOGFX) $(DEMOLIB) $(BASDIR)
-	$(CCOPY) $(ROOTDIR)basic$(S)images$(S)graphics.gfx $(BASDIR)
-	$(CCOPY) $(ROOTDIR)basic$(S)images$(S)test$(S)test.gfx $(BASDIR)
+	$(CCOPY) $(BASICDIR)basic$(S)images$(S)graphics.gfx $(BASDIR)
+	$(CCOPY) $(BASICDIR)basic$(S)images$(S)test$(S)test.gfx $(BASDIR)
 
 clearbuild:
 	$(CMAKEDIR) build
@@ -48,11 +48,11 @@ clearbuild:
 	$(CDEL) $(BASDIR)$(S)*.*
 
 basic/games/asteroids.bas : basic/games/asteroids.bsc basic/games/asteroid_asm.lib
-	$(PYTHON) $(BINDIR)makebasic.zip $< -obasic/games/asteroids.bas
+	$(PYTHON) $(BASICBIN)makebasic.zip $< -obasic/games/asteroids.bas
 	$(CCOPY) basic/games/asteroid*.bsc $(BASDIR)
 
 %.bas : %.bsc
-	$(PYTHON) $(BINDIR)makebasic.zip $< -o$@
+	$(PYTHON) $(BASICBIN)makebasic.zip $< -o$@
 	$(CCOPY) $@ $< $(BASDIR)
 
 

@@ -31,13 +31,13 @@ DOCUMENTS = $(DOCDIR)*.pdf $(BINDIR)neo6502.inc
 #
 BINARIES = 	 $(BINDIR)*.uf2 $(BINDIR)*.elf \
 			 $(ROOTDIR)emulator$(S)cross-compile$(S)neo.exe \
-			 $(BINDIR)basic.bin \
+			 $(BASICBIN)basic.bin \
 			 $(ROOTDIR)emulator$(S)neo
 #
 #		Python applications included.
 #
-PYTHONAPPS = $(BINDIR)makebasic.zip $(BINDIR)listbasic.zip $(BINDIR)exec.zip  \
-			 $(BINDIR)createblanks.zip $(BINDIR)makeimg.zip $(BINDIR)cvimg.zip \
+PYTHONAPPS = $(BASICBIN)makebasic.zip $(BASICBIN)listbasic.zip $(BASICBIN)exec.zip  \
+			 $(BASICBIN)createblanks.zip $(BASICBIN)makeimg.zip $(BASICBIN)cvimg.zip \
 			 $(BINDIR)nxmit.zip 
 
 # ***************************************************************************************
@@ -66,7 +66,7 @@ all:
 	$(CCOPY) -r $(EXAMPLEDIR)c $(TMPDIR)examples
 	$(CMAKEDIR) $(TMPDIR)$(S)examples$(S)basic
 	$(CCOPY) -r $(EXAMPLEDIR)basic-examples$(S)* $(TMPDIR)examples$(S)basic
-	$(CCOPY) -r $(ROOTDIR)basic$(S)libraries $(TMPDIR)
+	$(CCOPY) -r $(BASICDIR)basic$(S)libraries $(TMPDIR)
 
 	# Zip up and copy back
 	cd $(TMPDIR) ; zip -r $(RELEASEFILE) *

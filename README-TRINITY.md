@@ -11,6 +11,12 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 
 ## Versions
 
+- **0.2.0** (2026-09-19, à valider sur carte) — BASIC découplé et menu de démarrage.
+  **BASIC découplé** (projet Neo6502Basic) : si `neobasic.bin` (= `bin/basic.bin` d'un build de `basic/`) est à la
+  racine du stockage, il est chargé en `$800` au démarrage et par `1,3` à la place de la copie embarquée
+  (message `NeoBASIC from storage (neobasic.bin)`) ; sinon le BASIC embarqué sert. Une nouvelle version du BASIC
+  se teste donc en copiant un fichier sur la clé, sans reflasher.
+
 - **0.1.0** (2026-09-19) — **TinyUSB 0.21.0** au lieu de 0.16.0 (amont) : le pilote hôte RP2040 de 0.16 lisait
   **un secteur en 2,5 s** derrière le hub 4 ports (transferts bulk sur les « interrupt endpoints », latches
   partagés — tinyusb #3533/#1261) ; avec la refonte HCD de 0.21 (EPX, double tampon) : **1 ms**. Mesuré sur

@@ -63,8 +63,24 @@ void MEMInitialiseMemory(void) {
 //
 // ***************************************************************************************
 
+// Trinity (bmarty, Neo6502Basic) : the BASIC is decoupled from the firmware. If NEOBASIC.BIN exists at the
+// root of the storage, it is loaded at $800 instead of the embedded copy (same layout as bin/basic.bin) ;
+// otherwise the embedded BASIC is used. Returns true when the storage copy was loaded.
+
+#define BASIC_STORAGE_FILE "neobasic.bin"
+
+bool MEMLoadBasicFromStorage(void) {
+	uint8_t exists = 0;
+	if (FIOExistsFile(BASIC_STORAGE_FILE,&exists) != 0 || !exists) return false;
+	if (FIOReadFileBasic(BASIC_STORAGE_FILE,BASIC_LOAD) != 0) {  					// Unreadable : back to the embedded one.
+		loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);
+		return false;
+	}
+	return true;
+}
+
 void MEMLoadBasic(void) {
-	loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);  									// Copy ROM image into memory crashes
+	if (!MEMLoadBasicFromStorage()) loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);  	// Storage copy, else the embedded ROM image
 	cpuMemory[0x0] = BASIC_LOAD & 0xFF;  										// Start with jmp (0)
 	cpuMemory[0x1] = BASIC_LOAD >> 8;
 }
