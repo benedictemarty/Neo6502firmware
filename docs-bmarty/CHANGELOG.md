@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : R22 — **plan de la SRAM** (`R22-budget-sram.md`) : carte `.data`/`.bss`/tas/scratch du firmware USB `8db5e86` avec adresses, tailles et leviers classés (FF_FS_TINY 4 Ko, déroulement d'exceptions ≈ 2,1 Ko en `.data`, pages graphiques, banques…) ; `core1_stack` est en scratch X, pas en `.bss`.
 - 2026-09-18 : F-46 (1/2) — **Resource Manager (groupe 38)** : ressources nommées (type de 4 caractères + id 16
   bits) dans un fichier **NR1** sur le stockage (`docs-bmarty/tools/mkres.py` : table d'entrées puis données),
   ouvert sur un canal du groupe 3 choisi par le programme ; 38,1 Open / 2 Close / 3 Count / 4 Find (type, id →
