@@ -1,6 +1,19 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-17 — **locale FR et caractères Latin-1**. (a) `fr.locale` = **AZERTY PC** (table de
+  `layouts/fr.kmap` de Neo6502kbd : lettres permutées, rangée des chiffres, `ù ² ° ¨ £ µ § ¤`, Alt/AltGr
+  `~ # { [ | \` \\ ^ @ ] }`), codes **Latin-1** pour les accents ; l'ancien `fr.locale` amont (disposition
+  **Apple** française : `@ § ! - = \``) devient `fm.locale`, complété des accents ; `keymaps.py` accepte les
+  codes 160-255. (b) Glyphes 5×7 : `$A0-$BF` (symboles Latin-1, flash, `scripts/latin1.py` →
+  `data/latin1font.h`) et `$C0-$FF` (lettres accentuées, composées depuis `font_5x7` : accent sur 2 lignes,
+  capitales resserrées sur 6) chargées dans la police utilisateur au reset (`CONResetUserFont`) — 2,5 les
+  remplace comme avant. La console (2,6, cellules de 8 et 14 lignes), 5,x Draw Text et QuickDraw 32,16/17
+  (police système) affichent `$A0-$FF` (`CONGlyph`) ; `$80-$9F` restent des codes de couleur. Vérifié dans
+  NeoBASIC (`a$="éè"` : `len` 2, `asc` 233). Test `latin1.asm` (touches AZERTY injectées, pixels, 2,5,
+  32,16) ; tas inchangé (USB 3 280 o).
+- 2026-09-18 : correctif `neo` (F-01) — l'autotype `keys:` sautait le code HID `$32` (non-US #) : `; ' \` , . /`
+  envoyaient la touche précédente (`;` → `\`, etc.), invisible en locale US, faux en AZERTY.
 - 2026-09-18 : backlog — F-17 **Locale FR** inscrite (demande bmarty) ; constat : `fr.locale` amont existe (AZERTY) sans accents ; périmètre à trancher.
 - 2026-09-18 : F-45 — **Dialog Manager (groupe 37)** : dialogues modaux construits depuis un descripteur en RAM
   6502 lu en place (rect écran, drapeau barre de titre, titre, jusqu'à 12 items : genre 1-5 = contrôles du

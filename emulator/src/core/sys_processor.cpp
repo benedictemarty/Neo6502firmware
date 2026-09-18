@@ -255,8 +255,8 @@ int CPUUseDebugKeys(void) {
 
 static int CPUAsciiToHID(char ch,int *mods) {
 	static const char *shifted = ")!@#$%^&*(";
-	static const char *plain  = "-=[]\\;'`,./";
-	static const char *shift2 = "_+{}|:\"~<>?";
+	static const char *plain  = "-=[]\\\001;'`,./";  									// 0x2D.. ; 0x32 = non-US # (never typed)
+	static const char *shift2 = "_+{}|\001:\"~<>?";
 	*mods = 0;
 	if (ch >= 'a' && ch <= 'z') return 0x04 + ch - 'a';
 	if (ch >= 'A' && ch <= 'Z') { *mods = KEY_SHIFT;return 0x04 + ch - 'A'; }

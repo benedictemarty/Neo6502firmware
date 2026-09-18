@@ -38,6 +38,8 @@ void CONReverseCursorBlock();
 void CONSetCursorVisible(uint8_t vFlag);
 
 extern uint8_t userDefinedFont[64*8];
+const uint8_t *CONGlyph(uint8_t ch);  											// F-17 : 8 line glyph of any character
+void CONResetUserFont(void);  													// F-17 : Latin-1 letters back in $C0-$FF
 
 #define CONTROL(c) 	((c) & 0x1F)
 

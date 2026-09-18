@@ -25,6 +25,28 @@ struct GraphicsMode *graphMode;
 // ***************************************************************************************
 
 uint8_t userDefinedFont[64*8];
+#include "data/latin1font.h"  													// F-17 : Latin-1 symbols $A0-$BF, default letters $C0-$FF
+static const uint8_t blankGlyph[8] = { 0,0,0,0,0,0,0,0 };
+
+// ***************************************************************************************
+//
+//		8 line glyph of any character : $20-$7F built in (the console font can be replaced
+//		for those, F-95), $80-$9F blank (control codes), $A0-$BF Latin-1 symbols, $C0-$FF
+//		user defined (Latin-1 letters by default, F-17).
+//
+// ***************************************************************************************
+
+const uint8_t *CONGlyph(uint8_t ch) {
+	if (ch < 0x20) return blankGlyph;
+	if (ch < 0x80) return font_5x7 + (ch - 0x20) * 8;
+	if (ch < 0xA0) return blankGlyph;
+	if (ch < 0xC0) return font_latin1_symbols + (ch - 0xA0) * 8;
+	return userDefinedFont + (ch - 0xC0) * 8;
+}
+
+void CONResetUserFont(void) {  													// Reset : Latin-1 letters in $C0-$FF (2,5 replaces them)
+	memcpy(userDefinedFont,font_latin1_letters,sizeof(userDefinedFont));
+}
 static const uint8_t *consoleFont = font_5x7;  									// F-95 : 8 line glyphs $20-$7F (default or 6502 RAM)
 static const uint8_t *consoleFont14 = font_8x14;  								// F-95 (2/2) : 14 line glyphs $20-$7F for 9x14 cells
 
@@ -83,8 +105,7 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 		if (cHeight == 14 && ch < 128) {
 			b = consoleFont14[(ch-32)*14 + y1];  										// F-95 : user 8x14 font or built in.
 		} else if (y1 >= yPad && y1 < yPad + 8) {
-			b = (ch < 128) ? consoleFont[(ch-32)*8 + y1 - yPad] : font_5x7[(ch-32)*8 + y1 - yPad];
-			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
+			b = (ch < 128) ? consoleFont[(ch-32)*8 + y1 - yPad] : CONGlyph(ch)[y1 - yPad];
 		}
 		if (attr & MDA_BRIGHT) b |= (b >> 1);  										// Bold : double strike.
 		if ((attr & MDA_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  				// Underline row (MDA : row 12 of 14).
@@ -126,8 +147,7 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
 			for (uint16_t y1 = 0;y1 < cHeight;y1++) {  							// Each line of font data
 
 				uint16_t b = (ch < 128) ? consoleFont[(ch-32)*cHeight + y1] : 	// Bit pattern for that line (F-95 : user font for $20-$7F).
-														font_5x7[(ch-32)*cHeight + y1];
-				if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1]; 		// $C0-$FF UDG Memory.												
+														CONGlyph(ch)[y1]; 		// $A0-$BF Latin-1, $C0-$FF UDG (F-17).
 
 				uint8_t *screen = graphMode->graphicsMemory+					// Where in memory it starts.
 												x*cWidth+(y*cHeight+y1) * 320;	
@@ -450,7 +470,7 @@ void CONSetDebugEcho(uint8_t on) {
 void CONWrite(int c) {
 	if (consoleEcho) {  														// F-92 : text and newlines go to the debug UART / stderr
 		if (c == CC_ENTER) { FDBWrite(13);FDBWrite(10); }
-		else if ((c >= 32 && c < 127) || (c >= 0xC0 && consoleEcho > 1)) FDBWrite((uint8_t)c);
+		else if ((c >= 32 && c < 127) || (c >= 0xA0 && consoleEcho > 1)) FDBWrite((uint8_t)c);
 	}
 
 	switch (c) {
@@ -526,7 +546,7 @@ void CONWrite(int c) {
 			CONDeleteCharacter();break;
 
 		default:
-			if ((c >= ' ' && c < 127) || c >= 192) {  							// 32-126,192+ output a character.
+			if ((c >= ' ' && c < 127) || c >= 0xA0) {  							// 32-126,160+ output a character (F-17 : $A0-$BF Latin-1).
 				CONDrawCharacter(graphMode->xCursor,graphMode->yCursor,c,graphMode->foreCol,graphMode->backCol);
 				graphMode->xCursor++;
 				if (graphMode->xCursor == graphMode->xCSize) {  				// Char at EOL mark extended.

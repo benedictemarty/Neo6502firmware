@@ -24,6 +24,8 @@ all:
 	touch sources$(S)interface$(S)dispatch.cpp
 	$(CCOPY) $(BINDIR)basic_binary.h include$(S)data
 
+	$(PYTHON) $(COMDIR)scripts$(S)latin1.py $(COMDIR)include$(S)interface$(S)font_5x7.h >$(COMDIR)include$(S)data$(S)latin1font.h
+
 	$(PYTHON) $(COMDIR)scripts$(S)who.py >$(COMDIR)include$(S)data$(S)neowho.h
 
 	$(PYTHON) $(COMDIR)scripts$(S)prompt.py $(COMDIR)scripts$(S)build.count >$(COMDIR)include$(S)data$(S)prompt.h

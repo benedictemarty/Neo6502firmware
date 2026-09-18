@@ -223,11 +223,10 @@ void GFXRectangle(struct GraphicsMode *gMode,int x1,int y1,int x2,int y2,int sol
 void GFXScaledText(struct GraphicsMode *gMode,char *s,int x,int y,int useSolidFill) {
 	while (*s != '\0') {
 		uint8_t c = *s++;
-		if ((c >= ' ' && c < 0x80) || (c >= 0xC0)) {
+		if ((c >= ' ' && c < 0x80) || (c >= 0xA0)) {  								// F-17 : $A0-$FF too
 			int y1 = y;
 			for (int yc = 0;yc < 8;yc++) {				
-				int bits = font_5x7[(c-' ')*8+yc];
-				if (c >= 0xC0) bits = userDefinedFont[(c & 0x3F) * 8 + yc];
+				int bits = CONGlyph(c)[yc];
 				int x1 = x;
 				for (int pixel = 0;pixel < 6;pixel++) {
 					if (bits & 0x80) {

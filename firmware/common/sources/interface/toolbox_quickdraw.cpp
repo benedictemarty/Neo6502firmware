@@ -245,8 +245,8 @@ static uint8_t fontHeight = 8,fontFirst = 32,fontCount = 96,fontSpacing = 0,font
 
 static bool _QDGlyph(uint8_t ch,const uint8_t **rows,uint8_t *width) {         // Glyph rows and advance width
     if (fontGlyphs == NULL) {
-        if (ch < 32 || ch > 127) return false;
-        *rows = font_5x7 + (ch - 32) * 8;*width = 6;                            // 6x8 cells, 8 rows, bit 7 left
+        if (ch < 32 || ch == 127 || (ch >= 0x80 && ch < 0xA0)) return false;
+        *rows = CONGlyph(ch);*width = 6;                                        // 6x8 cells, 8 rows, bit 7 left ; $A0-$FF Latin-1 / UDG (F-17)
         return true;
     }
     if (ch < fontFirst || ch >= fontFirst + fontCount) return false;
@@ -337,10 +337,10 @@ void QDTextRaw(const uint8_t *text,uint8_t len,int x,int y,uint8_t colour) {
     uint8_t saveColour = penColour;penColour = colour;
     for (int i = 0;i < len;i++) {
         uint8_t ch = text[i];
-        if (ch < 32 || ch > 127) continue;
+        if (ch < 32 || ch == 127 || (ch >= 0x80 && ch < 0xA0)) continue;
         const uint8_t *save = fontGlyphs;uint8_t h = fontHeight,rb = fontRowBytes;
         fontGlyphs = NULL;fontHeight = 8;fontRowBytes = 1;                        // System font, whatever is selected
-        _QDDrawGlyph(font_5x7 + (ch - 32) * 8,6,x,y);
+        _QDDrawGlyph(CONGlyph(ch),6,x,y);
         fontGlyphs = save;fontHeight = h;fontRowBytes = rb;
         x += 6;
     }

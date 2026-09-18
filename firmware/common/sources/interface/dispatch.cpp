@@ -86,6 +86,7 @@ void DSPReset(void) {
 	MNReset();                                                                  // No menus (F-44)
 	CTReset();                                                                  // No controls (F-44)
 	DLReset();                                                                  // No dialogs (F-45)
+	CONResetUserFont();                                                         // Latin-1 letters in $C0-$FF (F-17)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo
