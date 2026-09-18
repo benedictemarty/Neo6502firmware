@@ -37,7 +37,7 @@ code applicatif (rappels, boucles d'événements).
 | 36 | **Control Manager** | boutons, cases à cocher, boutons radio, ascenseurs, champs de texte simples ; `TrackControl` |
 | 37 | **Dialog Manager** | boîtes modales et alertes construites depuis une description en RAM 6502 |
 | 38 | **Resource/Font Manager** | ressources nommées sur le stockage (fontes, icônes, menus, dialogues), poignées côté RP2040 |
-| 39 | **Memory (RP2040)** | poignées de blocs dans la SRAM libre du RP2040 (≈ 47 Ko) ou en flash : `NewHandle`, `Read/Write` vers la RAM 6502 par blocs — stockage hors des 64 Ko |
+| 39 | ~~**Memory (RP2040)**~~ | **retiré le 2026-09-18** (décision bmarty) : les ≈ 47 Ko de SRAM supposés n'existent plus (R22) ; les données hors des 64 Ko passent par les ressources (38, lecture) et les fichiers (3, écriture) |
 
 ### Conventions
 - Paramètres : identifiants entiers 16 bits (fenêtre, menu, contrôle, poignée),
@@ -55,8 +55,8 @@ code applicatif (rappels, boucles d'événements).
 
 Écart de mise en œuvre (F-46, 2026-09-18) : le groupe 39 « Memory (RP2040) » supposait ≈ 47 Ko de
 SRAM libre ; après F-23, F-5x et la toolbox il reste ≈ 5,8 Ko (R22). Le groupe 38 est réalisé
-(ressources NR1 sur le stockage, relues à la demande) ; le 39 attend une décision (flash, pages
-des banques, ou abandon) — voir `BACKLOG.md` F-46.
+(ressources NR1 sur le stockage, relues à la demande) ; le 39 est **retiré** (décision bmarty 2026-09-18 : flash trop risquée sans carte, pages des banques =
+API exclusive ; une page blitter `$B0` serait la bonne réponse à un futur besoin de cache).
 
 ## Options écartées
 - Tout en 6502 (bibliothèque neolib) : trop lent (6,25 MHz, 64 Ko) pour le

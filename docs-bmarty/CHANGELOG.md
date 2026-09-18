@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : décision bmarty — **groupe 39 Memory (RP2040) retiré** de l'ADR-01 ; F-46 close (38 livré).
 - 2026-09-18 : R22 leviers 1 et 2 (décision bmarty) — (1) **`FF_FS_TINY 1`** dans les deux FatFs (USB TinyUSB et
   SD `no-OS-FatFS`) par `patches/apply-fatfs-tiny.sh`, idempotent, lancé à la configuration CMake : tampon de
   secteur partagé par volume, `fileHandles` 4 416 → 320 o ; **à valider sur carte** (les émulateurs et la co-sim
