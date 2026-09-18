@@ -3,7 +3,7 @@
 ; Sortie attendue (console) :
 ;   NEW 00 01 / EV 09 01 00 / EV 0A 01 01 / NEW 00 02 / EV 09 01 00 / EV 09 02 00 / EV 0A 01 00 / EV 0A 02 01
 ;   FIND 02 01 / FIND 01 02 / FIND 01 03 / FIND 02 04 / SEL 00 / EV 09 02 00 / EV 09 01 00
-;   EV 0A 02 00 / EV 0A 01 01 / FIND 01 01 / RECT 0015 006F 0095 00BD / PIX 0F 0F 08 / MOVE 00 / FRONT 01
+;   EV 0A 02 00 / EV 0A 01 01 / FIND 01 01 / RECT 0015 006F 0095 00BD / PIX 0F 0F 09 / MOVE 00 / FRONT 01
 ;   DISP 00 / FRONT 02 / PIX 00 / CLIP 00C9 00A1 0140 00EF / END 00 / BAD 01 / END
 ; SPDX-License-Identifier: EUPL-1.2
 ; Auteur : bmarty <bmarty@mailo.com>
@@ -98,7 +98,7 @@ start:
   jsr api
   jsr prect
 
-  ldx #<spix                ; PIX : cadre A (20,100)=0F, titre A (140,105)=0F, titre B (180,135)=08
+  ldx #<spix                ; PIX : cadre A (20,100)=0F, titre A (140,105)=0F, titre B (180,135)=09
   ldy #>spix
   jsr print
   ldx #20

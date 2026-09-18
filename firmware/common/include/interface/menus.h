@@ -22,7 +22,7 @@
 #define MN_TITLE_GAP     12                                                     // Pixels between titles
 #define MN_COL_BAR       15
 #define MN_COL_TEXT      0
-#define MN_COL_DISABLED  8
+#define MN_COL_DISABLED  9                                                      // Dark grey (8 is solid black)
 
 #define MN_ITEM_DISABLED 0x01
 #define MN_ITEM_CHECKED  0x02

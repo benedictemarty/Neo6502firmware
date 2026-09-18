@@ -161,18 +161,31 @@ static bool _WMReadTitle(uint16_t addr,struct Window *w) {
     return true;
 }
 
-uint8_t WMNewWindow(uint16_t rectAddr,uint16_t titleAddr,uint8_t flags,uint8_t *id) {
+// Common creation (Dialog Manager alerts, F-45) : rect and title in firmware memory.
+uint8_t WMNewWindowRaw(const struct QDRect *rect,const uint8_t *title,uint8_t titleLen,uint8_t flags,uint8_t *id) {
     int slot = -1;
     for (int i = 0;i < WM_MAX_WINDOWS;i++) if (!windows[i].used) { slot = i;break; }
     if (slot < 0) return 2;                                                     // No free window
+    if (rect->right <= rect->left || rect->bottom <= rect->top) return 1;
     struct Window *w = &windows[slot];
-    if (!_WMReadRect(rectAddr,&w->frame)) return 1;
-    if (!_WMReadTitle(titleAddr,w)) return 1;
+    w->frame = *rect;
+    if (titleLen > WM_TITLE_MAX) titleLen = WM_TITLE_MAX;
+    memcpy(w->title,title,titleLen);w->titleLen = titleLen;
     w->flags = flags;w->used = true;w->visible = true;
     zOrder[zCount++] = slot + 1;
     *id = slot + 1;
     _WMRepaintAfterChange();
     return 0;
+}
+
+uint8_t WMNewWindow(uint16_t rectAddr,uint16_t titleAddr,uint8_t flags,uint8_t *id) {
+    struct QDRect r;
+    if (!_WMReadRect(rectAddr,&r)) return 1;
+    if (titleAddr > 0xFF00 - 1) return 1;
+    uint8_t len = cpuMemory[titleAddr];
+    if (len > WM_TITLE_MAX) len = WM_TITLE_MAX;
+    if ((uint32_t)titleAddr + len > 0xFF00 - 1) return 1;
+    return WMNewWindowRaw(&r,cpuMemory + titleAddr + 1,len,flags,id);
 }
 
 uint8_t WMDisposeWindow(uint8_t id) {

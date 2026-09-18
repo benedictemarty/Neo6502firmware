@@ -1,6 +1,20 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-45 — **Dialog Manager (groupe 37)** : dialogues modaux construits depuis un descripteur en RAM
+  6502 lu en place (rect écran, drapeau barre de titre, titre, jusqu'à 12 items : genre 1-5 = contrôles du
+  groupe 36, 6 = texte statique multi-lignes ; drapeaux inactif / défaut (Return, anneau) / annulation
+  (Escape) ; rect relatif au contenu, maximum, texte ou tampon préfixé), sur les gestionnaires de fenêtres
+  (34) et de contrôles (36). Aucun appel bloquant : `Dialog Event` reçoit l'EventRecord du groupe 33 et
+  rend l'item qui a agi et si l'événement appartenait au dialogue (souris et clavier toujours ; update
+  du dialogue redessiné sur place ; update/activate des autres fenêtres et timers rendus au programme) ;
+  suivi des contrôles par phases, saisie vers le premier champ de texte (Tab : suivant). `Alert` :
+  message centré (lignes sur 13) et boutons OK / OK-Cancel / Yes-No (titres en flash, `CTNewRaw`,
+  `WMNewWindowRaw`). 2 dialogues (une alerte au-dessus d'un dialogue). Test `dlg.asm` identique dans
+  `neo`, Phosphoneo et co-sim ; tas USB 3 280 o, SDCARD 4 528 o ; **non testé sur carte**.
+- 2026-09-18 : correctif toolbox — la couleur « gris » des barres de titre inactives (34), items de menu
+  et contrôles inactifs (35, 36) était l'index **8, noir opaque** dans la palette par défaut (le gris
+  sombre est 9) : passage à 9 (`wm.asm` : `PIX 0F 0F 09`).
 - 2026-09-18 : correctif `fix/hotkey-keyup` — depuis F-42, `KBDMapToASCII` était aussi appelé à la **relâche**
   d'une touche (`EVTPostKey(EVT_KEYUP, …)`) ; comme il insérait le texte des touches de fonction (2,4 Define
   Hotkey) en effet de bord, chaque appui sur F1..F10 injectait la chaîne **deux fois**. L'insertion est

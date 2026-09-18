@@ -14,7 +14,7 @@
 struct Control {
     uint8_t kind,window,flags,part;                                             // part : part being tracked
     struct QDRect rect;                                                         // Relative to the window content
-    uint16_t text;                                                              // Title (ptext) or text buffer (ptext)
+    const uint8_t *text;                                                        // Title (ptext) or text buffer (ptext) : 6502 RAM, or firmware (alerts, F-45)
     int16_t value,max;                                                          // Scroll bar : 0..max ; text : max length ; check/radio : 0/1
 };
 
@@ -49,7 +49,7 @@ static void _CTDrawOne(const struct Control *c) {
     struct QDRect save;QDGetClipRaw(&save);
     QDSetClipRaw(&content);
     uint8_t ink = (c->flags & CT_FLAG_DISABLED) ? CT_COL_DISABLED : CT_COL_TEXT;
-    const uint8_t *title = cpuMemory + c->text + 1;uint8_t len = cpuMemory[c->text];
+    const uint8_t *title = c->text + 1;uint8_t len = c->text[0];
     switch (c->kind) {
         case CT_KIND_BUTTON: {
             bool hi = (c->flags & CT_FLAG_HILITE) != 0;
@@ -115,23 +115,31 @@ void CTReset(void) { for (int i = 0;i < CT_MAX_CONTROLS;i++) controls[i].kind = 
 
 void CTWindowDisposed(uint8_t window) { for (int i = 0;i < CT_MAX_CONTROLS;i++) if (controls[i].window == window) controls[i].kind = 0; }
 
-uint8_t CTNew(uint8_t kind,uint8_t window,uint16_t rectAddr,uint16_t textAddr,uint16_t max,uint8_t *id) {
-    if (kind < CT_KIND_BUTTON || kind > CT_KIND_TEXT || rectAddr > 0xFF00 - 8 || textAddr > 0xFF00 - 1) return 1;
+// Common creation : rect in firmware memory, ptext anywhere (6502 RAM or a firmware constant, F-45 alerts).
+uint8_t CTNewRaw(uint8_t kind,uint8_t window,const struct QDRect *rect,const uint8_t *ptext,uint16_t max,uint8_t *id) {
+    if (kind < CT_KIND_BUTTON || kind > CT_KIND_TEXT) return 1;
     struct QDRect content;
     if (!WMContentRectOf(window,&content)) return 1;
+    if (rect->right <= rect->left || rect->bottom <= rect->top) return 1;
+    if (kind == CT_KIND_TEXT && ptext[0] > max) return 1;                       // Buffer longer than its max
     int slot = -1;
     for (int i = 0;i < CT_MAX_CONTROLS;i++) if (controls[i].kind == 0) { slot = i;break; }
     if (slot < 0) return 2;
     struct Control *c = &controls[slot];
-    const uint8_t *p = cpuMemory + rectAddr;
-    c->rect.left = (int16_t)(p[0] | (p[1] << 8));c->rect.top = (int16_t)(p[2] | (p[3] << 8));
-    c->rect.right = (int16_t)(p[4] | (p[5] << 8));c->rect.bottom = (int16_t)(p[6] | (p[7] << 8));
-    if (c->rect.right <= c->rect.left || c->rect.bottom <= c->rect.top) return 1;
-    c->kind = kind;c->window = window;c->flags = 0;c->part = 0;c->text = textAddr;c->value = 0;c->max = (int16_t)max;
-    if (kind == CT_KIND_TEXT && cpuMemory[textAddr] > max) return 1;             // Buffer longer than its max
+    c->rect = *rect;
+    c->kind = kind;c->window = window;c->flags = 0;c->part = 0;c->text = ptext;c->value = 0;c->max = (int16_t)max;
     *id = slot + 1;
     _CTDrawOne(c);
     return 0;
+}
+
+uint8_t CTNew(uint8_t kind,uint8_t window,uint16_t rectAddr,uint16_t textAddr,uint16_t max,uint8_t *id) {
+    if (rectAddr > 0xFF00 - 8 || textAddr > 0xFF00 - 1) return 1;
+    struct QDRect r;
+    const uint8_t *p = cpuMemory + rectAddr;
+    r.left = (int16_t)(p[0] | (p[1] << 8));r.top = (int16_t)(p[2] | (p[3] << 8));
+    r.right = (int16_t)(p[4] | (p[5] << 8));r.bottom = (int16_t)(p[6] | (p[7] << 8));
+    return CTNewRaw(kind,window,&r,cpuMemory + textAddr,max,id);
 }
 
 uint8_t CTDispose(uint8_t id) {
@@ -168,6 +176,8 @@ uint8_t CTSetValue(uint8_t id,int16_t value) {
     _CTDrawOne(c);
     return 0;
 }
+
+uint8_t CTGetKind(uint8_t id) { struct Control *c = _CTGet(id);return c == NULL ? 0 : c->kind; }
 
 uint8_t CTGetValue(uint8_t id,int16_t *value) {
     struct Control *c = _CTGet(id);
@@ -280,9 +290,9 @@ uint8_t CTKey(uint8_t id,uint8_t key,uint8_t *changed) {
     *changed = 0;
     if (c == NULL || c->kind != CT_KIND_TEXT) return 1;
     if (c->flags & CT_FLAG_DISABLED) return 0;
-    uint8_t *len = cpuMemory + c->text;
+    uint8_t *len = (uint8_t *)c->text;                                          // Text fields always live in 6502 RAM
     if (key == 8 || key == 127) { if (*len > 0) { (*len)--;*changed = 1; } }
-    else if (key >= 32 && key < 127) { if (*len < c->max && *len < 255) { cpuMemory[c->text + 1 + *len] = key;(*len)++;*changed = 1; } }
+    else if (key >= 32 && key < 127) { if (*len < c->max && *len < 255) { len[1 + *len] = key;(*len)++;*changed = 1; } }
     if (*changed) _CTDrawOne(c);
     return 0;
 }

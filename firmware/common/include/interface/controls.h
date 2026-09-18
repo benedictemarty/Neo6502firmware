@@ -40,7 +40,7 @@
 #define CT_COL_FRAME     15
 #define CT_COL_TEXT      15
 #define CT_COL_BACK      0
-#define CT_COL_DISABLED  8
+#define CT_COL_DISABLED  9                                                      // Dark grey (8 is solid black in the default palette)
 #define CT_ARROW         8                                                      // Scroll bar arrow length
 
 void CTReset(void);
@@ -55,3 +55,5 @@ void CTFind(int16_t x,int16_t y,uint8_t *id,uint8_t *part);                     
 uint8_t CTTrack(uint8_t id,int16_t x,int16_t y,uint8_t phase,uint8_t *acted);   // 36,9
 uint8_t CTKey(uint8_t id,uint8_t key,uint8_t *changed);                         // 36,10
 void CTWindowDisposed(uint8_t window);                                          // from the Window Manager
+uint8_t CTNewRaw(uint8_t kind,uint8_t window,const struct QDRect *rect,const uint8_t *ptext,uint16_t max,uint8_t *id);  // Dialogs (F-45)
+uint8_t CTGetKind(uint8_t id);                                                  // 0 if unused

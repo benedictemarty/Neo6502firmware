@@ -30,7 +30,7 @@
 
 #define WM_COL_FRAME     15
 #define WM_COL_TITLE_ON  15                                                     // Front window title bar
-#define WM_COL_TITLE_OFF 8
+#define WM_COL_TITLE_OFF 9                                                      // Dark grey (8 is solid black)
 #define WM_COL_TEXT      0
 #define WM_COL_CONTENT   0
 
@@ -50,3 +50,4 @@ uint8_t WMSetPort(uint8_t id);                                                  
 void WMInvalidate(const struct QDRect *r);                                      // Menus : windows under r redraw
 bool WMContentRectOf(uint8_t id,struct QDRect *r);                              // Controls : content rect (false if no window)
 bool WMIsVisible(uint8_t id);
+uint8_t WMNewWindowRaw(const struct QDRect *rect,const uint8_t *title,uint8_t titleLen,uint8_t flags,uint8_t *id);  // Dialogs (F-45)

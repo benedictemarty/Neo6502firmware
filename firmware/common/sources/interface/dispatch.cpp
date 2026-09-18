@@ -85,6 +85,7 @@ void DSPReset(void) {
 	WMReset();                                                                  // No windows (F-43)
 	MNReset();                                                                  // No menus (F-44)
 	CTReset();                                                                  // No controls (F-44)
+	DLReset();                                                                  // No dialogs (F-45)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	LOGDrawLogo();                                                              // Draw logo
