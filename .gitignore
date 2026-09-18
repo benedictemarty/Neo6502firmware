@@ -1,10 +1,3 @@
-basic/build/basic.bin
-basic/build/basic_binary.h
-basic/build/basic.lst
-basic/build/tokenised.dat
-basic/sources/generated/
-basic/scripts/__pycache__/tokens.cpython-310.pyc
-basic/libraries.zip
 bin
 emulator/framework/debugger.o
 emulator/framework/gfx.o
@@ -57,7 +50,6 @@ firmware/sources/interface/*.o
 *.aux
 *.pyc
 documents/release/basic.pdf
-basic/scripts/__pycache__/tokens.cpython-311.pyc
 firmware/common/include/data/prompt.h
 firmware/common/include/data/neolocale.h
 firmware/common/include/data/sfxdata.h
@@ -66,10 +58,7 @@ emulator/6502/__6502mnemonics.h
 emulator/6502/__6502opcodes.h
 emulator/6502/__6502support.h
 emulator/cross-compile/neowin.zip
-basic/_include.inc
 kernel/neo6502.inc
-basic/test.bsc
-basic/tests/__pycache__/testutils.cpython-311.pyc
 .cache
 documents/release/source/api.tex
 *.sublime-*

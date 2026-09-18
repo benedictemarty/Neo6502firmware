@@ -37,7 +37,7 @@ always:
 kernel: always
 	$(MAKE) -C ..$(S)kernel
 	$(CCOPY) $(BINDIR)kernel_binary.h $(COMDIR)include$(S)data
-	$(CCOPY) $(BINDIR)basic_binary.h $(COMDIR)include$(S)data
+	$(CCOPY) $(BASICBIN)basic_binary.h $(COMDIR)include$(S)data
 	$(TOUCH) sources$(S)memory.c*
 
 # ***************************************************************************************
@@ -101,7 +101,7 @@ upload:
 # ***************************************************************************************
 
 checkserial:
-	$(PYTHON) $(BINDIR)nxmit.zip /dev/ttyUSB0 b:$(ROOTDIR)basic$(S)build$(S)tokenised.dat
+	$(PYTHON) $(BINDIR)nxmit.zip /dev/ttyUSB0 b:$(BASICDIR)basic$(S)build$(S)tokenised.dat
 
 # ***************************************************************************************
 #

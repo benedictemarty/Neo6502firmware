@@ -135,6 +135,7 @@ prebuild:
 	$(MAKE) -C processor
 	$(PYTHON) scripts$(S)mapper.py >include$(S)hid2sdl.h
 	$(CCOPY) $(BINDIR)*_binary.h include
+	$(CCOPY) $(BASICBIN)basic_binary.h include
 
 # ***************************************************************************************
 #
