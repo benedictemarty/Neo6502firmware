@@ -93,38 +93,38 @@ GROUP 10 UExt I/O
         Try to write a block of memory to SPI Device from memory at Parameters:1,2, length Parameters:3,4.
 
     FUNCTION 13 Read UART Block
-        *DERROR = IOUARTReadBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        *DERROR = UARTRReadBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
     DOCUMENTATION
-        Try to read a block of memory from UART into memory at Parameters:1,2, length Parameters:3,4. This can fail with a timeout.
+        Try to read a block of memory from UART into memory at Parameters:1,2, length Parameters:3,4. This can fail with a timeout. If UART routing (10,19) selects a USB CDC modem, the block is read from it instead.
 
     FUNCTION 14 Write UART Block
-        *DERROR = IOUARTWriteBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        *DERROR = UARTRWriteBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
     DOCUMENTATION
         Try to write a block of memory to UART from memory
-        at Parameters:1,2, length Parameters:3,4.
+        at Parameters:1,2, length Parameters:3,4. Routed to a USB CDC modem if 10,19 selects it.
 
     FUNCTION 15 Set UART Speed and Protocol
-        *DERROR = 0;IOUARTInitialise(DSPGetInt16(DCOMMAND,4)+(DSPGetInt16(DCOMMAND,6) << 16),DPARAMS[4]);
+        *DERROR = 0;UARTRSetFormat(DSPGetInt16(DCOMMAND,4)+(DSPGetInt16(DCOMMAND,6) << 16),DPARAMS[4]);
     DOCUMENTATION
-        Set the Baud Rate and Serial Protocol for the UART interface. The baud rate is in Parameters:0..3 and the protocol number is Parameter:4. Currently only 8N1 is supported, this is protocol 0.
+        Set the Baud Rate and Serial Protocol for the UART interface. The baud rate is in Parameters:0..3 and the protocol number is Parameter:4. Currently only 8N1 is supported, this is protocol 0. If UART routing selects a USB CDC modem, this sets its line coding (most USB modems ignore it).
 
     FUNCTION 16 Write byte to UART
-        *DERROR = 0;SERWriteByte(DPARAMS[0]);
+        *DERROR = 0;UARTRWriteByte(DPARAMS[0]);
     DOCUMENTATION
-        Write byte Parameter:0 to the UART
+        Write byte Parameter:0 to the UART (or the routed USB CDC modem).
 
     FUNCTION 17 Read byte from UART
-        if (SERIsByteAvailable()) {
-            *DERROR = 0;
-            DPARAMS[0] = SERReadByte();
-        } else {
-            *DERROR = 1;
-        }
+        *DERROR = UARTRReadByte(&DPARAMS[0]);
     DOCUMENTATION
-        Read a byte from the UART. It is returned in Parameter:0
+        Read a byte from the UART (or the routed USB CDC modem). It is returned in Parameter:0. Error 1 if nothing is available.
 
     FUNCTION 18 Check if Byte Available
-        DPARAMS[0] = SERIsByteAvailable() ? 1 : 0;
+        DPARAMS[0] = UARTRByteAvailable() ? 1 : 0;
     DOCUMENTATION
         See if a byte is available in the UART input buffer. If available Parameter:0 is non zero.
+
+    FUNCTION 19 Route UART to USB CDC modem
+        UARTRouteSet(DPARAMS[0]);DPARAMS[0] = UARTRouteGet();*DERROR = 0;
+    DOCUMENTATION
+        Select the source/target of the UART functions 10,13-10,18. Parameter:0 = 0 for the hardware UART (UEXT), 1 for the first USB CDC modem, 2 for AUTO (the CDC modem if one is plugged in, otherwise the hardware UART). AUTO is the default, so serial programs such as netconfig/prophet use a USB Wi-Fi modem unchanged when one is present. Parameter:0 returns the mode in effect.
         

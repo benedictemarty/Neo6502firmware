@@ -50,7 +50,11 @@
 #define CFG_TUH_ENUMERATION_BUFSIZE 256
 
 #define CFG_TUH_HUB                 1
-#define CFG_TUH_CDC                 0
+#define CFG_TUH_CDC                 2   // bmarty F-90 : USB CDC-ACM serial (modems), 2 interfaces
+#define CFG_TUH_CDC_FTDI            1   // USB-serial adapters handled by the same class driver
+#define CFG_TUH_CDC_CP210X          1
+#define CFG_TUH_CDC_RX_BUFSIZE      1024
+#define CFG_TUH_CDC_TX_BUFSIZE      256
 #define CFG_TUH_HID                 4 // typical keyboard + mouse device can have 3-4 HID interfaces
 #define CFG_TUH_MIDI                0 // there will be at most one MIDIStreaming Interface descriptor
 #define CFG_TUH_MSC                 1
