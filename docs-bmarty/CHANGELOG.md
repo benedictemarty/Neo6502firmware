@@ -1,6 +1,13 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-19 : **première session sur carte** (Neo6502 4×USB-A, clavier Semico, modem Pico W, clé 8 Go). Constats :
+  (1) alimentation par bloc secteur obligatoire (sur l'USB-C d'un PC : clavier/hub décrochent, écran noir avec le
+  fork) ; (2) une clé 60 Go USB 3 n'énumère pas, une 8 Go USB 2 oui ; (3) **TinyUSB 0.16 (amont et fork) lit un
+  secteur en 2,5 s derrière le hub** (pilote hôte RP2040 : bulk sur les interrupt endpoints, tinyusb #3533) →
+  branche **`trinity`** (amont + modem CDC uniquement) passée à **TinyUSB 0.21.0** : 1 ms par secteur, modem
+  reconnu, `netinfo.neo` obtient l'IP (Trinity 0.1.0, tags `trinity-v0.0.1`/`v0.1.0`). Le fork `bmarty/main`
+  (-98) reste sur 0.16 : story F-105 (TinyUSB 0.21) à faire avant toute validation carte du fork.
 - 2026-09-18 : décision bmarty — **groupe 39 Memory (RP2040) retiré** de l'ADR-01 ; F-46 close (38 livré).
 - 2026-09-18 : R22 leviers 1 et 2 (décision bmarty) — (1) **`FF_FS_TINY 1`** dans les deux FatFs (USB TinyUSB et
   SD `no-OS-FatFS`) par `patches/apply-fatfs-tiny.sh`, idempotent, lancé à la configuration CMake : tampon de
