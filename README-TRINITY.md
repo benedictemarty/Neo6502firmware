@@ -1,7 +1,7 @@
 # Trinity — firmware Neo6502 amont + modem USB
 
 Branche `trinity` (bmarty, 2026-09-18) : le firmware **amont** (`v1.0.0-14-gdc70908`, Paul Robson, MIT)
-plus **une seule chose** : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur
+plus, depuis 0.2.0, les modes vidéo du fork (Hercules), et : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur
 un port USB-A de la carte — F-90 (groupe 14, `cdc.cpp`, `cdcserial.cpp`, TinyUSB `cdc_host`) et F-93
 (routage des fonctions UART 10,13-10,18 vers le modem, 10,19, AUTO par défaut). Rien d'autre du fork
 `bmarty/main` (toolbox, banques, modes vidéo, R22…).
@@ -10,6 +10,13 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 (`make -C firmware build STORAGE=USB`, SDK 1.5.1, TinyUSB 0.16.0, PicoDVI amont non modifié).
 
 ## Versions
+
+- **0.2.0** (2026-09-19, à valider sur carte) — **modes vidéo du fork** (épopée F5, cherry-pick de `feat/video-modes`) :
+  **mode 1 Hercules** 720×350 × 1 bpp, console texte **80×25 en cellules 9×14** (police MDA 8×14), attributs
+  MDA (souligné, gras, clignotant, inverse) ; mode 2 320×256 × 16 couleurs (console 40×32) ; pages écran (F-55),
+  images/tilemaps/sprites en modes compacts (F-53) ; correctif PicoDVI `vertical_repeat` (`patches/`) ; timing DVI
+  720×480p à chaud. Sélection : `5,9 Set Graphics Mode` (0 = 320×240 amont, 1 = Hercules, 2 = 320×256),
+  `5,10 Get Graphics Mode`. Jamais exécuté sur carte avant Trinity 0.2.0 (validé dans `neo`/Phosphoneo, co-sim).
 
 - **0.1.0** (2026-09-19) — **TinyUSB 0.21.0** au lieu de 0.16.0 (amont) : le pilote hôte RP2040 de 0.16 lisait
   **un secteur en 2,5 s** derrière le hub 4 ports (transferts bulk sur les « interrupt endpoints », latches

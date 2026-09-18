@@ -55,6 +55,10 @@ int _GFXY(int y);
 int _GFXS(void);
 
 void GFXOpenWindow(const char *title,int width,int height,int colour);
+void GFXSetWindowSize(int width,int height);  										// Resize (no-op in full screen)
+void GFXSetFullScreen(int isFullScreen);  											// Desktop full screen on/off
+int  GFXIsFullScreen(void);
+void GFXGetDrawableSize(int *width,int *height);  									// Current surface size
 void GFXStart(void);
 void GFXExit(void);
 void GFXCloseWindow(void);

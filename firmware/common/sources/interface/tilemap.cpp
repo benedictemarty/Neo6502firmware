@@ -99,6 +99,8 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	xTrailer = todo - xLeader - xBlock16 * tileSize;  						// Pixels to display to edge.
 
 	gDraw = gMode.graphicsMemory + x + yWindow * gMode.xGSize;				// Start drawing here.
+	static uint8_t lineBuffer[MAXSCREENWIDTH];  							// Packed modes : render each line here, then pack it.
+	int packed = GFXIsPackedMode();
 
 //	printf("TD:%d,%d %d,%d\n",xWindow,yWindow,wWindow,hWindow);	
 //	printf("%d %d %d\n",xLeader,xBlock16,xTrailer);	
@@ -106,17 +108,29 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	while (lineCount > 0 && yTile < height * tileSize) {  					// Until complete or off tile map
 		tilePtr = mapData + 3 + (yTile>>tileShift)*width+(xPos>>tileShift);	// Tile data comes from here.
 		uint8_t *gStart = gDraw;  											// Start of drawing.
+		if (packed) {  														// Packed : current pixels in the line buffer (transparent tiles keep them).
+			for (int i = 0;i < wWindow;i++) lineBuffer[i] = GFXReadPixelRaw(x+i,y);
+			gDraw = lineBuffer;
+		}
 		if (y >= 0 && y <= gMode.yGSize) {			
 			if (xLeader != 0) TMRenderTileLineStart(xLeader); 				// Do the first pixels.
 			for (int i = 0;i < xBlock16;i++) TMRRenderTileLine(tileSize); 	// Render complete 16 pixel tiles.
 			if (xTrailer != 0) TMRRenderTileLine(xTrailer); 				// Do the last pixels.
 			if (todo != wWindow) TMROutputBackground(wWindow-todo);			// Any following blanks
 		}
+		if (packed) {  														// Pack the line back.
+			for (int i = 0;i < wWindow;i++) GFXWritePixelRaw(x+i,y,lineBuffer[i]);
+		}
 		y++;lineCount--;  													// Next line.
 		gDraw = gStart + gMode.xGSize;  									// Down on screen
 		yTile++; 															// Next tile position
 	}
 	while (lineCount-- > 0) {  												// Blank the bottom unused area to sprites only.
+		if (packed) {
+			for (uint16_t i = 0;i < wWindow;i++) GFXWritePixelRaw(x+i,y,0);
+			y++;
+			continue;
+		}
 		for (uint16_t i = 0;i < wWindow;i++) {
 			gDraw[i] &= 0xF0;
 		}

@@ -51,9 +51,12 @@ else()
         PicoDVI
         GIT_REPOSITORY https://github.com/paulscottrobson/PicoDVI
         #GIT_TAG        a248d72b8cc95a08b43ef4307cd954eb801272b2 # just the latest on 11/12/2023
+        PATCH_COMMAND   sh ${CMAKE_CURRENT_LIST_DIR}/patches/apply-picodvi.sh <SOURCE_DIR>
     )
     FetchContent_MakeAvailable(PicoDVI)
 endif()
+# bmarty : the patch is idempotent, so a PICO_DVI_PATH checkout can be patched by hand :
+#   sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
 add_subdirectory(${picodvi_SOURCE_DIR}/software/libdvi ${picodvi_BINARY_DIR})
 
 add_library(fatfs INTERFACE)

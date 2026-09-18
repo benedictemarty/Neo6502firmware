@@ -114,6 +114,7 @@ void HWReset(void) {
 void HWSync(void) {
 	TICKProcess();
 	frameCount++;
+	CONBlinkSync();  															// The emulator does not call DSPSync : blink here.
 }
 
 int  RNDGetFrameCount(void) {

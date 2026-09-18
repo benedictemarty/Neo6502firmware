@@ -92,16 +92,18 @@ uint8_t GFXGetDrawSize(void) {
 // ***************************************************************************************
 
 void GFXPlotPixel(struct GraphicsMode *gMode,int x,int y) {
+	if (gMode->bitsPerPixel != 8) {  											// Packed modes : generic slow path, no sprite layer.
+		GFXWritePixelRaw(x,y,(GFXReadPixelRaw(x,y) & pixelAnd) ^ pixelXor);
+		return;
+	}
 	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
 	uint8_t *pixel = gMode->graphicsMemory+x+y*gMode->xGSize;
 	*pixel = ((*pixel) & sprAnd) ^ pixelXor;
 }
 
 void GFXPlotPixelChecked(struct GraphicsMode *gMode,int x,int y) {
-	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
 	if (x >= 0 && y >= 0 && x < gMode->xGSize && y < gMode->yGSize) {
-		uint8_t *pixel = gMode->graphicsMemory+x+y*gMode->xGSize;
-		*pixel = ((*pixel) & sprAnd) ^ pixelXor;
+		GFXPlotPixel(gMode,x,y);
 	}
 }
 
@@ -113,6 +115,10 @@ void GFXPlotPixelChecked(struct GraphicsMode *gMode,int x,int y) {
 
 // Helper to draw a horizontal line (without safety checks!)
 static void hline_noclip(struct GraphicsMode *gMode, int xMin, int xMax, int y) {
+	if (gMode->bitsPerPixel != 8) {  											// Packed modes : generic slow path.
+		for (int x = xMin; x <= xMax; ++x) GFXPlotPixel(gMode,x,y);
+		return;
+	}
 	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
 	uint8_t *pixel = gMode->graphicsMemory + xMin + (y * gMode->xGSize);
 	if (sprAnd == 0) {
@@ -128,6 +134,10 @@ static void hline_noclip(struct GraphicsMode *gMode, int xMin, int xMax, int y) 
 
 // Helper to draw a vertical line (without safety checks!)
 static void vline_noclip(struct GraphicsMode *gMode, int x, int yMin, int yMax) {
+	if (gMode->bitsPerPixel != 8) {  											// Packed modes : generic slow path.
+		for (int y = yMin; y <= yMax; ++y) GFXPlotPixel(gMode,x,y);
+		return;
+	}
 	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
 	uint8_t *pixel = gMode->graphicsMemory + x + (yMin * gMode->xGSize);
 	for (int y = yMin; y <= yMax; ++y) {
@@ -339,7 +349,7 @@ void GFXGraphicsCommand(uint8_t cmd,uint8_t *data) {
 			isOk = (x1 >= 0 && y1 >= 0 && x1 < gMode.xGSize && y1 < gMode.yGSize);
 			data[2] = isOk ? 0 : 1;
 			if (isOk) {
-				data[4] = gMode.graphicsMemory[x1 + y1 * gMode.xGSize];
+				data[4] = GFXReadPixelRaw(x1,y1);
 				if (SPRSpritesInUse()) data[4] &= 0x0F;
 			}
 			break;

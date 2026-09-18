@@ -87,7 +87,32 @@ void SPRPHYErase(SPRITE_ACTION *s) {
 //
 // ***************************************************************************************
 
+//
+//		Packed modes (1/4 bpp, F-53) : the sprite is XORed pixel by pixel into the frame
+//		buffer (no separate layer). Erase = draw again. Over a black background the
+//		colours are exact ; over a coloured background they mix (XOR) ; in monochrome
+//		any non zero sprite pixel inverts the background. Generic, unoptimised path.
+//
+static void _SPXORDrawPacked(SPRITE_ACTION *s) {
+	int xSize = s->xSize,ySize = s->ySize;
+	for (int yPos = 0;yPos < ySize;yPos++) {
+		int y = s->y + yPos;
+		if (y < 0 || y >= gMode.yGSize) continue;
+		int yImg = (s->flip & 2) ? ySize-1-yPos : yPos;
+		const uint8_t *line = s->image + yImg * xSize / 2;
+		for (int xPos = 0;xPos < xSize;xPos++) {
+			int x = s->x + xPos;
+			if (x < 0 || x >= gMode.xGSize) continue;
+			int xImg = (s->flip & 1) ? xSize-1-xPos : xPos;
+			uint8_t p = line[xImg >> 1];
+			p = (xImg & 1) ? (p & 0x0F) : (p >> 4);
+			if (p != 0) GFXWritePixelRaw(x,y,GFXReadPixelRaw(x,y) ^ p);
+		}
+	}
+}
+
 void SPRPHYDraw(SPRITE_ACTION *s) {
+	if (GFXIsPackedMode()) { _SPXORDrawPacked(s);return; }
 	if (s->x < clipLeft - s->xSize || s->x > clipRight) return; 				// Clip completely.
 
 	s->xBytes = s->xSize/2; 							 						// Bytes to copy

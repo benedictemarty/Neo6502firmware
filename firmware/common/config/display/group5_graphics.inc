@@ -62,6 +62,34 @@ GROUP 5 Graphics
     DOCUMENTATION
         Draw the current tilemap at the screen coordinates specified in Parameters:0,1,Parameters:2,3 (top-left X,Y) and Parameters:4,5,Parameters:6,7 (bottom-right X,Y) using current graphics settings.
 
+    FUNCTION 9 Set Graphics Mode
+        *DERROR = GFXSetMode(DPARAMS[0]);
+    DOCUMENTATION
+        Select the display mode in Parameter:0 and reinitialise the screen, palette and console (F5 / ADR-02).
+        0 is the standard 320x240 256 colour mode. 1 is the Hercules mode (720x350 monochrome, 80x25 text in 9x14 cells).
+        2 is 320x256 in 16 colours (40x32 text in 8x8 cells). Sprites, tilemaps and images are only available in mode 0.
+        Sets the error flag if the mode is unknown or not supported by this hardware.
+
+    FUNCTION 10 Get Graphics Mode
+        DPARAMS[0] = GFXGetMode();DPARAMS[1] = gMode.xGSize & 0xFF;DPARAMS[2] = gMode.xGSize >> 8;
+        DPARAMS[3] = gMode.yGSize & 0xFF;DPARAMS[4] = gMode.yGSize >> 8;DPARAMS[5] = gMode.bitsPerPixel;
+        DPARAMS[6] = gMode.xCSize;DPARAMS[7] = gMode.yCSize;
+    DOCUMENTATION
+        Return the current display mode in Parameter:0, the pixel width in Parameters:1,2, the pixel height in Parameters:3,4,
+        the bits per pixel in Parameter:5 and the console size in characters in Parameters:6,7.
+
+    FUNCTION 11 Set Draw Page
+        *DERROR = GFXSetDrawPage(DPARAMS[0]);
+    DOCUMENTATION
+        Select the page (Parameter:0) that console and graphics commands draw into (F-55).
+        Mode 0 has one page, modes 1 and 2 have two (0 and 1). Sets the error flag if the page does not exist.
+
+    FUNCTION 12 Set Display Page
+        *DERROR = GFXSetDisplayPage(DPARAMS[0]);
+    DOCUMENTATION
+        Select the page (Parameter:0) shown on screen from the next frame (F-55). Use Function 37 (Frame Count) to wait for the swap.
+        Sets the error flag if the page does not exist.
+
     FUNCTION 32 Set Palette
         GFXSetPalette(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3]);
     DOCUMENTATION
