@@ -44,9 +44,11 @@ Phosphoneo `make test` : 0 échec. Rien n'a encore été flashé sur une carte.
 ## R22 : correctifs appliqués aux dépendances à la configuration
 
 - `firmware/patches/apply-picodvi.sh` : `vertical_repeat` dans PicoDVI (FetchContent `PATCH_COMMAND`).
-- `firmware/patches/apply-fatfs-tiny.sh` : `FF_FS_TINY 1` dans `ffconf.h` des deux FatFs (TinyUSB et
-  `no-OS-FatFS-SD-SPI`), lancé par `execute_process` à chaque `cmake` (idempotent) — vaut aussi pour un
-  `PICO_TINYUSB_PATH` / `PICO_FATFS_PATH` fournis par l'environnement (le fichier de l'arbre fourni est modifié).
+- `firmware/patches/apply-fatfs-tiny.sh` : `FF_FS_TINY 1` dans `ffconf.h` de la FatFs SD (`no-OS-FatFS-SD-SPI`),
+  lancé par `execute_process` à chaque `cmake` (idempotent) — vaut aussi pour un `PICO_FATFS_PATH` fourni par
+  l'environnement. La FatFs de la clé USB est dans `firmware/lib/fatfs` (F-105, déjà en `FF_FS_TINY 1`).
+- TinyUSB **0.21.0** (F-105) : FetchContent, ou `PICO_TINYUSB_PATH=~/neo-deps/tinyusb-0.21` (clone local du tag) ;
+  `tinyusb_board` n'est plus lié (son BSP exige le SDK 2.x).
 - `firmware/sources/memmap_neo.ld` : script d'édition de liens (`pico_set_linker_script`), copie de
   `memmap_default.ld` du SDK 1.5.1 avec le dérouleur d'exceptions de libgcc laissé en flash ; à resynchroniser
   si le SDK change.

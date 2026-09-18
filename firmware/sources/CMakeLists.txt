@@ -102,7 +102,7 @@ target_link_libraries(firmware
     libdvi
     tinyusb_host
     tinyusb_device
-    tinyusb_board
+    # tinyusb_board removed (F-105, TinyUSB 0.21 : its bsp needs SDK 2.x and the firmware never used board_*)
 )
 
 target_include_directories(firmware PUBLIC ${CMAKE_CURRENT_LIST_DIR})

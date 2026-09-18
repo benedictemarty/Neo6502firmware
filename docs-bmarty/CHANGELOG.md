@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-19 : F-105 — **TinyUSB 0.21.0** (FetchContent ; local : `PICO_TINYUSB_PATH=~/neo-deps/tinyusb-0.21`) à la
+  place de 0.16.0 : refonte du pilote hôte RP2040 (bulk sur EPX, double tampon, hubs) — mesuré sur carte dans
+  Trinity 0.1.0 : 1 ms par secteur au lieu de 2,5 s derrière le hub. FatFs R0.15 copié dans `firmware/lib/fatfs`
+  (TinyUSB 0.21 ne le livre plus ; `FF_FS_TINY 1` directement dans son `ffconf.h`, le patch ne s'applique plus
+  qu'à la FatFs SD) ; `tinyusb_board` retiré (BSP pour SDK 2.x, inutilisé). Tas USB 14 040 o. USB/SDCARD compilés ;
+  **à valider sur carte** (fiche `~/neo-carte/README-CARTE.md`), y compris F-90 avec le `cdc_host` 0.21.
 - 2026-09-19 : **première session sur carte** (Neo6502 4×USB-A, clavier Semico, modem Pico W, clé 8 Go). Constats :
   (1) alimentation par bloc secteur obligatoire (sur l'USB-C d'un PC : clavier/hub décrochent, écran noir avec le
   fork) ; (2) une clé 60 Go USB 3 n'énumère pas, une 8 Go USB 2 oui ; (3) **TinyUSB 0.16 (amont et fork) lit un

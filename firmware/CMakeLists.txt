@@ -21,7 +21,7 @@ else()
     FetchContent_Declare(
         tinyusb
         GIT_REPOSITORY https://github.com/hathach/tinyusb.git
-        GIT_TAG        0.16.0
+        GIT_TAG        0.21.0   # F-105 : rework of the RP2040 host driver (0.16 : 2.5 s per sector behind a hub, tinyusb #3533)
     )
     FetchContent_MakeAvailable(tinyusb)
 endif()
@@ -62,16 +62,15 @@ endif()
 #   sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
 add_subdirectory(${picodvi_SOURCE_DIR}/software/libdvi ${picodvi_BINARY_DIR})
 
-# bmarty R22 : FF_FS_TINY 1 (shared sector buffer, -4 KB of SRAM), idempotent, also on a PICO_TINYUSB_PATH checkout
-execute_process(COMMAND sh ${CMAKE_CURRENT_LIST_DIR}/patches/apply-fatfs-tiny.sh ${tinyusb_SOURCE_DIR}/lib/fatfs/source/ffconf.h)
-
 add_library(fatfs INTERFACE)
+# F-105 : FatFs R0.15 for the USB key lives in lib/fatfs (copy of TinyUSB 0.16's lib/fatfs, FF_FS_TINY 1 set in its
+# ffconf.h for R22 ; TinyUSB 0.21 no longer bundles FatFs)
 target_sources(fatfs INTERFACE
-    ${tinyusb_SOURCE_DIR}/lib/fatfs/source/ff.c
-    ${tinyusb_SOURCE_DIR}/lib/fatfs/source/ffsystem.c
-    ${tinyusb_SOURCE_DIR}/lib/fatfs/source/ffunicode.c
+    ${CMAKE_CURRENT_LIST_DIR}/lib/fatfs/source/ff.c
+    ${CMAKE_CURRENT_LIST_DIR}/lib/fatfs/source/ffsystem.c
+    ${CMAKE_CURRENT_LIST_DIR}/lib/fatfs/source/ffunicode.c
 )
-target_include_directories(fatfs INTERFACE ${tinyusb_SOURCE_DIR}/lib/fatfs/source/)
+target_include_directories(fatfs INTERFACE ${CMAKE_CURRENT_LIST_DIR}/lib/fatfs/source/)
 
 add_subdirectory(sources)
 
