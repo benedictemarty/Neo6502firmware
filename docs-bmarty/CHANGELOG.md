@@ -1,6 +1,7 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : backlog — F-17 **Locale FR** inscrite (demande bmarty) ; constat : `fr.locale` amont existe (AZERTY) sans accents ; périmètre à trancher.
 - 2026-09-18 : F-45 — **Dialog Manager (groupe 37)** : dialogues modaux construits depuis un descripteur en RAM
   6502 lu en place (rect écran, drapeau barre de titre, titre, jusqu'à 12 items : genre 1-5 = contrôles du
   groupe 36, 6 = texte statique multi-lignes ; drapeaux inactif / défaut (Return, anneau) / annulation
