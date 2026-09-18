@@ -1,6 +1,11 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : correctif `fix/hotkey-keyup` — depuis F-42, `KBDMapToASCII` était aussi appelé à la **relâche**
+  d'une touche (`EVTPostKey(EVT_KEYUP, …)`) ; comme il insérait le texte des touches de fonction (2,4 Define
+  Hotkey) en effet de bord, chaque appui sur F1..F10 injectait la chaîne **deux fois**. L'insertion est
+  déplacée dans la branche *key down* de `KBDProcessEvent` ; `KBDMapToASCII` est de nouveau pur. Détecté par
+  Ozmoo-Neo6502 (F1 = mode sombre basculait puis rebasculait, trace 2,1 de Phosphoneo).
 - 2026-09-18 : R22 — console dimensionnée aux modes conservés (`MAXCONSOLEHEIGHT` 32, −1 760 o) ; tas USB 3 804 o,
   SDCARD 5 052 o ; mémo `R22-budget-sram.md` mis à jour (modes 3/4 retirés).
 - 2026-09-18 : décision bmarty — **modes vidéo 3 (F-57, Hercules 80×43) et 4 (ADR-04 a, TEXT Oric) retirés**

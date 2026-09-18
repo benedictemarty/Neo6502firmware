@@ -65,6 +65,9 @@ void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers) {
 		if (isDown) {
 			keyboardState[keyCode] = 0xFF; 										// Set down flag.
 			keyboardModifiers = modifiers;										// Copy modifiers
+			if (keyCode >= KEY_F1 && keyCode < KEY_F1+10) {  					// Function key : hotkey text (2,4)
+				KBDFunctionKey(keyCode - KEY_F1 + 1,modifiers);  				// on key DOWN only (KBDMapToASCII is
+			}  																	// also called on key up for the event)
 			uint8_t ascii = KBDMapToASCII(keyCode,modifiers);  					// What key ?
 			if (ascii != 0) {
 				currentASCII = ascii;  											// Remember code and time.
@@ -164,9 +167,6 @@ static uint8_t KBDMapToASCII(uint8_t keyCode,uint8_t modifiers) {
 	uint8_t isShift = (modifiers & KEY_SHIFT) != 0;
 	uint8_t isControl = (modifiers & KEY_CONTROL) != 0;
 
-	if (keyCode >= KEY_F1 && keyCode < KEY_F1+10) {  							// Do whatever with function keys.
-		KBDFunctionKey(keyCode - KEY_F1 + 1,modifiers);
-	}
 	if (keyCode >= KEY_A && keyCode < KEY_A+26) { 								// Handle alphabet.
 		ascii = keyCode - KEY_A + 'A';  										// Make ASCII
 		if (!isShift) ascii += 'a'-'A'; 										// Handle shift
