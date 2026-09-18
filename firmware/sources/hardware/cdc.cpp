@@ -79,3 +79,4 @@ uint8_t HWCDCSetLineCoding(uint8_t dev, uint32_t baud, uint8_t dataBits, uint8_t
 	lc.data_bits = dataBits;
 	return tuh_cdc_set_line_coding(cdcItf[dev], &lc, NULL, 0) ? 0 : 1;
 }
+

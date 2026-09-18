@@ -55,7 +55,7 @@ void STOSynchronise(void) {
 
 bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_data) {
     if (cb_data->csw->status != 0) {
-        //CONWriteString("MSC SCSI inquiry failed\r\n");
+        CONWriteString("MSC SCSI inquiry failed\r");
         return false;
     }
 
@@ -67,7 +67,7 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_dat
     drive_path[0] += dev_addr;
     FRESULT result = f_mount(&msc_fatfs_volumes[dev_addr], drive_path, 1);
     if (result != FR_OK) {
-        // CONWriteString("MSC filesystem mount failed\r\n");
+        CONWriteString("MSC filesystem mount failed, FatFs error ");CONWriteHex(result);CONWrite('\r');
         return false;
     }
 
