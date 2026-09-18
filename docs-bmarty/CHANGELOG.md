@@ -1,6 +1,15 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : R22 leviers 1 et 2 (décision bmarty) — (1) **`FF_FS_TINY 1`** dans les deux FatFs (USB TinyUSB et
+  SD `no-OS-FatFS`) par `patches/apply-fatfs-tiny.sh`, idempotent, lancé à la configuration CMake : tampon de
+  secteur partagé par volume, `fileHandles` 4 416 → 320 o ; **à valider sur carte** (les émulateurs et la co-sim
+  servent les fichiers par l'hôte, pas par FatFs) : lectures 3,8 / 3,27 non alignées un peu plus lentes, à mesurer.
+  (2) C++ **sans exceptions** (`-fno-exceptions`, sans tables de déroulement) et script d'édition de liens
+  `sources/memmap_neo.ld` (copie de `memmap_default.ld` du SDK 1.5.1 + une ligne : les objets `unwind-*`,
+  `libunwind`, `pr-support` de libgcc restent en flash au lieu d'être copiés en SRAM avec le reste de libgcc) :
+  `.data` 20 284 → 16 300 o. Tas USB **5 808 → 13 888 o**, SDCARD 7 056 → 15 136 o. Aucun changement de
+  `firmware/common/` (émulateurs inchangés).
 - 2026-09-18 : R22 — **plan de la SRAM** (`R22-budget-sram.md`) : carte `.data`/`.bss`/tas/scratch du firmware USB `8db5e86` avec adresses, tailles et leviers classés (FF_FS_TINY 4 Ko, déroulement d'exceptions ≈ 2,1 Ko en `.data`, pages graphiques, banques…) ; `core1_stack` est en scratch X, pas en `.bss`.
 - 2026-09-18 : F-46 (1/2) — **Resource Manager (groupe 38)** : ressources nommées (type de 4 caractères + id 16
   bits) dans un fichier **NR1** sur le stockage (`docs-bmarty/tools/mkres.py` : table d'entrées puis données),

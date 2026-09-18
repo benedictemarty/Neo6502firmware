@@ -14,6 +14,12 @@ else()
     FetchContent_MakeAvailable(no-OS-FatFS-SD-SPI-RPi-Pico)
 endif()
 
+# bmarty R22 : linker script keeping the C++ unwinder in flash (see memmap_neo.ld)
+pico_set_linker_script(firmware ${CMAKE_CURRENT_LIST_DIR}/memmap_neo.ld)
+
+# bmarty R22 : FF_FS_TINY 1 for the SD card FatFs too
+execute_process(COMMAND sh ${CMAKE_CURRENT_LIST_DIR}/../patches/apply-fatfs-tiny.sh ${no-os-fatfs-sd-spi-rpi-pico_SOURCE_DIR}/FatFs_SPI/ff15/source/ffconf.h)
+
 pico_generate_pio_header(firmware ${CMAKE_CURRENT_LIST_DIR}/system/sm0_memory_emulation_with_clock.pio)
 
 add_definitions(-Wno-error=unused-variable)

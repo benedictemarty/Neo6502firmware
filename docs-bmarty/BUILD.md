@@ -40,3 +40,13 @@ Le dossier `firmware/build` doit être **supprimé** quand on change de SDK
 USB, SDCARD et slot 0 compilés sans erreur (3 avertissements amont « unused variable »,
 non bloquants grâce à `-Wno-error=unused-variable`) ; image multi-boot assemblée ;
 Phosphoneo `make test` : 0 échec. Rien n'a encore été flashé sur une carte.
+
+## R22 : correctifs appliqués aux dépendances à la configuration
+
+- `firmware/patches/apply-picodvi.sh` : `vertical_repeat` dans PicoDVI (FetchContent `PATCH_COMMAND`).
+- `firmware/patches/apply-fatfs-tiny.sh` : `FF_FS_TINY 1` dans `ffconf.h` des deux FatFs (TinyUSB et
+  `no-OS-FatFS-SD-SPI`), lancé par `execute_process` à chaque `cmake` (idempotent) — vaut aussi pour un
+  `PICO_TINYUSB_PATH` / `PICO_FATFS_PATH` fournis par l'environnement (le fichier de l'arbre fourni est modifié).
+- `firmware/sources/memmap_neo.ld` : script d'édition de liens (`pico_set_linker_script`), copie de
+  `memmap_default.ld` du SDK 1.5.1 avec le dérouleur d'exceptions de libgcc laissé en flash ; à resynchroniser
+  si le SDK change.

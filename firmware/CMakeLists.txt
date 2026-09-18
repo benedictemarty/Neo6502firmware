@@ -30,6 +30,9 @@ set(PICO_TINYUSB_PATH ${tinyusb_SOURCE_DIR})
 pico_sdk_init()
 
 add_compile_options(-Wall -Werror -O2)
+# bmarty R22 : no C++ exceptions. The SDK linker script copies the whole of libgcc.a to SRAM (fast float) ;
+# with unwind tables the exception unwinder (__gnu_unwind_*, _Unwind_VRS_Pop, about 2 KB) came along with it.
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions> $<$<COMPILE_LANGUAGE:CXX>:-fno-unwind-tables> $<$<COMPILE_LANGUAGE:CXX>:-fno-asynchronous-unwind-tables>)
 
 # To change the default serial config for all apps, pass e.g.
 #   cmake -DDVI_DEFAULT_SERIAL_CONFIG=pimoroni_demo_hdmi_cfg ..
@@ -58,6 +61,9 @@ endif()
 # bmarty : the patch is idempotent, so a PICO_DVI_PATH checkout can be patched by hand :
 #   sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
 add_subdirectory(${picodvi_SOURCE_DIR}/software/libdvi ${picodvi_BINARY_DIR})
+
+# bmarty R22 : FF_FS_TINY 1 (shared sector buffer, -4 KB of SRAM), idempotent, also on a PICO_TINYUSB_PATH checkout
+execute_process(COMMAND sh ${CMAKE_CURRENT_LIST_DIR}/patches/apply-fatfs-tiny.sh ${tinyusb_SOURCE_DIR}/lib/fatfs/source/ffconf.h)
 
 add_library(fatfs INTERFACE)
 target_sources(fatfs INTERFACE

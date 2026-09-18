@@ -114,12 +114,12 @@ Total `.bss` : 235 856 o, dont **200 000 o (85 %)** pour les quatre tableaux `cp
 
 | # | Mesure | Gain | Coût / risque |
 |---|---|---:|---|
-| 1 | `FF_FS_TINY 1` (tampon de secteur partagé par volume) | 4 096 o | lectures non alignées un peu plus lentes ; à mesurer sur carte (3,8 et 3,27) |
-| 2 | Compiler sans déroulement d'exceptions (`-fno-exceptions -fno-unwind-tables`, vérifier que libgcc/newlib ne tirent plus `__gnu_unwind_*` en `.data`) | ≈ 2 100 o | à vérifier : d'où vient le placement en `.data` (script d'édition de liens du SDK ?) |
+| 1 | `FF_FS_TINY 1` (tampon de secteur partagé par volume) | 4 096 o | **FAIT 2026-09-18** (`patches/apply-fatfs-tiny.sh`) ; lectures non alignées un peu plus lentes ; à mesurer sur carte (3,8 et 3,27) |
+| 2 | Sans exceptions C++ + dérouleur libgcc laissé en flash (`memmap_neo.ld`) | 3 984 o | **FAIT 2026-09-18** : le script du SDK copie toute libgcc.a en SRAM (flottants rapides), le dérouleur suivait ; `.data` 20 284 → 16 300 o |
 | 3 | Une seule page graphique en modes 1/2 (F-55) | 5 120 o | perd le double tampon des modes 1/2 |
 | 4 | 1 banque au lieu de 2 (F-23) | 8 192 o | API 1,18 réduite |
 | 5 | 2 volumes au lieu de 4 (F-102) | 1 420 o | — |
 | 6 | 1 port CDC hôte (F-90) | 740 o | modem + 2ᵉ périphérique série impossibles |
 | 7 | `rxBuffer` 1 Ko | 1 024 o | dépassement possible à 230 400 bauds |
 
-Priorité proposée : 1 puis 2 (sans effet fonctionnel), le reste seulement sur besoin.
+Leviers 1 et 2 appliqués le 2026-09-18 : tas USB **13 888 o**, SDCARD 15 136 o. Le reste seulement sur besoin.
