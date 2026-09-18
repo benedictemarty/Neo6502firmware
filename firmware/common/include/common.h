@@ -66,6 +66,7 @@
 #include "interface/menus.h"
 #include "interface/controls.h"
 #include "interface/dialogs.h"
+#include "interface/resources.h"
 #include "interface/miscellany.h"
 #include "interface/mos.h"
 #include "interface/sprites.h"

@@ -35,6 +35,11 @@ tas sur la base avec les modes 3 et 4 de l'autre session). **Décision bmarty : 
 (`MAXCONSOLEHEIGHT` 43 → 32, −1 760 o) : tas USB **3 804 o**, SDCARD 5 052 o. Les
 options 1-4 ci-dessous restent ouvertes pour la suite (F-45 dialogues, F-46 ressources).
 
+Mise à jour du 2026-09-18 (soir) : **`DSPHandler` est copié en SRAM** (`__time_critical_func`, 6,8 Ko) et
+chaque groupe toolbox ajouté à son `switch` coûtait ≈ 300-370 o (F-46 : −368 o). Les groupes ≥ 32 sont
+désormais servis par `DSPToolbox` en flash (`dispatch_toolbox.h`, `noinline`) : tas USB **5 808 o**,
+SDCARD 7 056 o (F-45 dialogues : −524 o ; F-17 : 0).
+
 ## Qui utilise le tas ?
 `std::string` du groupe 3 (chemins > 15 caractères : allocations transitoires
 ≤ 256 o), TinyUSB (statique, hors tas), FatFs (statique), pas de `iostream`.

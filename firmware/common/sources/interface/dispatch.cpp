@@ -37,6 +37,13 @@
 //
 // ***************************************************************************************
 
+// bmarty R22 : the toolbox groups (32.., ADR-01) are dispatched here, in flash. DSPHandler is copied to RAM
+// (time critical) and grew by about 300 bytes of SRAM per group ; the toolbox calls are not time critical.
+static void __attribute__((noinline)) DSPToolbox(uint8_t *cBlock, uint8_t *memory,uint8_t cmd) {
+	(void)memory;
+	#include "data/dispatch_toolbox.h"
+}
+
 void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory) 
 {
 	float f1,f2;
@@ -86,6 +93,7 @@ void DSPReset(void) {
 	MNReset();                                                                  // No menus (F-44)
 	CTReset();                                                                  // No controls (F-44)
 	DLReset();                                                                  // No dialogs (F-45)
+	RSReset();                                                                  // No resource file (F-46)
 	CONResetUserFont();                                                         // Latin-1 letters in $C0-$FF (F-17)
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.

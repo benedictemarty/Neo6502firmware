@@ -53,6 +53,11 @@ code applicatif (rappels, boucles d'événements).
 - Ordre de réalisation : 32 QuickDraw → 33 Event → 34 Window → 35/36 Menu &
   Control → 37 Dialog → 38/39 ; le Télémon est l'application-vitrine.
 
+Écart de mise en œuvre (F-46, 2026-09-18) : le groupe 39 « Memory (RP2040) » supposait ≈ 47 Ko de
+SRAM libre ; après F-23, F-5x et la toolbox il reste ≈ 5,8 Ko (R22). Le groupe 38 est réalisé
+(ressources NR1 sur le stockage, relues à la demande) ; le 39 attend une décision (flash, pages
+des banques, ou abandon) — voir `BACKLOG.md` F-46.
+
 ## Options écartées
 - Tout en 6502 (bibliothèque neolib) : trop lent (6,25 MHz, 64 Ko) pour le
   dessin et les fontes ; garder le 6502 pour la logique applicative.

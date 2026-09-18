@@ -1,6 +1,17 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-18 : F-46 (1/2) — **Resource Manager (groupe 38)** : ressources nommées (type de 4 caractères + id 16
+  bits) dans un fichier **NR1** sur le stockage (`docs-bmarty/tools/mkres.py` : table d'entrées puis données),
+  ouvert sur un canal du groupe 3 choisi par le programme ; 38,1 Open / 2 Close / 3 Count / 4 Find (type, id →
+  numéro) / 5 Info / 6 Size (32 bits) / 7 Load (vers toute page du blitter, comme 3,27, taille plafonnée) /
+  8 Use Font (Load + 32,15). Rien n'est mis en cache dans le RP2040 (R22) : la table est relue sur le stockage
+  à chaque appel. Test `res.asm` + `test.res` (DejaVu9 + « Hello »). **Memory RP2040 (39) non fait** : l'ADR-01
+  le prévoyait sur ≈ 47 Ko de SRAM libre, il en reste 3 Ko (R22) ; options (flash XIP avec `flash_safe_execute`,
+  pages `$A0/$A1` des banques) à trancher par bmarty, voir backlog.
+- 2026-09-18 : **R22** — le dispatch des groupes toolbox (32 et suivants) sort de `DSPHandler` (copié en SRAM,
+  `__time_critical_func`) vers `DSPToolbox` en flash (`makedispatch.py` génère `dispatch_toolbox.h`, `noinline`) :
+  chaque groupe coûtait ≈ 300-370 o de SRAM. Tas USB **2 912 → 5 808 o**, SDCARD 4 160 → 7 056 o.
 - 2026-09-18 : F-17 — **locale FR et caractères Latin-1**. (a) `fr.locale` = **AZERTY PC** (table de
   `layouts/fr.kmap` de Neo6502kbd : lettres permutées, rangée des chiffres, `ù ² ° ¨ £ µ § ¤`, Alt/AltGr
   `~ # { [ | \` \\ ^ @ ] }`), codes **Latin-1** pour les accents ; l'ancien `fr.locale` amont (disposition
