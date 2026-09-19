@@ -1,0 +1,65 @@
+// ***************************************************************************************
+// ***************************************************************************************
+//
+//      Name :      bootmenu.cpp
+//      Authors :   bmarty (bmarty@mailo.com)
+//      Date :      19th September 2026
+//      Purpose :   Trinity boot menu (see bootmenu.h).
+//
+// ***************************************************************************************
+// ***************************************************************************************
+
+#include "common.h"
+
+static char bootNames[BOOT_MAX][BOOT_NAME_MAX+1];
+static uint8_t bootCount = 0;
+static int8_t bootChoice = -1;                                                  // -1 none/NeoBASIC, 0.. index in bootNames
+
+static bool _BOOTEndsWith(const char *s,const char *suffix) {
+    size_t l = strlen(s),m = strlen(suffix);
+    if (l < m) return false;
+    for (size_t i = 0;i < m;i++) if (tolower(s[l-m+i]) != suffix[i]) return false;
+    return true;
+}
+
+void BOOTSelect(void) {
+    bootCount = 0;bootChoice = -1;
+    if (FIOOpenDir(BOOT_DIR) != 0) return;                                      // No boot directory : no menu
+    std::string name;uint32_t size;uint8_t attribs;
+    while (bootCount < BOOT_MAX && FIOReadDir(name,&size,&attribs) == 0) {
+        if (name.size() == 0 || name[0] == '.' || name.size() > BOOT_NAME_MAX) continue;
+        if (!_BOOTEndsWith(name.c_str(),".neo") && !_BOOTEndsWith(name.c_str(),".bin")) continue;
+        strcpy(bootNames[bootCount++],name.c_str());
+    }
+    FIOCloseDir();
+    if (bootCount == 0) return;
+    CONWriteString("Boot : 1 NeoBASIC");
+    for (int i = 0;i < bootCount;i++) CONWriteString("  %d %s",i + 2,bootNames[i]);
+    CONWriteString("\r");
+    uint32_t end = TMRRead() + BOOT_TIMEOUT;
+    while ((int32_t)(end - TMRRead()) > 0) {
+        KBDSync();
+        uint8_t key = KBDGetKey();
+        if (key == 13) break;                                                   // Enter : default
+        if (key >= '1' && key < '2' + bootCount) { bootChoice = key - '2';break; }   // '1' = NeoBASIC (-1)
+    }
+    CONWriteString("-> %s\r",bootChoice < 0 ? "NeoBASIC" : bootNames[bootChoice]);
+}
+
+// Load the boot choice at the first 1,3 after reset : a .bin goes to $800 like BASIC, a .neo through the
+// normal loader (JMP exec written at $FF08 by FIOReadFile, the kernel's jmp (0) goes there).
+bool BOOTLoadChoice(void) {
+    if (bootChoice < 0) return false;
+    std::string path = std::string(BOOT_DIR) + "/" + bootNames[bootChoice];
+    bool isBin = _BOOTEndsWith(bootNames[bootChoice],".bin");
+    bootChoice = -1;                                                            // Once only : later 1,3 go back to BASIC
+    if (isBin) {
+        if (FIOReadFileBasic(path,0x0800) != 0) return false;                    // Same address as BASIC (BASIC_LOAD)
+        cpuMemory[0] = 0x00;cpuMemory[1] = 0x08;
+        return true;
+    }
+    uint8_t *cmd = cpuMemory + DEFAULT_PORT;
+    if (FIOReadFile(path,0xFFFF,cmd) != 0 || cmd[8] != 0x4C) return false;     // No exec address : fall back to BASIC
+    cpuMemory[0] = (DEFAULT_PORT + 8) & 0xFF;cpuMemory[1] = (DEFAULT_PORT + 8) >> 8;   // jmp (0) -> JMP exec at $FF08
+    return true;
+}

@@ -80,6 +80,7 @@ bool MEMLoadBasicFromStorage(void) {
 }
 
 void MEMLoadBasic(void) {
+	if (BOOTLoadChoice()) return;  												// Trinity boot menu : chosen program (first 1,3 only)
 	if (!MEMLoadBasicFromStorage()) loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);  	// Storage copy, else the embedded ROM image
 	cpuMemory[0x0] = BASIC_LOAD & 0xFF;  										// Start with jmp (0)
 	cpuMemory[0x1] = BASIC_LOAD >> 8;
