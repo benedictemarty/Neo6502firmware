@@ -17,6 +17,7 @@
 extern const uint8_t font_5x7[];
 
 void CONInitialise(struct GraphicsMode *gMode);
+void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);
 void CONWriteHex(uint16_t h);	
 void CONWriteString(const char *s, ...);

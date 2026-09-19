@@ -62,8 +62,19 @@ bool SERInitialise(void) {
 //
 // ***************************************************************************************
 
+static uint32_t currentBaudRate = 0;
+
+//
+//		The UART divisors are derived from clk_peri, which follows clk_sys : after a
+//		display mode switch (252 <-> 270 MHz) the baud rate must be programmed again.
+//
+void SERClockChanged(void) {
+	if (currentBaudRate != 0) uart_set_baudrate(UART_ID,currentBaudRate);
+}
+
 void SERSetSerialFormat(uint32_t baudRate,uint32_t protocol) {
     int UART_IRQ = UART_ID == uart0 ? UART0_IRQ : UART1_IRQ;
+    currentBaudRate = baudRate;
     irq_set_enabled(UART_IRQ, false);
 
 	uart_init(UART_ID, baudRate);

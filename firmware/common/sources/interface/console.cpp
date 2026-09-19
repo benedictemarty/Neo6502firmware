@@ -13,6 +13,7 @@
 #include "common.h"
 
 #include "interface/font_5x7.h"
+#include "interface/font_8x14.h"  												// Hercules 9x14 text (F-52)
 #include <stdarg.h>
 
 struct GraphicsMode *graphMode;                                         
@@ -45,6 +46,71 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 //
 // ***************************************************************************************
 
+//
+//		Packed modes (1/4 bpp) go through GFXWritePixelRaw. Colours beyond the mode depth
+//		are masked by GFXWritePixelRaw (1 bpp keeps bit 0 : any non black colour is "on").
+//		Cells of 14 lines (Hercules 9x14) use the 8x14 font for $20-$7F ; the 8 line
+//		glyphs ($80-$BF symbols, $C0-$FF UDG) are centred vertically. The 9th column is
+//		always background (no MDA style replication for $C0-$DF, the Neo charset differs).
+//
+//		Monochrome (Hercules) attributes, MDA style, carried by the colour nibbles (F-52) :
+//		ink bit 0 = ink on, bit 1 = underline, bit 2 = bright (bold), bit 3 = blink ;
+//		paper bit 0 = paper on (inverse video when the ink is off).
+//
+#define MDA_INK 		(0x01)
+#define MDA_UNDERLINE 	(0x02)
+#define MDA_BRIGHT 		(0x04)
+#define MDA_BLINK 		(0x08)
+static uint8_t blinkHidden = 0;  												// Blink phase : 1 = blinking text hidden.
+static void CONPaintCharacter(uint16_t x,uint16_t y);
+
+static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fcol,uint8_t bcol) {
+	uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight;
+	int xOrg = x * cWidth + (graphMode->xGSize - graphMode->xCSize * cWidth) / 2;	// Horizontal centering.
+	int yOrg = y * cHeight;
+	int yPad = (cHeight > 8) ? (cHeight - 8) / 2 : 0;  							// Centring of 8 line glyphs in taller cells.
+	uint8_t attr = 0;
+	if (graphMode->bitsPerPixel == 1) {  											// Monochrome : decode the attributes.
+		attr = fcol;
+		fcol = attr & MDA_INK;bcol = bcol & MDA_INK;
+		if (fcol == bcol) fcol = !bcol;  											// Keep text readable.
+		if ((attr & MDA_BLINK) && blinkHidden) fcol = bcol;  						// Hidden phase of blinking text.
+	}
+	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
+		uint16_t b = 0;
+		if (cHeight == 14 && ch < 128) {
+			b = font_8x14[(ch-32)*14 + y1];
+		} else if (y1 >= yPad && y1 < yPad + 8) {
+			b = font_5x7[(ch-32)*8 + y1 - yPad];
+			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
+		}
+		if (attr & MDA_BRIGHT) b |= (b >> 1);  										// Bold : double strike.
+		if ((attr & MDA_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  				// Underline row (MDA : row 12 of 14).
+		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
+			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);
+			b = b << 1;
+		}
+	}
+}
+
+//
+//		Blink (monochrome only) : called from DSPSync / the host frame sync. Phase from
+//		the 100 Hz timer (half a second on, half a second off) ; repaints the blinking
+//		cells when the phase changes, except the cursor cell (its reversal is kept).
+//
+void CONBlinkSync(void) {
+	if (graphMode == NULL || graphMode->bitsPerPixel != 1) return;
+	uint8_t hidden = (TMRRead() / 50) & 1;
+	if (hidden == blinkHidden) return;
+	blinkHidden = hidden;
+	for (int y = 0;y < graphMode->yCSize;y++) {
+		for (int x = 0;x < graphMode->xCSize;x++) {
+			if (x == graphMode->xCursor && y == graphMode->yCursor) continue;
+			if (graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH] & (MDA_BLINK << 8)) CONPaintCharacter(x,y);
+		}
+	}
+}
+
 static void CONPaintCharacter(uint16_t x,uint16_t y) {
  	if (x < graphMode->xCSize && y < graphMode->yCSize) {  						// Coords in range.
  		uint16_t ch = graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH];		// Character data
@@ -52,7 +118,9 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  		uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight; 
  		ch = ch & 0xFF;  														// Character #
 
- 		if (graphMode->xGSize != 0) {  											// Only if graphics mode.
+ 		if (graphMode->xGSize != 0 && graphMode->bitsPerPixel != 8) {  			// Packed modes : generic path.
+ 			CONPaintCharacterPacked(x,y,ch,fcol,bcol);
+ 		} else if (graphMode->xGSize != 0) {  									// Only if graphics mode.
 			for (uint16_t y1 = 0;y1 < cHeight;y1++) {  							// Each line of font data
 
 				uint16_t b = font_5x7[(ch-32)*cHeight + y1]; 					// Bit pattern for that line.
@@ -93,12 +161,16 @@ static void CONDrawCharacter(uint16_t x,uint16_t y,uint16_t ch,uint16_t fcol,uin
 void CONClearScreen(void) {
 	graphMode->xCursor = graphMode->yCursor = 0;  								// Home cursor
 	if (graphMode->xGSize != 0) {  												// Graphics present ?
-		if (SPRSpritesInUse()) {  												// Sprites present, only delete that layer
+		if (SPRSpritesInUse() && !GFXIsPackedMode()) {  												// Sprites present, only delete that layer
 			for (int i = 0;i < gMode.xGSize*gMode.yGSize;i++) {
 				graphMode->graphicsMemory[i] &= 0xF0;
 			}
 		} else {																// Erase graphics screen to black
-			memset(graphMode->graphicsMemory,graphMode->backCol,MAXGRAPHICSMEMORY); 
+			uint8_t fill = graphMode->backCol;  								// Replicate the colour in packed modes.
+			if (graphMode->bitsPerPixel == 4) fill = (fill & 0x0F) | (fill << 4);
+			if (graphMode->bitsPerPixel == 1) fill = (fill & 1) ? 0xFF : 0x00;
+			memset(graphMode->graphicsMemory,fill,graphMode->pageSize);  		// Draw page only (F-55)
+			SPRScreenCleared();  												// Packed modes : sprites went with it.
 		}
 	}
 	for (int c = 0;c < MAXCONSOLEMEMORY;c++) {  								// Erase the console memory.
@@ -149,6 +221,8 @@ void CONGetScreenSizeChars(uint8_t* width, uint8_t* height) {
 void CONInitialise(struct GraphicsMode *gMode) {
 	graphMode = gMode;	
 	graphMode->foreCol = 7;graphMode->backCol = 0; 	 							// Reset colours
+	if (gMode->bitsPerPixel == 1) graphMode->foreCol = MDA_INK;  				// Monochrome : plain ink, no attribute.
+	blinkHidden = 0;
 	CONWrite(12);  																// Clear screen / home cursor.
 }
 
@@ -258,6 +332,17 @@ void CONSetCursorVisible(uint8_t vFlag) {
 // ***************************************************************************************
 
 void CONReverseCursorBlock(void) {
+	if (graphMode->isCursorVisible != 0 && graphMode->bitsPerPixel != 8) { 		// Packed modes : generic path.
+		int xOrg = graphMode->xCursor * graphMode->fontWidth +
+					(graphMode->xGSize - graphMode->xCSize * graphMode->fontWidth) / 2;
+		int yOrg = graphMode->yCursor * graphMode->fontHeight;
+		for (int y = 0;y < graphMode->fontHeight;y++) {
+			for (int x = 0;x < graphMode->fontWidth;x++) {
+				GFXWritePixelRaw(xOrg+x,yOrg+y,GFXReadPixelRaw(xOrg+x,yOrg+y) ^ graphMode->foreCol);
+			}
+		}
+		return;
+	}
 	if (graphMode->isCursorVisible != 0) {
 		for (int y = 0;y < graphMode->fontHeight;y++) {
 			uint8_t *p = graphMode->graphicsMemory + 

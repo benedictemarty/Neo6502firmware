@@ -13,6 +13,18 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 
 ## Versions
 
+- **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascule 0 → 1 à chaud) — **mode vidéo 1
+  Hercules** 720×350 × 1 bpp, console 80×25 en cellules 9×14 (police MDA 8×14), attributs MDA (bits de l'encre :
+  1 allumé, 2 souligné, 4 gras, 8 clignotant ; papier bit 0 = inverse), 2 pages écran, sprites/tilemaps/images en
+  1 bpp (XOR) — F-51/52/53/55 du fork, **sans le mode 2** (320×256, retiré sur décision bmarty). `5,9 Set Graphics
+  Mode` 0/1, `5,10 Get Graphics Mode`, encre = entrée 1 de la palette (blanc ; ambre/vert via `5,32`). Quatre
+  corrections trouvées sur carte (le fork n'avait jamais tourné) : (1) division dans l'IRQ DMA du correctif PicoDVI →
+  masque ; (2) encodage 1 bpp une seule fois par ligne, voies TMDS partagées (décalages par voie, extension du
+  correctif PicoDVI) au lieu de trois copies (lignes en retard) ; (3) core 1 garé coopérativement, jamais réinitialisé
+  ; (4) chaînage DMA coupé avant l'abandon des six canaux (un canal abandonné était relancé par son partenaire :
+  signal sans image). Connu : les codes couleur 2/3/6 des messages de démarrage donnent « souligné » en mode 1
+  (par conception, ils ne s'affichent qu'en mode 0).
+
 - **0.2.1** (2026-09-19, **à valider sur carte**) — **lecture UART par blocs (10,13) via le modem USB corrigée** :
   `UARTRReadBlock` attendait les octets dans une boucle sans jamais servir l'hôte USB (`tuh_task`, appelé
   seulement par `KBDSync` entre deux appels API) : seuls les octets déjà dans le FIFO CDC (≤ 1 Ko) étaient
@@ -44,7 +56,5 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
   pas : clavier/hub décrochent) ; une clé 60 Go USB 3 n'énumère pas, une 8 Go USB 2 oui.
 - **0.0.1** (2026-09-18) — amont `dc70908` + modem USB CDC (F-90/F-93), message `USB serial modem found`.
 
-## Écarté (branche `trinity-video`)
-Les modes vidéo du fork (Hercules 720×350, 320×256, pages écran — F-51/52/53/55, correctif PicoDVI) ont été
-essayés sur carte le 2026-09-19 : **écran noir dès le démarrage, même en mode 0**. Conservés sur la branche
-`trinity-video` pour investigation (renderer DVI multi-modes, changement de timing, `vertical_repeat`) ; pas dans Trinity.
+## Écarté
+Le mode 2 (320×256 × 16 couleurs) du fork : retiré de Trinity (décision bmarty 2026-09-19).

@@ -53,6 +53,18 @@ void RNDStartMode0(struct GraphicsMode *gMode) {
 	isExtArray = gMode->isExtLine;
 }
 
+//
+//		The emulator can display every mode (rendering is done from the packed buffer
+//		through GFXReadPixelRaw, so it is the same code path for all of them).
+//
+int RNDModeSupported(int mode) {
+	return mode >= 0 && mode < GFX_MODE_COUNT;
+}
+
+void RNDSetDisplayPage(uint8_t *displayMemory) {
+	videoRAM = displayMemory;  													// Immediate : the emulator renders from gMode.displayMemory anyway.
+}
+
 // *******************************************************************************************************************************
 //
 //											Get/Set emulator display scale
@@ -82,6 +94,9 @@ void DBGSaveArguments(int argc,char *argv[]) {
 		if (strncmp(p,"scale=",6) == 0 && strlen(p) == 7) {
 			DBGSetDisplayScale(p[6]-'0');
 		}
+		if (strcmp(p,"fullscreen") == 0 || strcmp(p,"fullscreen=1") == 0) {  		// Full screen from the start (Ctrl+F11 toggles).
+			GFXSetFullScreen(1);
+		}
 	}
 }
 
@@ -91,11 +106,27 @@ void DBGSaveArguments(int argc,char *argv[]) {
 //
 // *******************************************************************************************************************************
 
+//
+//		Scale (scale=1..4, or the largest integer that fits in full screen) applies to every
+//		video mode ; the window grows to fit modes wider than 320x240 (Hercules 720x350).
+//
 void DGBXGetActiveDisplayInfo(SDL_Rect *r,int *pxs,int *pys,int *pxc,int *pyc) {
-		*pxs = SCALE;*pys = SCALE;
-		*pxc = 320;*pyc = 240;
+		*pxc = gMode.xGSize;*pyc = gMode.yGSize;
+		int sw,sh;
+		if (GFXIsFullScreen()) {
+			GFXGetDrawableSize(&sw,&sh);
+			int s = sw / (*pxc);if (sh / (*pyc) < s) s = sh / (*pyc);
+			if (s < 1) s = 1;
+			*pxs = *pys = s;
+		} else {
+			*pxs = *pys = SCALE;
+			sw = WIN_WIDTH;sh = WIN_HEIGHT;
+			if ((*pxc) * SCALE + 16 > sw) sw = (*pxc) * SCALE + 16;  				// Grow the window for wide/tall modes.
+			if ((*pyc) * SCALE + 16 > sh) sh = (*pyc) * SCALE + 16;
+			GFXSetWindowSize(sw,sh);
+		}
 		r->w = (*pxs) * (*pxc);r->h = (*pys) * (*pyc);
-		r->x = WIN_WIDTH/2-r->w/2;r->y = WIN_HEIGHT/2-r->h/2;
+		r->x = sw/2-r->w/2;r->y = sh/2-r->h/2;
 }
 
 // *******************************************************************************************************************************
@@ -236,10 +267,10 @@ void DBGXRender(int *address,int showDisplay) {
 		rc2.w = xs;rc2.h = ys;
 		BYTE8 *vPtr = videoRAM;
 		if (vPtr != NULL) {
-			for (int y = 0;y < 240;y++) {
+			for (int y = 0;y < yc;y++) {
 				rc2.y = r.y + y*ys;rc2.x = r.x;
-				for (int x = 0;x < 320;x++) {
-					int col = palette[*vPtr++];
+				for (int x = 0;x < xc;x++) {
+					int col = palette[GFXReadDisplayPixelRaw(x,y)];
 					if (col != 0) GFXRectangle(&rc2,col);
 					rc2.x += xs;
 				}
@@ -251,8 +282,8 @@ void DBGXRender(int *address,int showDisplay) {
 				cursorImage = CURGetCurrent(&xHit,&yHit);				
 				cursorX -= xHit;cursorY -= yHit;
 				uint8_t w = 16,h = 16;
-				if (cursorX + 16 >= 320) w = 320-cursorX;
-				if (cursorY + 16 >= 240) h = 240-cursorY;
+				if (cursorX + 16 >= xc) w = xc-cursorX;
+				if (cursorY + 16 >= yc) h = yc-cursorY;
 				rc2.w = xs;rc2.h = ys;
 				for (int x = 0;x < w;x++) {
 					for (int y = 0;y < h;y++) {
@@ -263,10 +294,10 @@ void DBGXRender(int *address,int showDisplay) {
 					}
 				}
 			}
-			for (int y = 0; y < 240/8;y++) {
+			for (int y = 0; y < gMode.yCSize;y++) {
 			 	rc2.x = r.x + r.w + 4;
-			 	rc2.y = r.y + y * ys * 8 + 2;
-			 	rc2.w = xs * 2;rc2.h = ys * 8 - 4;
+			 	rc2.y = r.y + y * ys * gMode.fontHeight + 2;
+			 	rc2.w = xs * 2;rc2.h = ys * gMode.fontHeight - 4;
 			 	GFXRectangle(&rc2,isExtArray[y] ? 0x0F0 : 0xF00);
 			}
 		}	
