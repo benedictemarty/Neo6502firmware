@@ -11,7 +11,7 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 
 ## Versions
 
-- **0.2.0** (2026-09-19, à valider sur carte) — BASIC découplé et menu de démarrage.
+- **0.2.0** (2026-09-19, **validé sur carte** : `boot/auto.txt` → netinfo.neo démarre seul et obtient l'IP) — BASIC découplé et menu de démarrage.
   **BASIC découplé** (projet Neo6502Basic) : si `neobasic.bin` (= `bin/basic.bin` d'un build de `basic/`) est à la
   racine du stockage, il est chargé en `$800` au démarrage et par `1,3` à la place de la copie embarquée
   (message `NeoBASIC from storage (neobasic.bin)`) ; sinon le BASIC embarqué sert. Une nouvelle version du BASIC
@@ -33,3 +33,8 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
   Constats carte du 2026-09-18 : alimenter la carte par un bloc secteur (le port USB-C d'un PC ne suffit
   pas : clavier/hub décrochent) ; une clé 60 Go USB 3 n'énumère pas, une 8 Go USB 2 oui.
 - **0.0.1** (2026-09-18) — amont `dc70908` + modem USB CDC (F-90/F-93), message `USB serial modem found`.
+
+## Écarté (branche `trinity-video`)
+Les modes vidéo du fork (Hercules 720×350, 320×256, pages écran — F-51/52/53/55, correctif PicoDVI) ont été
+essayés sur carte le 2026-09-19 : **écran noir dès le démarrage, même en mode 0**. Conservés sur la branche
+`trinity-video` pour investigation (renderer DVI multi-modes, changement de timing, `vertical_repeat`) ; pas dans Trinity.
