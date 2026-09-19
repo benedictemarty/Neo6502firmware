@@ -52,3 +52,13 @@ Le reste (fichiers, scripts, éditeur) n'utilise que l'amont.
 NeoDOS recopie la ligne de commande en **`$0200`** (pstring, 200 caractères max) avant `JSR $FF08` ;
 un programme `.NEO` peut la lire (exemple `BIN/ARGS.NEO`). Un programme qui écrit au-dessus de
 `$C000` détruit NeoDOS. Sans rapport avec le firmware, mais utile à connaître pour `boot/`.
+
+## Complément 2026-09-20 — survie de NeoDOS (T-11)
+NeoBASIC « survit » aux programmes parce que `1,3` le recharge depuis la flash ; NeoDOS 0.8.2 fait
+pareil depuis le disque avec un **stub en `$0100`** (poussé comme adresse de retour : somme de
+contrôle du code, sentinelles, puis 3,2 `/boot/neodos.neo` + `$FF08`). Fragile si un programme
+utilise `$0100-$01A0`. Le firmware peut rendre ce stub inutile : que `1,3` applique `boot/auto.txt`
+à chaque appel (`BOOTLoadChoice` n'agit qu'au premier), ou une fonction `1,22 Reload Boot Program`
+— story **T-11**. Constaté au passage sur carte (bmarty) : NeoDOS 0.8.0 gelait `poker.neo`
+(chargé en `$0200`) — corrigé en 0.8.1 (plus de copie de la ligne de commande dans la zone
+programme ; pointeur en `$C00C`).
