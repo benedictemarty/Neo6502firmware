@@ -71,6 +71,7 @@
 #include "interface/gamepad.h"
 #include "interface/editor.h"
 #include "interface/cdcserial.h"
+#include "interface/bootmenu.h"
 
 #endif
 
