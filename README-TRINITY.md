@@ -1,4 +1,6 @@
-# Trinity — firmware Neo6502 amont + modem USB
+# Trinity — firmware Neo6502 de référence (bmarty)
+
+**Firmware de référence unique depuis le 2026-09-19** (le fork `bmarty/main` est archivé). Backlog : `docs/BACKLOG.md`.
 
 Branche `trinity` (bmarty, 2026-09-18) : le firmware **amont** (`v1.0.0-14-gdc70908`, Paul Robson, MIT)
 plus **une seule chose** : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur
