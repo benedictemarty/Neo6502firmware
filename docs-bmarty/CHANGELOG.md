@@ -1,6 +1,12 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-19 : **carte** — F-93 : `UARTRReadBlock` (10,13 routé vers le modem CDC) attendait les octets sans servir
+  l'hôte USB (`tuh_task` n'est appelé que par `KBDSync`) : seul le contenu déjà présent dans le FIFO CDC était lu,
+  timeout 5 s ensuite. Vu avec ProphetGui sur Trinity 0.2.0 : `/cat` (30 octets, lecture octet par octet) OK,
+  `/list` (≈ 1 Ko en bloc) → « liste indisponible » ; invisible dans les émulateurs (pty lu directement, `KBDSync`
+  vide). Correctif : `KBDSync()` dans la boucle d'attente (motif de `serialmanager.cpp`) — Trinity 0.2.1
+  (`trinity-v0.2.1`, UF2 `~/neo-carte/trinity-v0.2.1-USB.uf2`) et `bmarty/main`. Risque R16 de `F-90-cdc.md` avéré.
 - 2026-09-19 : **carte** — les modes vidéo (F-51/52/53/55) portés sur Trinity donnent un **écran noir dès le démarrage**
   (même en mode 0) ; sans eux (Trinity 0.2.0) l'image est là : le fork `bmarty/main` est donc **sans image sur carte**
   tant que F-52 n'est pas isolé (timing DVI à chaud, correctif PicoDVI, renderer). Trinity 0.2.0 validée : BASIC

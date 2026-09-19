@@ -101,7 +101,8 @@ int UARTRReadBlock(uint8_t *data, size_t size) {
 		uint32_t timeOut = TMRRead() + 500;                  // 5 s, comme l'UART matériel
 		uint16_t n = 0;
 		while ((n = HWCDCRead(0, data, size > 0xFFFF ? 0xFFFF : size)) == 0) {
-			if (TMRRead() > timeOut) return 1;
+			KBDSync();                                       // sert l'hote USB (tuh_task) : sinon rien n'arrive
+			if (TMRRead() > timeOut) return 1;               // dans le FIFO CDC pendant l'attente (carte 2026-09-19)
 		}
 		data += n; size -= n;
 	}

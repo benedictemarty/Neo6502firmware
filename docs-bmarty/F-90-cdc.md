@@ -52,6 +52,7 @@ l'écho des commandes (`ATE0` pour le couper).
 |---|---|---|
 | R15 | Énumération d'un modem composite (CDC + MSC, hubs) : `CFG_TUH_DEVICE_MAX` 5, tampon d'énumération 256 | brancher un vrai modem ; si échec, `CFG_TUH_ENUMERATION_BUFSIZE` 512 |
 | R16 | Débit : `tuh_task` n'est appelé qu'au rythme de `DSPSync` (~100 Hz) → RX 1 Ko suffit à 115 200 bauds pendant 10 ms (≈ 115 octets) ; au-delà, pertes possibles si le 6502 ne lit pas | mesurer avec un transfert continu ; option : appeler `tuh_task` aussi dans 14,1/14,4 |
+| R16b | **Avéré sur carte (2026-09-19, Trinity 0.2.0 + ProphetGui)** : la lecture par blocs routée (10,13 → `UARTRReadBlock`) attendait sans servir `tuh_task` → seuls les octets déjà dans le FIFO étaient lus, timeout 5 s sur un corps HTTP de 1 Ko (« liste indisponible »). Corrigé : `KBDSync()` dans la boucle (Trinity 0.2.1, `bmarty/main`). `CDCReadBlock` (14,4) rend ce qui est disponible sans attendre : non concerné. | Trinity 0.2.1 sur carte : `prophetgui.neo` doit afficher la grille |
 | R17 | Coût mémoire : `CFG_TUH_CDC 2` × (1 Ko RX + 256 TX) + FTDI/CP210x | `arm-none-eabi-size` : à surveiller (SRAM ~47 Ko libres avant F5) |
 
 ## Suite (Neo6502drive EPIC-02)
