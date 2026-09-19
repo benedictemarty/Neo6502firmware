@@ -13,7 +13,7 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 
 ## Versions
 
-- **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascule 0 → 1 à chaud) — **mode vidéo 1
+- **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascules 0 → 1 et 1 → 0 à chaud depuis le BASIC) — **mode vidéo 1
   Hercules** 720×350 × 1 bpp, console 80×25 en cellules 9×14 (police MDA 8×14), attributs MDA (bits de l'encre :
   1 allumé, 2 souligné, 4 gras, 8 clignotant ; papier bit 0 = inverse), 2 pages écran, sprites/tilemaps/images en
   1 bpp (XOR) — F-51/52/53/55 du fork, **sans le mode 2** (320×256, retiré sur décision bmarty). `5,9 Set Graphics
