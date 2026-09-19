@@ -16,3 +16,4 @@ Co-Authored-By), CHANGELOG à chaque modification, tag `trinity-vX.Y.Z` à chaqu
 | T-07 | P2 | Modes vidéo (Hercules 720×350, 320×256) : **écran noir sur carte** avec les commits du fork (`trinity-video`) ; isoler timing DVI à chaud / correctif PicoDVI / renderer, un build par suspect. | TODO |
 | T-08 | P2 | Primitives BASIC `at`/`atline$`/`atwait` (Neo6502Basic) : livrées par `neobasic.bin`, à consigner ici par version. | WIP (Neo6502Basic) |
 | T-09 | P3 | Reprises du fork, une par une et validées carte : 3,27 File Read Paged, volumes 3,24-3,26, locale FR/Latin-1, tick/IRQ trame, banques, toolbox. | TODO — sur demande |
+| T-10 | P2 | **NeoDOS** (`docs/MEMO-NEODOS-2026-09-19.md`) : valider sur carte `boot/neodos.neo` + `auto.txt` ; reprises demandées : volumes 3,24-26 (T-09), date/heure 1,20-21 + horodatage FAT, dates dans 3,18/3,16 (ou `3,28 Stat Extended`), `..` et casse dans l'émulateur `neo`, contrat `$FF08` documenté. | TODO |
