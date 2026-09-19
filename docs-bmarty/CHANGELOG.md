@@ -1,6 +1,10 @@
 # Changelog (fork bmarty)
 
 ## [Unreleased]
+- 2026-09-19 : **carte** — les modes vidéo (F-51/52/53/55) portés sur Trinity donnent un **écran noir dès le démarrage**
+  (même en mode 0) ; sans eux (Trinity 0.2.0) l'image est là : le fork `bmarty/main` est donc **sans image sur carte**
+  tant que F-52 n'est pas isolé (timing DVI à chaud, correctif PicoDVI, renderer). Trinity 0.2.0 validée : BASIC
+  découplé (`neobasic.bin`), menu `boot/` + `auto.txt` ; `basic/` déplacé vers `~/Neo6502Basic` par la session parallèle.
 - 2026-09-19 : F-105 — **TinyUSB 0.21.0** (FetchContent ; local : `PICO_TINYUSB_PATH=~/neo-deps/tinyusb-0.21`) à la
   place de 0.16.0 : refonte du pilote hôte RP2040 (bulk sur EPX, double tampon, hubs) — mesuré sur carte dans
   Trinity 0.1.0 : 1 ms par secteur au lieu de 2,5 s derrière le hub. FatFs R0.15 copié dans `firmware/lib/fatfs`
