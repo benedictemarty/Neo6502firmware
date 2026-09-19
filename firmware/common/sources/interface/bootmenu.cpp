@@ -33,6 +33,35 @@ void BOOTSelect(void) {
     }
     FIOCloseDir();
     if (bootCount == 0) return;
+    int8_t autoChoice = -1;                                                     // boot/auto.txt : name of the entry to start at once
+    {
+        uint8_t exists = 0;
+        if (FIOExistsFile(BOOT_DIR "/" BOOT_AUTO,&exists) == 0 && exists) {
+            uint8_t *buf = cpuMemory + 0xFE00;                                  // Scratch below the kernel, before the 6502 runs
+            memset(buf,0,BOOT_NAME_MAX + 2);
+            if (FISOpenFileHandle(0,BOOT_DIR "/" BOOT_AUTO,FIOMODE_RDONLY) == 0) {
+                uint16_t n = BOOT_NAME_MAX + 1;
+                FISReadFileHandle(0,0xFE00,&n);
+                FISCloseFileHandle(0);
+                buf[BOOT_NAME_MAX + 1] = 0;
+                for (uint8_t *q = buf;*q;q++) if (*q == '\r' || *q == '\n' || *q == ' ') { *q = 0;break; }
+                for (int i = 0;i < bootCount;i++) if (strcasecmp((char *)buf,bootNames[i]) == 0) autoChoice = i;
+            }
+            memset(buf,0,BOOT_NAME_MAX + 2);
+        }
+    }
+    if (autoChoice >= 0) {                                                      // Auto : start it unless Escape within 1 s
+        CONWriteString("Boot : auto %s (Esc = menu)\r",bootNames[autoChoice]);
+        bootChoice = autoChoice;
+        uint32_t end = TMRRead() + BOOT_AUTO_TIMEOUT;
+        bool menu = false;
+        while ((int32_t)(end - TMRRead()) > 0) {
+            KBDSync();
+            if (KBDGetKey() == 27) { menu = true;break; }
+        }
+        if (!menu) { CONWriteString("-> %s\r",bootNames[bootChoice]);return; }
+        bootChoice = -1;
+    }
     CONWriteString("Boot : 1 NeoBASIC");
     for (int i = 0;i < bootCount;i++) CONWriteString("  %d %s",i + 2,bootNames[i]);
     CONWriteString("\r");
@@ -59,7 +88,10 @@ bool BOOTLoadChoice(void) {
         return true;
     }
     uint8_t *cmd = cpuMemory + DEFAULT_PORT;
-    if (FIOReadFile(path,0xFFFF,cmd) != 0 || cmd[8] != 0x4C) return false;     // No exec address : fall back to BASIC
+    if (FIOReadFile(path,0xFFFF,cmd) != 0 || cmd[8] != 0x4C) {                 // Unreadable or no exec address : back to BASIC
+        CONWriteString("Boot : %s not started (load error or no exec address), NeoBASIC\r",path.c_str());
+        return false;
+    }
     cpuMemory[0] = (DEFAULT_PORT + 8) & 0xFF;cpuMemory[1] = (DEFAULT_PORT + 8) >> 8;   // jmp (0) -> JMP exec at $FF08
     return true;
 }
