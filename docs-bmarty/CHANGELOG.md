@@ -1,4 +1,10 @@
-# Changelog (fork bmarty)
+# Changelog (fork bmarty) — **ARCHIVÉ le 2026-09-19**
+
+Décision bmarty (2026-09-19) : **Trinity** (branche `trinity`, branche par défaut du dépôt) est l'unique firmware de
+référence — amont + modem USB CDC + TinyUSB 0.21 + BASIC découplé + menu de démarrage, validé sur carte. Cette
+branche `bmarty/main` (toolbox 32-38, banques, modes vidéo, Latin-1, R22…) est **archivée** telle quelle
+(`archive/bmarty-main-2026-09-19`) ; ses fonctionnalités seront reprises une à une dans Trinity si besoin, chacune
+validée sur carte. Les modes vidéo F-51/52 donnent un écran noir sur carte (constat du 2026-09-19).
 
 ## [Unreleased]
 - 2026-09-19 : **carte** — F-93 : `UARTRReadBlock` (10,13 routé vers le modem CDC) attendait les octets sans servir
