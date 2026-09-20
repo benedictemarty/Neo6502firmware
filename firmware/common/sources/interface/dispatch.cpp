@@ -91,6 +91,7 @@ void DSPReset(void) {
 	QDInitGraf();                                                               // Toolbox (T-12) : QuickDraw port
 	EVTReset();                                                                 // Event manager off
 	WMReset();                                                                  // No windows
+	MNReset();                                                                  // No menus
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 

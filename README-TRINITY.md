@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.2** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.2-menus-USB.uf2`) — **Toolbox : groupe 35 Menu
+  Manager** (T-12), repris du fork sans modification (`toolbox_menus.cpp`, `menus.h`, `group35_menus.inc`) : barre de menus
+  (12 lignes, 6 menus), menus déroulants suivis par `35,3` Menu Select / `35,4` Track / `35,5` Track End, descripteurs
+  lus en place dans la RAM 6502 (titre, items : drapeaux désactivé/coché/séparateur), `35,6`/`35,8` drapeaux d'item,
+  `35,7` Dispose ; les fenêtres recouvertes par un menu reçoivent un update (`WMInvalidate`). `MNReset` au reset. Test
+  `menu.asm` du fork : sortie identique. RAM +56 o (36 256 o libres) ; UF2 384 000 o.
+
 - **0.5.1** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.1-events-USB.uf2`) — **Toolbox : groupe 33 Event
   Manager** (T-12), repris du fork (`toolbox_events.cpp`, `events.h`, `group33_events.inc`) : file unique de 32 événements
   (clavier down/up/auto, souris down/up/move/molette, 4 timers, update/activate des fenêtres), `33,1` Init (masque),
