@@ -37,6 +37,24 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.4.1** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.4.1-mda-USB.uf2`) — **NeoBASIC en mode 1 (T-16)**.
+  Exploration du « problème BASIC / MDA » dans `neo` (captures d'écran de la fenêtre SDL) : (1) `cls` remplissait la
+  mémoire console avec l'encre 7 codée en dur → en mode 1 (F-52 : 7 = allumé + souligné + gras) chaque défilement
+  repeignait les cellules vides **soulignées sur toute la ligne** ; (2) le codage F-52 des attributs sur les bits de
+  l'encre rendait les encres de NeoBASIC (`02colours.inc`) : 7 blanc → gras souligné, 6 cyan (mots-clés de `list`) →
+  gras souligné, 2 vert (prompt) et 3 jaune → soulignés, **11 orange (constantes de `list`, encre conservée ensuite) →
+  clignotant** (le `1` de `vmode 1` et le texte suivant disparaissaient une demi-seconde sur deux). Décision bmarty :
+  **codage fidèle à l'IBM MDA** — l'octet d'attribut est `papier << 4 | encre` : encre 0 = éteint, 1 = souligné, 2-7 =
+  normal, 8-15 = gras ; papier 1-7 = inverse, papier 8-15 = clignotant (`CONMDADecode`, `console.cpp`). Avec NeoBASIC :
+  texte et mots-clés normaux, constantes en gras, numéros de ligne soulignés, rien ne clignote ; le curseur inverse
+  toujours la cellule en 1 bpp (avant : XOR avec l'encre, invisible pour une encre paire). L'encre par défaut de la console
+  est 7 dans tous les modes. Vérifié dans `neo` (`print`, défilement, `cls`, `cursor`, `input`, `list`, attributs, 1 → 0).
+  **Non résolu** : sur carte, bmarty observe après `vmode 1` depuis NeoBASIC un **écran noir, signal présent, sans
+  activité**, alors que `mda.neo6502` (qui remplace le BASIC en `$800`, bascule, imprime puis boucle sans plus rien
+  appeler) fonctionne ; `neo` ne reproduit pas. Différences côté BASIC : boucle `2,1` + code 24 (curseur) de `KReadLine`,
+  puis tout le reste de l'API. Piste écartée par lecture : palette (couleur 1 par défaut = rouge, pas noir). À faire sur
+  carte : protocole dans `docs/BACKLOG.md` T-16.
+
 - **0.4.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.4.0-neodos-USB.uf2`) — **NeoDOS remplace
   NeoBASIC comme environnement résident (T-15)**, décision bmarty du jour. Le firmware embarque `neodos_binary.h`
   (NeoDOS 0.12.0, dépôt Neo6502Msdos, image brute `$C000-$E854`, 10 325 o) au lieu de `basic_binary.h` ;
@@ -65,7 +83,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 - **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascules 0 → 1 et 1 → 0 à chaud depuis le BASIC) — **mode vidéo 1
   Hercules** 720×350 × 1 bpp, console 80×25 en cellules 9×14 (police MDA 8×14), attributs MDA (bits de l'encre :
-  1 allumé, 2 souligné, 4 gras, 8 clignotant ; papier bit 0 = inverse), 2 pages écran, sprites/tilemaps/images en
+  1 allumé, 2 souligné, 4 gras, 8 clignotant ; papier bit 0 = inverse — **codage remplacé en 0.4.1**, T-16), 2 pages écran, sprites/tilemaps/images en
   1 bpp (XOR) — F-51/52/53/55 du fork, **sans le mode 2** (320×256, retiré sur décision bmarty). `5,9 Set Graphics
   Mode` 0/1, `5,10 Get Graphics Mode`, encre = entrée 1 de la palette (blanc ; ambre/vert via `5,32`). Quatre
   corrections trouvées sur carte (le fork n'avait jamais tourné) : (1) division dans l'IRQ DMA du correctif PicoDVI →

@@ -53,16 +53,37 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 //		glyphs ($80-$BF symbols, $C0-$FF UDG) are centred vertically. The 9th column is
 //		always background (no MDA style replication for $C0-$DF, the Neo charset differs).
 //
-//		Monochrome (Hercules) attributes, MDA style, carried by the colour nibbles (F-52) :
-//		ink bit 0 = ink on, bit 1 = underline, bit 2 = bright (bold), bit 3 = blink ;
-//		paper bit 0 = paper on (inverse video when the ink is off).
+//		Monochrome (Hercules) attributes : the colour nibbles form the IBM MDA attribute
+//		byte (paper << 4 | ink), decoded as the MDA does (T-16, replaces the F-52 bit
+//		scheme of 0.3.0 which turned NeoBASIC's inks 2-7 and 11 into underline, bold and
+//		blink) : ink 0 = off (black), 1 = underline, 2-7 = normal, 8-15 = bold (bright) ;
+//		paper 1-7 = inverse video, paper 8-15 = blink. So the mode 0 defaults (ink 7,
+//		paper 0) and the NeoBASIC colour scheme render as plain text.
 //
-#define MDA_INK 		(0x01)
-#define MDA_UNDERLINE 	(0x02)
-#define MDA_BRIGHT 		(0x04)
-#define MDA_BLINK 		(0x08)
+#define MDA_ATTR_UNDERLINE 	(0x02)
+#define MDA_ATTR_BRIGHT 	(0x04)
+#define MDA_ATTR_BLINK 		(0x08)
+#define MDA_ATTR_INVERSE 	(0x10)
+#define MDA_INK 			(7)  													// Default monochrome ink : normal text.
 static uint8_t blinkHidden = 0;  												// Blink phase : 1 = blinking text hidden.
 static void CONPaintCharacter(uint16_t x,uint16_t y);
+
+//		Decode the MDA attribute byte : ink on (bit 0), attribute flags (bits 1-4) ; paper is on
+//		only in inverse video (an "on" ink with an "on" paper would be invisible).
+static uint8_t CONMDADecode(uint8_t ink,uint8_t paper,uint8_t *fcol,uint8_t *bcol) {
+	uint8_t attr = 0;
+	if ((ink & 7) == 1) attr |= MDA_ATTR_UNDERLINE;
+	if (ink & 8) attr |= MDA_ATTR_BRIGHT;
+	if (paper & 8) attr |= MDA_ATTR_BLINK;
+	if (paper & 7) attr |= MDA_ATTR_INVERSE;
+	*fcol = (ink & 7) ? 1 : 0;*bcol = 0;
+	if (attr & MDA_ATTR_INVERSE) { *bcol = 1;*fcol = 0; }  						// Inverse : black on white.
+	return attr;
+}
+
+static bool CONMDABlinks(uint16_t cell) {  										// Console memory cell of a blinking character.
+	return (cell & 0x8000) != 0;  												// Paper bit 3
+}
 
 static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fcol,uint8_t bcol) {
 	uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight;
@@ -70,11 +91,11 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 	int yOrg = y * cHeight;
 	int yPad = (cHeight > 8) ? (cHeight - 8) / 2 : 0;  							// Centring of 8 line glyphs in taller cells.
 	uint8_t attr = 0;
-	if (graphMode->bitsPerPixel == 1) {  											// Monochrome : decode the attributes.
-		attr = fcol;
-		fcol = attr & MDA_INK;bcol = bcol & MDA_INK;
-		if (fcol == bcol) fcol = !bcol;  											// Keep text readable.
-		if ((attr & MDA_BLINK) && blinkHidden) fcol = bcol;  						// Hidden phase of blinking text.
+	if (graphMode->bitsPerPixel == 1) {  											// Monochrome : decode the MDA attribute byte.
+		uint8_t f,b;
+		attr = CONMDADecode(fcol,bcol,&f,&b);
+		fcol = f;bcol = b;
+		if ((attr & MDA_ATTR_BLINK) && blinkHidden) fcol = bcol;  					// Hidden phase of blinking text.
 	}
 	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
 		uint16_t b = 0;
@@ -84,8 +105,8 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 			b = font_5x7[(ch-32)*8 + y1 - yPad];
 			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
 		}
-		if (attr & MDA_BRIGHT) b |= (b >> 1);  										// Bold : double strike.
-		if ((attr & MDA_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  				// Underline row (MDA : row 12 of 14).
+		if (attr & MDA_ATTR_BRIGHT) b |= (b >> 1);  									// Bold : double strike.
+		if ((attr & MDA_ATTR_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  			// Underline row (MDA : row 12 of 14).
 		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
 			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);
 			b = b << 1;
@@ -106,7 +127,7 @@ void CONBlinkSync(void) {
 	for (int y = 0;y < graphMode->yCSize;y++) {
 		for (int x = 0;x < graphMode->xCSize;x++) {
 			if (x == graphMode->xCursor && y == graphMode->yCursor) continue;
-			if (graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH] & (MDA_BLINK << 8)) CONPaintCharacter(x,y);
+			if (CONMDABlinks(graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH])) CONPaintCharacter(x,y);
 		}
 	}
 }
@@ -173,8 +194,9 @@ void CONClearScreen(void) {
 			SPRScreenCleared();  												// Packed modes : sprites went with it.
 		}
 	}
+	uint8_t blankInk = 7;  														// Normal text in every mode (T-16 : MDA decoding)
 	for (int c = 0;c < MAXCONSOLEMEMORY;c++) {  								// Erase the console memory.
-		graphMode->consoleMemory[c] = ' ' + (7 << 8) + (0 << 12);
+		graphMode->consoleMemory[c] = ' ' + (blankInk << 8) + (0 << 12);
 	}
 	for (int y = 0;y < graphMode->yCSize;y++) {  								// No extended lines.
 		graphMode->isExtLine[y] = 0;
@@ -221,7 +243,6 @@ void CONGetScreenSizeChars(uint8_t* width, uint8_t* height) {
 void CONInitialise(struct GraphicsMode *gMode) {
 	graphMode = gMode;	
 	graphMode->foreCol = 7;graphMode->backCol = 0; 	 							// Reset colours
-	if (gMode->bitsPerPixel == 1) graphMode->foreCol = MDA_INK;  				// Monochrome : plain ink, no attribute.
 	blinkHidden = 0;
 	CONWrite(12);  																// Clear screen / home cursor.
 }
@@ -338,7 +359,8 @@ void CONReverseCursorBlock(void) {
 		int yOrg = graphMode->yCursor * graphMode->fontHeight;
 		for (int y = 0;y < graphMode->fontHeight;y++) {
 			for (int x = 0;x < graphMode->fontWidth;x++) {
-				GFXWritePixelRaw(xOrg+x,yOrg+y,GFXReadPixelRaw(xOrg+x,yOrg+y) ^ graphMode->foreCol);
+				uint8_t mask = (graphMode->bitsPerPixel == 1) ? 1 : graphMode->foreCol;   // Monochrome : always reverse (T-16)
+				GFXWritePixelRaw(xOrg+x,yOrg+y,GFXReadPixelRaw(xOrg+x,yOrg+y) ^ mask);
 			}
 		}
 		return;
