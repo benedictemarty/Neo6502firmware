@@ -22,7 +22,7 @@ all:
 
 	$(PYTHON) $(COMDIR)scripts$(S)makedispatch.py dispatch.config >$(COMDIR)include$(S)data$(S)dispatch_code.h
 	touch sources$(S)interface$(S)dispatch.cpp
-	$(CCOPY) $(BASICBIN)basic_binary.h include$(S)data
+	$(HCONVERT) $(NEODOSBIN) include$(S)data$(S)neodos_binary.h neodos C000
 
 	$(PYTHON) $(COMDIR)scripts$(S)who.py >$(COMDIR)include$(S)data$(S)neowho.h
 

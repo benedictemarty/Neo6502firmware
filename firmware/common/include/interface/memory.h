@@ -30,8 +30,7 @@ extern uint16_t controlPort;
 #define CONTROLPORT 	(controlPort)
 
 void MEMInitialiseMemory(void);
-void MEMLoadBasic(void);
-bool MEMLoadBasicFromStorage(void);  											// Trinity : NEOBASIC.BIN on the storage, if any
+void MEMLoadBasic(void);  														// 1,3 : resident environment (NeoDOS, Trinity 0.4.0)
 
 #endif
 

@@ -87,8 +87,16 @@ BINDIR = $(ROOTDIR)bin$(S)
 SRCDIR = $(ROOTDIR)kernel$(S)
 COMDIR = $(ROOTDIR)firmware$(S)common$(S)
 #
-#		NeoBASIC vit dans le dépôt Neo6502Basic (surchargeable : make BASICDIR=/chemin/) ;
-#		ses produits (basic.bin, basic_binary.h, makebasic.zip...) sont lus dans $(BASICBIN).
+#		Trinity 0.4.0 : l'environnement résident du firmware est NeoDOS (dépôt Neo6502Msdos, surchargeable :
+#		make NEODOSDIR=/chemin/) ; build/neodos.bin (image brute pour $C000) est converti en neodos_binary.h
+#		par kernel/scripts/hconvert.py. Le firmware ne dépend plus de NeoBASIC.
+#
+NEODOSDIR ?= $(ROOTDIR)..$(S)Neo6502Msdos$(S)
+NEODOSBIN = $(NEODOSDIR)build$(S)neodos.bin
+HCONVERT = $(PYTHON) $(ROOTDIR)kernel$(S)scripts$(S)hconvert.py
+#
+#		NeoBASIC (dépôt Neo6502Basic, surchargeable : make BASICDIR=/chemin/) ne sert plus qu'aux exemples et au
+#		paquet de release amont (makebasic.zip, bibliothèques) : examples/ et release/.
 #
 BASICDIR ?= $(ROOTDIR)..$(S)Neo6502Basic$(S)
 BASICBIN = $(BASICDIR)bin$(S)

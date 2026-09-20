@@ -3,6 +3,7 @@ emulator/framework/debugger.o
 emulator/framework/gfx.o
 emulator/framework/main.o
 emulator/include/basic_binary.h
+neodos_binary.h
 emulator/javascript/build
 emulator/javascript/neo.*
 emulator/neo
@@ -26,6 +27,7 @@ storage/*
 *.sym
 *.hex
 firmware/include/data/basic_binary.h
+neodos_binary.h
 firmware/include/data/dispatch_code.h
 firmware/include/data/prompt.h
 firmware/libraries/update_libs.sh

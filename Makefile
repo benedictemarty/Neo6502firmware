@@ -46,7 +46,6 @@ firmware: firmware-deps
 	@echo building firmware
 	$(CMAKEDIR) bin
 	$(MAKE) -B -C kernel release
-	$(MAKE) -B -C $(BASICDIR) release FWDIR=$(ROOTDIR)
 	$(MAKE) -B -C firmware release
 
 
@@ -60,7 +59,6 @@ windows: emulator-deps-nix emulator-deps-win
 	@echo building windows emulator
 	$(CMAKEDIR) bin
 	$(MAKE) -B -C kernel
-	$(MAKE) -B -C $(BASICDIR) release FWDIR=$(ROOTDIR)
 	$(MAKE) -B -C emulator clean
 	$(MAKE) -B -C emulator ewindows
 	$(MAKE) -B -C examples release
@@ -69,7 +67,6 @@ linux: emulator-deps-nix
 	@echo building nix emulator
 	$(CMAKEDIR) bin
 	$(MAKE) -B -C kernel
-	$(MAKE) -B -C $(BASICDIR) release FWDIR=$(ROOTDIR)
 	$(MAKE) -B -C emulator clean
 	$(MAKE) -B -C emulator elinux
 	$(MAKE) -B -C examples release

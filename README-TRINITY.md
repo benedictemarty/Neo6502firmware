@@ -3,10 +3,18 @@
 **Firmware de référence unique depuis le 2026-09-19** (le fork `bmarty/main` est archivé). Backlog : `docs/BACKLOG.md`.
 
 Branche `trinity` (bmarty, 2026-09-18) : le firmware **amont** (`v1.0.0-14-gdc70908`, Paul Robson, MIT)
-plus **une seule chose** : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur
-un port USB-A de la carte — F-90 (groupe 14, `cdc.cpp`, `cdcserial.cpp`, TinyUSB `cdc_host`) et F-93
-(routage des fonctions UART 10,13-10,18 vers le modem, 10,19, AUTO par défaut). Rien d'autre du fork
-`bmarty/main` (toolbox, banques, modes vidéo, R22…).
+plus : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur un port USB-A de la carte —
+F-90 (groupe 14, `cdc.cpp`, `cdcserial.cpp`, TinyUSB `cdc_host`) et F-93 (routage des fonctions UART 10,13-10,18
+vers le modem, 10,19, AUTO par défaut) ; TinyUSB 0.21 ; le menu `boot/` ; le mode vidéo 1 Hercules ; et, depuis
+la **0.4.0**, **NeoDOS comme environnement résident à la place de NeoBASIC** (T-15).
+
+## Construction (0.4.0)
+
+`make -C firmware build STORAGE=USB` (SDK 1.5.1, TinyUSB 0.21, PicoDVI amont). L'image de NeoDOS est lue dans
+`$(NEODOSDIR)build/neodos.bin` (défaut `../Neo6502Msdos/`, `make NEODOSDIR=/chemin/`) et convertie en
+`firmware/common/include/data/neodos_binary.h` (`kernel/scripts/hconvert.py … neodos C000`) ; même chose pour
+l'émulateur `neo` (`make -C emulator elinux`). Le dépôt Neo6502Basic n'est plus nécessaire au firmware ni à `neo` ;
+`BASICDIR` ne sert qu'aux cibles `examples/` et `release/` de l'amont.
 
 Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags : `v0.0.1-N-gXXXXXXX`). Compilation : comme l'amont
 (`make -C firmware build STORAGE=USB`, SDK 1.5.1, TinyUSB 0.16.0, PicoDVI amont non modifié).
@@ -22,11 +30,24 @@ dépasse `RAM_LIMIT`** (230 000 o par défaut) sur les 262 144 o de SRAM princip
 | Morpheus amont `dc70908` | — | — | — | 207 596 (Berkeley) | — | — | 370 176 |
 | Trinity 0.3.0 | 126 112 | 60 788 | 17 920 | 212 488 | 230 600 | 31 544 | 413 696 |
 | Trinity 0.3.1 | 117 696 | 57 440 | 13 828 | 211 000 | **225 020** | **37 124** | 379 904 |
+| Trinity 0.4.0 | 117 448 | 48 312 | 13 828 | 211 000 | 225 020 | 37 124 | 360 960 |
 
 Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (76 800) / `gfxObjectMemory` (32 768) /
 `cpuMemory` (65 536), jamais dans un nouveau tableau `static` (`docs/BACKLOG.md`, T-13).
 
 ## Versions
+
+- **0.4.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.4.0-neodos-USB.uf2`) — **NeoDOS remplace
+  NeoBASIC comme environnement résident (T-15)**, décision bmarty du jour. Le firmware embarque `neodos_binary.h`
+  (NeoDOS 0.12.0, dépôt Neo6502Msdos, image brute `$C000-$E854`, 10 325 o) au lieu de `basic_binary.h` ;
+  `MEMInitialiseMemory` et `1,3` (« Load BASIC ») chargent NeoDOS depuis la flash et pointent `jmp (0)` sur `$C000` ;
+  le premier `1,3` du noyau applique toujours le choix du menu `boot/` (entrée par défaut affichée : `1 NeoDOS`).
+  La copie racine `neobasic.bin` de la 0.2.0 est retirée : **NeoBASIC se lance par `boot/neobasic.bin`** (= `bin/basic.bin`
+  du dépôt Neo6502Basic, image `$800`) et `boot/auto.txt` ; `boot/neodos.neo` devient inutile. Vérifié dans `neo` :
+  sans `boot/`, NeoDOS exécute `AUTOEXEC.BAT` (`ECHO … > RESULT.TXT`, `VER` = NeoDOS 0.12.0) ; avec `boot/neobasic.bin`
+  + `auto.txt`, NeoBASIC démarre. UF2 360 960 o (−18 944 o par rapport à 0.3.1), RAM inchangée (225 020 o).
+  Conséquence pour NeoDOS : `EXIT` (1,3 + `jmp (0)`) relance NeoDOS ; le stub de survie `$0100` n'est plus nécessaire
+  sur Trinity (T-11 réduit).
 
 - **0.3.1** (2026-09-20, **à valider sur carte** : modes 0 et 1, lignes noires des bordures verticales, chargement de fichiers)
   — **budget mémoire (T-13)** : −5 580 o de RAM, −33,8 Ko d'UF2, sans changement fonctionnel. (1) `std::string` de l'API

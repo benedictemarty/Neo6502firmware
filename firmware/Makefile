@@ -37,7 +37,7 @@ always:
 kernel: always
 	$(MAKE) -C ..$(S)kernel
 	$(CCOPY) $(BINDIR)kernel_binary.h $(COMDIR)include$(S)data
-	$(CCOPY) $(BASICBIN)basic_binary.h $(COMDIR)include$(S)data
+	$(HCONVERT) $(NEODOSBIN) $(COMDIR)include$(S)data$(S)neodos_binary.h neodos C000
 	$(TOUCH) sources$(S)memory.c*
 
 # ***************************************************************************************

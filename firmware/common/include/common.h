@@ -40,6 +40,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <hardware.h>
+#define __time_critical_func(x) x  												// Pico SDK RAM placement : no-op on PC (keyboard.cpp, amont c792b77).
 #endif
 //
 //		Neo6502 Includes

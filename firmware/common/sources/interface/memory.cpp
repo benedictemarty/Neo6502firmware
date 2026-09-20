@@ -13,7 +13,7 @@
 
 #include "common.h"
 #include "data/kernel_binary.h"                                            		// Contains kernel image.
-#include "data/basic_binary.h" 													// NeoBasic
+#include "data/neodos_binary.h" 													// NeoDOS (Trinity 0.4.0 : resident environment)
 
 #ifdef PICO
 /* _Alignas(MEMORY_SIZE) */ uint8_t cpuMemory[MEMORY_SIZE] = {0};  				// Processor memory, aligned for Pico
@@ -53,37 +53,26 @@ static void loadROM(const uint8_t *vROM, uint16_t startAddress, uint16_t romSize
 
 void MEMInitialiseMemory(void) {
 	loadROM(kernel_bin,KERNEL_LOAD,KERNEL_SIZE);    							// Load in the kernel
-	loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);  									// Load in BASIC to run by default
+	loadROM(neodos_bin,NEODOS_LOAD,NEODOS_SIZE);  								// Load in NeoDOS to run by default
 	cpuMemory[DEFAULT_PORT] = 0x00;               								// Clear the default command port
 }
 
 // ***************************************************************************************
 //
-//                     			Load BASIC from Flash
+//                     		Load the resident environment (1,3)
 //
 // ***************************************************************************************
 
-// Trinity (bmarty, Neo6502Basic) : the BASIC is decoupled from the firmware. If NEOBASIC.BIN exists at the
-// root of the storage, it is loaded at $800 instead of the embedded copy (same layout as bin/basic.bin) ;
-// otherwise the embedded BASIC is used. Returns true when the storage copy was loaded.
-
-#define BASIC_STORAGE_FILE "neobasic.bin"
-
-bool MEMLoadBasicFromStorage(void) {
-	uint8_t exists = 0;
-	if (FIOExistsFile(BASIC_STORAGE_FILE,&exists) != 0 || !exists) return false;
-	if (FIOReadFileBasic(BASIC_STORAGE_FILE,BASIC_LOAD) != 0) {  					// Unreadable : back to the embedded one.
-		loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);
-		return false;
-	}
-	return true;
-}
+// Trinity 0.4.0 (bmarty) : the firmware no longer embeds NeoBASIC. 1,3 "Load BASIC" loads the resident
+// environment, NeoDOS (project Neo6502Msdos, image for $C000-$FBFF, neodos_binary.h), from the flash and points
+// jmp (0) at it. The first 1,3 after reset applies the boot/ menu choice instead (bootmenu.cpp) ; NeoBASIC is
+// started this way, as boot/neobasic.bin (image for $800).
 
 void MEMLoadBasic(void) {
 	if (BOOTLoadChoice()) return;  												// Trinity boot menu : chosen program (first 1,3 only)
-	if (!MEMLoadBasicFromStorage()) loadROM(basic_bin,BASIC_LOAD,BASIC_SIZE);  	// Storage copy, else the embedded ROM image
-	cpuMemory[0x0] = BASIC_LOAD & 0xFF;  										// Start with jmp (0)
-	cpuMemory[0x1] = BASIC_LOAD >> 8;
+	loadROM(neodos_bin,NEODOS_LOAD,NEODOS_SIZE);  								// The embedded NeoDOS image
+	cpuMemory[0x0] = NEODOS_LOAD & 0xFF;  										// Start with jmp (0)
+	cpuMemory[0x1] = NEODOS_LOAD >> 8;
 }
 
 // ***************************************************************************************
