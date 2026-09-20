@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.3** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.3-controls-USB.uf2`) — **Toolbox : groupe 36
+  Control Manager** (T-12), repris du fork sans modification (`toolbox_controls.cpp`, `controls.h`, `group36_controls.inc`) :
+  24 contrôles liés à une fenêtre — bouton, case à cocher, bouton radio, ascenseur, champ de texte (texte dans la RAM
+  6502) — `36,1` New … `36,10` Key ; `CTWindowDisposed` rebranché dans le Window Manager (les contrôles partent avec
+  leur fenêtre) ; `CTReset` au reset. Test `ctl.asm` du fork : sortie identique. RAM +480 o (`controls[24]`),
+  35 776 o libres ; UF2 390 656 o.
+
 - **0.5.2** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.2-menus-USB.uf2`) — **Toolbox : groupe 35 Menu
   Manager** (T-12), repris du fork sans modification (`toolbox_menus.cpp`, `menus.h`, `group35_menus.inc`) : barre de menus
   (12 lignes, 6 menus), menus déroulants suivis par `35,3` Menu Select / `35,4` Track / `35,5` Track End, descripteurs

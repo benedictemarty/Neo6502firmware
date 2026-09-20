@@ -16,9 +16,7 @@
 
 #include "common.h"
 
-// Trinity (T-12, 2026-09-20) : taken from the fork. The Control Manager (36) is not in yet : windows have no
-// controls ; the hook becomes a real call with its group (docs/BACKLOG.md T-12).
-static inline void CTWindowDisposed(uint8_t id) { (void)id; }
+// Trinity (T-12, 2026-09-20) : taken from the fork (archive/bmarty-main-2026-09-19).
 
 struct Window {
     bool used,visible;

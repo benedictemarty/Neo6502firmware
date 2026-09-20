@@ -92,6 +92,7 @@ void DSPReset(void) {
 	EVTReset();                                                                 // Event manager off
 	WMReset();                                                                  // No windows
 	MNReset();                                                                  // No menus
+	CTReset();                                                                  // No controls
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 
