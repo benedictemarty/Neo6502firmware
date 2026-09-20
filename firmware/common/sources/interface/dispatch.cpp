@@ -93,6 +93,7 @@ void DSPReset(void) {
 	WMReset();                                                                  // No windows
 	MNReset();                                                                  // No menus
 	CTReset();                                                                  // No controls
+	DLReset();                                                                  // No dialogs
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 

@@ -73,6 +73,7 @@
 #include "interface/windows.h"  														// 34 Window Manager
 #include "interface/menus.h"  															// 35 Menu Manager
 #include "interface/controls.h"  														// 36 Control Manager
+#include "interface/dialogs.h"  														// 37 Dialog Manager
 #include "interface/cdcserial.h"
 #include "interface/bootmenu.h"
 

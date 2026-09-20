@@ -37,6 +37,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.4** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.4-dialogs-USB.uf2`) — **Toolbox : groupe 37
+  Dialog Manager** (T-12), repris du fork sans modification (`toolbox_dialogs.cpp`, `dialogs.h`, `group37_dialogs.inc`) :
+  dialogues modaux construits depuis un descripteur en RAM 6502 (fenêtre + items : boutons, cases, radios, champs,
+  textes ; bouton par défaut avec anneau, Entrée/Échap), `37,2` Alert (message + Yes/No centrés), `37,3` Dialog Event
+  (consomme les événements du groupe 33 destinés au dialogue) ; `DLReset` au reset. Aucune dépendance à la locale
+  constatée dans le code (la note de T-12 visait les textes accentués des tests golden Phosphoneo). Test `dlg.asm` du
+  fork : sortie identique ; capture : alerte « Save? » avec « Yes » par défaut. 35620 o de RAM libres ; UF2 397824 o.
+
 - **0.5.3** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.3-controls-USB.uf2`) — **Toolbox : groupe 36
   Control Manager** (T-12), repris du fork sans modification (`toolbox_controls.cpp`, `controls.h`, `group36_controls.inc`) :
   24 contrôles liés à une fenêtre — bouton, case à cocher, bouton radio, ascenseur, champ de texte (texte dans la RAM
