@@ -37,6 +37,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.5** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.5-resources-USB.uf2`) — **Toolbox : groupe 38
+  Resource Manager** (T-12), repris du fork : fichier de ressources NR1 sur le stockage (`tools/toolbox/mkres.py`,
+  `mkfont.py` repris de l'archive), ouvert sur un canal (`38,1`), table lue à la demande (`38,3` Count, `38,4` Find
+  type/id, `38,5`/`38,6` Info, `38,7` Load dans une page du blitter `$00`/`$90`, `38,8` Use Font = Load + `32,15`), rien de
+  mis en cache côté RP2040. Adaptations : pas de `3,27` (lecture paginée locale `_RSReadPaged`), nom de fichier par tampon
+  fixe (T-13), `FISReadFileHandleBuffer` (F-16 du fork) ajouté aux deux hôtes (`fileimplementation.cpp`, `hardware.cpp`
+  de `neo`) ; `RSReset` au reset. Test `res.asm` + `test.res` (police `dejavu9.nf1` chargée en `$90:0000` et
+  sélectionnée) : sortie identique au fork. **La toolbox du fork est intégralement reprise (32-38), mode 0.**
+  RAM inchangée (35 620 o libres) ; UF2 400 384 o.
+
 - **0.5.4** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.4-dialogs-USB.uf2`) — **Toolbox : groupe 37
   Dialog Manager** (T-12), repris du fork sans modification (`toolbox_dialogs.cpp`, `dialogs.h`, `group37_dialogs.inc`) :
   dialogues modaux construits depuis un descripteur en RAM 6502 (fenêtre + items : boutons, cases, radios, champs,

@@ -7,6 +7,7 @@ HERE=$(cd "$(dirname "$0")/../.." && pwd)
 REF=0; [ "${1:-}" = "--ref" ] && { REF=1; shift; }
 NAME=${1:?usage: run_neo.sh [--ref] NOM}
 OUT=$HERE/build/tests/toolbox/$NAME; rm -rf "$OUT"; mkdir -p "$OUT/storage"
+cp "$HERE"/tests/toolbox/*.res "$OUT/storage/" 2>/dev/null
 sed 's/^NEO = 0/NEO = 1/' "$HERE/tests/toolbox/$NAME.asm" > "$OUT/$NAME.asm"
 64tass --mw65c02 --nostart -q -o "$OUT/$NAME.neo6502" "$OUT/$NAME.asm" || exit 2
 cd "$OUT" && timeout 60 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 > neo.log 2>&1

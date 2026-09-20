@@ -503,6 +503,24 @@ uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	return convertError(errno);
 }
 
+// T-12 (F-16 of the fork) : read into a host buffer ; bounds checked by the caller.
+uint8_t FISReadFileHandleBuffer(uint8_t fileno, uint8_t* dest, uint16_t* size) {
+	FILE* f = getF(fileno);
+	if (!f)
+		return FIOERROR_INVALID_PARAMETER;
+
+	errno = 0;
+	printf("FISReadFileHandleBuffer(%d, %d) -> ", fileno, *size);
+	size_t result = fread(dest, 1, *size, f);
+	printf("%d: %s\n", (int)result, (result != *size) ? strerror(errno) : "OK");
+	*size = result;
+
+	if ((errno == 0) && (result == 0)) {
+		return FIOERROR_EOF;
+	}
+	return convertError(errno);
+}
+
 uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	FILE* f = getF(fileno);
 	if (!f)

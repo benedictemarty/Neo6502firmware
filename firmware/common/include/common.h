@@ -74,6 +74,7 @@
 #include "interface/menus.h"  															// 35 Menu Manager
 #include "interface/controls.h"  														// 36 Control Manager
 #include "interface/dialogs.h"  														// 37 Dialog Manager
+#include "interface/resources.h"  														// 38 Resource Manager
 #include "interface/cdcserial.h"
 #include "interface/bootmenu.h"
 

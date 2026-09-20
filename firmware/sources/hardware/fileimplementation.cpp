@@ -405,6 +405,21 @@ uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	return convertError(result);
 }
 
+// T-12 (F-16 of the fork) : read into a host buffer (graphics RAM...) ; bounds checked by the caller.
+uint8_t FISReadFileHandleBuffer(uint8_t fileno, uint8_t* dest, uint16_t* size) {
+	FIL* f = getF(fileno);
+	if (!f)
+		return FIOERROR_INVALID_PARAMETER;
+
+	UINT read;
+	FRESULT result = f_read(f, dest, *size, &read);
+	*size = read;
+
+	if ((result == FR_OK) && (read == 0))
+		return FIOERROR_EOF;
+	return convertError(result);
+}
+
 uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	FIL* f = getF(fileno);
 	if (!f)
