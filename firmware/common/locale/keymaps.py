@@ -75,7 +75,7 @@ class Keymap(object):
 			mn = re.match("^\\d+$",m.group(2))   								# must be ASCII value
 			assert mn is not None,"Bad mapping character "+mapping
 			keyCode = m.group(2)
-		assert int(keyCode) >= 32 and int(keyCode) < 127,"Bad character value : "+mapping
+		assert (int(keyCode) >= 32 and int(keyCode) < 127) or (int(keyCode) >= 160 and int(keyCode) < 256),"Bad character value : "+mapping  # T-20 : Latin-1 $A0-$FF
 		return [keyMask,keyID,keyCode]
 
 mapList = []

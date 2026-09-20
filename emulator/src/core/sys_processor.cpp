@@ -218,6 +218,7 @@ static void CPURunTestHooks(void) {
 			if (!testHooks[i].done && testHooks[i].at >= exitAtCycles && testHooks[i].kind != 'k') CPURunHook(&testHooks[i]);
 		}
 		printf("cycles:%ld reached - exiting emulator\n",(long)exitAtCycles);
+		exitAtCycles = 0;  															// Once (CPUExit stops at the end of the frame)
 		CPUExit();
 	}
 }
@@ -225,7 +226,7 @@ static void CPURunTestHooks(void) {
 //#include "binary.h"
 
 void CPUReset(void) {
-	char command[128];
+	char command[512];  															// Test hooks carry file names (T-19)
 
 	for (int i = 1;i < argumentCount;i++) { 										// Look for loads.
 		strcpy(command,argumentList[i]);  											// Copy command

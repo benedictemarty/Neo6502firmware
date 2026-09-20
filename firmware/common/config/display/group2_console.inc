@@ -129,3 +129,27 @@ GROUP 2 Console
         CONSetCursorVisible(DPARAMS[0] ? 1 : 0);
     DOCUMENTATION
         Set the cursor visibility to Param[0]. This is reset by clearing the screen.
+
+    FUNCTION 20 Console Debug Echo
+        CONSetDebugEcho(DPARAMS[0]);
+    DOCUMENTATION
+        Parameter:0 non zero : every printable character written to the console (and Enter, as CR LF) is also sent to the debug port
+        (UART GP28/GP29 on the board, stderr in the emulators) ; 2 also forwards the characters $A0-$FF. 0 stops the echo.
+        Lets a PC capture the screen text of a real board over the serial link (Trinity T-20, F-92 of the fork).
+
+    FUNCTION 21 Set Console Font
+        *DERROR = CONSetFont(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2));
+    DOCUMENTATION
+        Selects the font used by the console for the characters $20-$7F (Trinity T-20, F-95 of the fork). On input:
+
+        Parameters:0,1 is the address, in 6502 RAM, of 96 glyphs of 8 bytes (one byte per row, bit 7 = leftmost pixel ;
+        the console draws the 6 leftmost columns in 6x8 cells and all 8 in 8x8 cells), in ASCII order from $20 to $7F ;
+        $0000 restores the built in font.
+
+        Parameters:2,3 is likewise the address of 96 glyphs of 14 bytes (8 columns) used by the 9x14 cells of the
+        Hercules mode 1 ; $0000 keeps the built in 8x14 font. Each address is checked and applied on its own.
+
+        The glyphs are read in place at every repaint (no copy) : the program must keep them intact while the font is
+        selected. The whole console is repainted. Characters $A0-$BF keep the built in Latin-1 symbols and $C0-$FF the
+        user defined characters (Function 2,5 ; Latin-1 letters by default). The built in font is restored by a mode
+        change (5,9) and at reset. Sets the error flag if the glyphs would run past the end of memory.

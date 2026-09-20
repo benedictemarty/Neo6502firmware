@@ -65,11 +65,46 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 #define MDA_ATTR_BLINK 		(0x08)
 #define MDA_ATTR_INVERSE 	(0x10)
 #define MDA_INK 			(7)  													// Default monochrome ink : normal text.
+static void CONPaintCharacter(uint16_t x,uint16_t y);
+#include "data/latin1font.h"  													// T-20 (F-17 of the fork) : Latin-1 symbols $A0-$BF, default letters $C0-$FF
 static const uint8_t blankGlyph[8] = {0,0,0,0,0,0,0,0};
-const uint8_t *CONGlyph(uint8_t ch) {  											// T-12 : QuickDraw system font
+static const uint8_t *consoleFont = font_5x7;  									// 2,21 (F-95) : 8 line glyphs $20-$7F (built in or 6502 RAM)
+static const uint8_t *consoleFont14 = font_8x14;  								// 14 line glyphs $20-$7F of the 9x14 cells (mode 1)
+
+// 8 line glyph of any character : $20-$7F console font, $80-$9F blank (control codes), $A0-$BF Latin-1
+// symbols (flash), $C0-$FF user defined (Latin-1 letters by default, 2,5 replaces them). QuickDraw uses it too.
+const uint8_t *CONGlyph(uint8_t ch) {
 	if (ch < 0x20) return blankGlyph;
-	if (ch < 0xC0) return font_5x7 + (ch - 0x20) * 8;  								// $20-$BF built in (symbols $80-$BF)
-	return userDefinedFont + (ch - 0xC0) * 8;  										// $C0-$FF UDG
+	if (ch < 0x80) return consoleFont + (ch - 0x20) * 8;
+	if (ch < 0xA0) return blankGlyph;
+	if (ch < 0xC0) return font_latin1_symbols + (ch - 0xA0) * 8;
+	return userDefinedFont + (ch - 0xC0) * 8;
+}
+
+void CONResetUserFont(void) {  													// Reset : Latin-1 letters in $C0-$FF
+	memcpy(userDefinedFont,font_latin1_letters,sizeof(userDefinedFont));
+}
+
+// 2,21 : font for $20-$7F. addr = 0 restores the built in font ; otherwise 96 x 8 bytes in 6502 RAM (MSB = left),
+// read in place (nothing copied to the RP2040 SRAM). addr14 : the 14 line glyphs of the 9x14 cells (96 x 14 bytes),
+// 0 keeps the built in 8x14. The console is repainted.
+uint8_t CONSetFont(uint16_t addr,uint16_t addr14) {
+	if (addr != 0 && addr > 0x10000 - 96*8) return 1;  							// Would run past the end of RAM.
+	if (addr14 != 0 && addr14 > 0x10000 - 96*14) return 1;
+	consoleFont = (addr == 0) ? font_5x7 : cpuMemory + addr;
+	consoleFont14 = (addr14 == 0) ? font_8x14 : cpuMemory + addr14;
+	if (graphMode != NULL && graphMode->xGSize != 0) {  							// Repaint the whole console.
+		for (int y = 0;y < graphMode->yCSize;y++) {
+			for (int x = 0;x < graphMode->xCSize;x++) CONPaintCharacter(x,y);
+		}
+	}
+	return 0;
+}
+
+static uint8_t consoleEcho = 0;  												// 2,20 (F-92) : mirror console text to the debug port
+
+void CONSetDebugEcho(uint8_t on) {
+	consoleEcho = on;
 }
 static uint8_t blinkHidden = 0;  												// Blink phase : 1 = blinking text hidden.
 static void CONPaintCharacter(uint16_t x,uint16_t y);
@@ -106,10 +141,9 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 	for (uint16_t y1 = 0;y1 < cHeight;y1++) {
 		uint16_t b = 0;
 		if (cHeight == 14 && ch < 128) {
-			b = font_8x14[(ch-32)*14 + y1];
+			b = consoleFont14[(ch-32)*14 + y1];  										// 2,21 : user 8x14 font or built in.
 		} else if (y1 >= yPad && y1 < yPad + 8) {
-			b = font_5x7[(ch-32)*8 + y1 - yPad];
-			if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1 - yPad];
+			b = CONGlyph(ch)[y1 - yPad];  												// Console font, Latin-1 or UDG
 		}
 		if (attr & MDA_ATTR_BRIGHT) b |= (b >> 1);  									// Bold : double strike.
 		if ((attr & MDA_ATTR_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  			// Underline row (MDA : row 12 of 14).
@@ -150,8 +184,7 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  		} else if (graphMode->xGSize != 0) {  									// Only if graphics mode.
 			for (uint16_t y1 = 0;y1 < cHeight;y1++) {  							// Each line of font data
 
-				uint16_t b = font_5x7[(ch-32)*cHeight + y1]; 					// Bit pattern for that line.
-				if (ch >= 192) b = userDefinedFont[(ch & 0x3F) * 8 + y1]; 		// $C0-$FF UDG Memory.												
+				uint16_t b = CONGlyph(ch)[y1]; 									// Bit pattern for that line (font, $A0-$BF Latin-1, $C0-$FF UDG).												
 
 				uint8_t *screen = graphMode->graphicsMemory+					// Where in memory it starts.
 												x*cWidth+(y*cHeight+y1) * 320;	
@@ -249,6 +282,8 @@ void CONGetScreenSizeChars(uint8_t* width, uint8_t* height) {
 void CONInitialise(struct GraphicsMode *gMode) {
 	graphMode = gMode;	
 	graphMode->foreCol = 7;graphMode->backCol = 0; 	 							// Reset colours
+	consoleFont = font_5x7;  													// 2,21 : built in font again (mode change, reset).
+	consoleFont14 = font_8x14;
 	blinkHidden = 0;
 	CONWrite(12);  																// Clear screen / home cursor.
 }
@@ -442,6 +477,10 @@ static void CONInsertCharacter(void) {
 // ***************************************************************************************
 
 void CONWrite(int c) {
+	if (consoleEcho) {  														// 2,20 : text and newlines go to the debug UART / stderr
+		if (c == CC_ENTER) { FDBWrite(13);FDBWrite(10); }
+		else if ((c >= 32 && c < 127) || (c >= 0xA0 && consoleEcho > 1)) FDBWrite((uint8_t)c);
+	}
 
 	switch (c) {
 
@@ -516,7 +555,7 @@ void CONWrite(int c) {
 			CONDeleteCharacter();break;
 
 		default:
-			if ((c >= ' ' && c < 127) || c >= 192) {  							// 32-126,192+ output a character.
+			if ((c >= ' ' && c < 127) || c >= 0xA0) {  							// 32-126,192+ output a character.
 				CONDrawCharacter(graphMode->xCursor,graphMode->yCursor,c,graphMode->foreCol,graphMode->backCol);
 				graphMode->xCursor++;
 				if (graphMode->xCursor == graphMode->xCSize) {  				// Char at EOL mark extended.

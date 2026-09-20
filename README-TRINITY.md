@@ -37,6 +37,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.7.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.7.1-latin1-USB.uf2`) — **Latin-1, locale FR, police
+  console, écho de débogage (T-20, F-17/F-95/F-92 du fork)**. Console : caractères `$A0-$BF` = symboles Latin-1 en flash
+  (`latin1font.h` généré par `scripts/latin1.py` depuis `font_5x7.h`), `$C0-$FF` = police utilisateur initialisée aux lettres
+  accentuées au reset (`2,5` les remplace), `CONGlyph` unique pour la console, Draw Text et QuickDraw ; `fr.locale` = AZERTY
+  PC en Latin-1 (l'ancienne disposition Apple devient `fm.locale`), codes 160-255 admis par `keymaps.py`. **`2,21` Set
+  Console Font** : glyphes `$20-$7F` lus en place dans la RAM 6502 (8 lignes, et 14 lignes pour les cellules 9×14 du mode 1),
+  rétablis par 5,9 et au reset. **`2,20` Console Debug Echo** : le texte console part aussi sur l'UART de débogage
+  (stderr dans `neo`). `neo` : tampon d'arguments 512 o, sortie `cycles:` une seule fois. Tests `tests/api/` :
+  `latin1.asm` (frappe AZERTY injectée `keys:2790\`#;` → `é è ç à ² 3 m`), `confont.asm`, `confont14.asm` du fork :
+  sorties identiques ; `events` : attendu en regex (position souris hôte). `make test-api` 7/7, `make test-toolbox` 10/10.
+  RAM 34 556 o libres ; UF2 409 600 o.
+
 - **0.7.0** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.7.0-banks-xip-USB.uf2`) — **Banques mémoire en
   flash (XIP), T-17** (décision bmarty : « je veux le XIP pour les banques »). Reprise de F-23 du fork avec le stockage en
   flash au lieu de la SRAM : **32 banques de 8 Ko** dans les 256 Ko du haut des 2 Mo (`0x1C0000`), lues en place ;

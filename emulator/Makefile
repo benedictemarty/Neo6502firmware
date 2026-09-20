@@ -136,6 +136,7 @@ prebuild:
 	$(PYTHON) scripts$(S)mapper.py >include$(S)hid2sdl.h
 	$(CCOPY) $(BINDIR)*_binary.h include
 	$(HCONVERT) $(NEODOSBIN) include$(S)neodos_binary.h neodos B800
+	$(PYTHON) $(COMDIR)scripts$(S)latin1.py $(COMDIR)include$(S)interface$(S)font_5x7.h >$(COMDIR)include$(S)data$(S)latin1font.h
 
 # ***************************************************************************************
 #

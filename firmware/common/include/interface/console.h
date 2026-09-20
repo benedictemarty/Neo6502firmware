@@ -17,6 +17,9 @@
 extern const uint8_t font_5x7[];
 
 const uint8_t *CONGlyph(uint8_t ch);  												// 8 rows of the 6x8 glyph (T-12 : QuickDraw text)
+void CONResetUserFont(void);  														// Latin-1 letters in $C0-$FF (T-20)
+uint8_t CONSetFont(uint16_t addr,uint16_t addr14);  									// 2,21 console font
+void CONSetDebugEcho(uint8_t on);  													// 2,20 echo to the debug port
 void CONInitialise(struct GraphicsMode *gMode);
 void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);

@@ -96,6 +96,7 @@ void DSPReset(void) {
 	DLReset();                                                                  // No dialogs
 	RSReset();                                                                  // No resource file
 	BNKReset();                                                                 // No bank mapped (T-17)
+	CONResetUserFont();                                                         // Latin-1 letters in $C0-$FF (T-20)
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 

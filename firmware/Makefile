@@ -38,6 +38,7 @@ kernel: always
 	$(MAKE) -C ..$(S)kernel
 	$(CCOPY) $(BINDIR)kernel_binary.h $(COMDIR)include$(S)data
 	$(HCONVERT) $(NEODOSBIN) $(COMDIR)include$(S)data$(S)neodos_binary.h neodos B800
+	$(PYTHON) $(COMDIR)scripts$(S)latin1.py $(COMDIR)include$(S)interface$(S)font_5x7.h >$(COMDIR)include$(S)data$(S)latin1font.h
 	$(TOUCH) sources$(S)memory.c*
 
 # ***************************************************************************************

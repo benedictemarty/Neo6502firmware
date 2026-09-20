@@ -23,6 +23,7 @@ all:
 	$(PYTHON) $(COMDIR)scripts$(S)makedispatch.py dispatch.config >$(COMDIR)include$(S)data$(S)dispatch_code.h
 	touch sources$(S)interface$(S)dispatch.cpp
 	$(HCONVERT) $(NEODOSBIN) include$(S)data$(S)neodos_binary.h neodos B800
+	$(PYTHON) $(COMDIR)scripts$(S)latin1.py $(COMDIR)include$(S)interface$(S)font_5x7.h >$(COMDIR)include$(S)data$(S)latin1font.h
 
 	$(PYTHON) $(COMDIR)scripts$(S)who.py >$(COMDIR)include$(S)data$(S)neowho.h
 
