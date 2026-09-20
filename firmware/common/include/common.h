@@ -68,6 +68,8 @@
 #include "interface/blitter.h"
 #include "interface/gamepad.h"
 #include "interface/editor.h"
+#include "interface/toolbox.h"  														// Toolbox (T-12) : 32 QuickDraw
+#include "interface/windows.h"  														// 34 Window Manager
 #include "interface/cdcserial.h"
 #include "interface/bootmenu.h"
 

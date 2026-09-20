@@ -33,6 +33,9 @@ struct BlitterArea {
 #define BLTFMT_HIGH 3		// High nibble (target only)
 #define BLTFMT_LOW  4		// Low nibble (target only)
 
+uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (T-12 : QuickDraw fonts)
+void BLTLoadArea(uint16_t addr,struct BlitterArea *b);													// 12,3 area structure in 6502 RAM (T-12)
+uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target);	// Areas in firmware memory (T-12)
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize);
 
 // Values for BLTComplexCopy and BLTImage action params

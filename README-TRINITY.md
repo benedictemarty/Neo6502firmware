@@ -37,6 +37,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.0-toolbox-USB.uf2`) — **Toolbox, première livraison
+  (T-12) : groupe 32 QuickDraw et groupe 34 Window Manager**, repris du fork (`archive/bmarty-main-2026-09-19`,
+  `toolbox_quickdraw.cpp`, `toolbox_windows.cpp`, `config/toolbox/group32_quickdraw.inc`, `group34_windows.inc`, ADR-01),
+  mode 0 d'abord (décision bmarty). Adaptations : pas de pages de banques (`$A0+`) ni de sources blitter 2 bits / doublées
+  (`12,3` amont : `BLTGetRealAddress`, `BLTLoadArea`, `BLTCopyArea` exposés par `blitter.cpp`) ; `CONGlyph` (police 6×8
+  système, `$C0-$FF` UDG) dans `console.cpp` ; les groupes ≥ 32 sont dispatchés par `DSPToolbox()` en flash
+  (`dispatch_toolbox.h`, `makedispatch.py` R22 du fork) pour ne pas grossir `DSPHandler` copié en RAM ; `QDInitGraf` et
+  `WMReset` au reset. **Pas encore repris** : Event Manager (33) — les événements update/activate des fenêtres sont
+  ignorés (crochets no-op dans `toolbox_windows.cpp`), le programme redessine après chaque appel — et Control Manager (36).
+  Tests : `tests/toolbox/quickdraw.asm`, `quickdraw2.asm`, `wm.asm` (du fork, journal console recopié en RAM `$2000`,
+  fin `jmp $FFFF` sous `neo`), `make test-toolbox` → sorties **identiques à celles du fork** (hors lignes `EV`).
+  RAM : +428 o (`windows[8]`, ordre Z), 36 696 o libres ; UF2 375 808 o (+14 336 o de flash).
+
 - **0.4.1** (2026-09-20, **validé sur carte** le soir même : bannière `v0.4.0 dirty` = ce code avant le tag ; `boot/neobasic.bin`
   lancé par `auto.txt`, `vmode 1` → curseur visible, `list` lisible, numéros de ligne soulignés comme l'encre rouge du mode 0,
   `vmode 0` → retour ; UF2 reconstruit avec la bannière `v0.4.1-1-g10724fe` : `~/neo-carte/trinity-0.4.1-mda-USB.uf2`)

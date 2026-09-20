@@ -18,7 +18,7 @@
 //
 // ***************************************************************************************
 
-static uint8_t *_BLTGetRealAddress(uint8_t page,uint16_t address) {
+uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address) {  					// Public : QuickDraw (T-12)
 	int pos;
 	uint8_t *ptr = NULL;
 	switch(page) {
@@ -45,11 +45,11 @@ static uint8_t *_BLTGetRealAddress(uint8_t page,uint16_t address) {
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize) {	
 	printf("Blit: %02x:%04x to %02x:%04x bytes %04x\n",pageFrom,addressFrom,pageTo,addressTo,transferSize);
 	if (transferSize == 0) return 0;
-	uint8_t *src = _BLTGetRealAddress(pageFrom,addressFrom);  						// Copy from here
-	uint8_t *dst = _BLTGetRealAddress(pageTo,addressTo);  							// To here.
+	uint8_t *src = BLTGetRealAddress(pageFrom,addressFrom);  						// Copy from here
+	uint8_t *dst = BLTGetRealAddress(pageTo,addressTo);  							// To here.
 	if (src == NULL || dst == NULL) return 1;  										// Start both legitimate addresses
-	if (_BLTGetRealAddress(pageFrom,addressFrom+transferSize-1) == NULL) return 1; 	// Check end both legitimate addresses
-	if (_BLTGetRealAddress(pageTo,addressTo+transferSize-1) == NULL) return 1;
+	if (BLTGetRealAddress(pageFrom,addressFrom+transferSize-1) == NULL) return 1; 	// Check end both legitimate addresses
+	if (BLTGetRealAddress(pageTo,addressTo+transferSize-1) == NULL) return 1;
 	memmove(dst,src,transferSize); 													// Copy it.
 
 	return 0;
@@ -607,8 +607,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 					return 1;	// Unsupported combination
 				}
 
-				uint8_t *src = _BLTGetRealAddress(source->page, source->address);
-				uint8_t *tgt = _BLTGetRealAddress(target->page, target->address);
+				uint8_t *src = BLTGetRealAddress(source->page, source->address);
+				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
 					// Process a line.
@@ -625,8 +625,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 					return 1;	// Unsupported combination
 				}
 
-				uint8_t *src = _BLTGetRealAddress(source->page, source->address);
-				uint8_t *tgt = _BLTGetRealAddress(target->page, target->address);
+				uint8_t *src = BLTGetRealAddress(source->page, source->address);
+				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
 					(*copyMasked)(tgt, src, source->width, source->transparent);
@@ -642,8 +642,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 					return 1;	// Unsupported combination
 				}
 
-				uint8_t *src = _BLTGetRealAddress(source->page, source->address);
-				uint8_t *tgt = _BLTGetRealAddress(target->page, target->address);
+				uint8_t *src = BLTGetRealAddress(source->page, source->address);
+				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
 					(*solidMasked)(tgt, src, source->width, source->transparent, source->solid);
@@ -654,6 +654,11 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 			break;
 	}
 	return 0;
+}
+
+void BLTLoadArea(uint16_t addr,struct BlitterArea *b) { _BLTLoadBlitterAreaObject(addr,b); }  		// T-12
+uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target) {
+	return internalBLTComplexCopy(action,source,target);
 }
 
 uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget) {

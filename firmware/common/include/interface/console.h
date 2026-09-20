@@ -16,6 +16,7 @@
 #include "interface/graphics.h"
 extern const uint8_t font_5x7[];
 
+const uint8_t *CONGlyph(uint8_t ch);  												// 8 rows of the 6x8 glyph (T-12 : QuickDraw text)
 void CONInitialise(struct GraphicsMode *gMode);
 void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);

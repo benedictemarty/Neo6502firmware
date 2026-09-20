@@ -65,6 +65,12 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 #define MDA_ATTR_BLINK 		(0x08)
 #define MDA_ATTR_INVERSE 	(0x10)
 #define MDA_INK 			(7)  													// Default monochrome ink : normal text.
+static const uint8_t blankGlyph[8] = {0,0,0,0,0,0,0,0};
+const uint8_t *CONGlyph(uint8_t ch) {  											// T-12 : QuickDraw system font
+	if (ch < 0x20) return blankGlyph;
+	if (ch < 0xC0) return font_5x7 + (ch - 0x20) * 8;  								// $20-$BF built in (symbols $80-$BF)
+	return userDefinedFont + (ch - 0xC0) * 8;  										// $C0-$FF UDG
+}
 static uint8_t blinkHidden = 0;  												// Blink phase : 1 = blinking text hidden.
 static void CONPaintCharacter(uint16_t x,uint16_t y);
 

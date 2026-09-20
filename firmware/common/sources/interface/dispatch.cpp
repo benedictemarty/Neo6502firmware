@@ -31,6 +31,14 @@
 
 #include "data/neowho.h"
 
+// bmarty R22 / T-12 : the toolbox groups (32.., ADR-01) are dispatched here, in flash. DSPHandler is copied to
+// RAM (time critical) and grew by about 300 bytes of SRAM per group ; the toolbox calls are not time critical.
+static void __attribute__((noinline)) DSPToolbox(uint8_t *cBlock, uint8_t *memory,uint8_t cmd) {
+	(void)memory;
+	#include "data/dispatch_toolbox.h"
+}
+
+
 // ***************************************************************************************
 //
 //							Handle commands sent by message
@@ -80,6 +88,8 @@ void DSPReset(void) {
 	CURInitialise();
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
+	QDInitGraf();                                                               // Toolbox (T-12) : QuickDraw port
+	WMReset();                                                                  // No windows
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 

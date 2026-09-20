@@ -111,6 +111,10 @@ emulator-deps-nix:
 #
 # ***************************************************************************************
 
+# Tests de la toolbox (T-12) : tests/toolbox/*.asm joués dans bin/neo, journal comparé à *.expected
+test-toolbox:
+	for t in tests/toolbox/*.asm; do tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
+
 clean:
 	$(MAKE) -B -C kernel clean
 	$(MAKE) -B -C $(BASICDIR) clean
