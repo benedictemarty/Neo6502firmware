@@ -49,11 +49,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   texte et mots-clés normaux, constantes en gras, numéros de ligne soulignés, rien ne clignote ; le curseur inverse
   toujours la cellule en 1 bpp (avant : XOR avec l'encre, invisible pour une encre paire). L'encre par défaut de la console
   est 7 dans tous les modes. Vérifié dans `neo` (`print`, défilement, `cls`, `cursor`, `input`, `list`, attributs, 1 → 0).
-  **Non résolu** : sur carte, bmarty observe après `vmode 1` depuis NeoBASIC un **écran noir, signal présent, sans
-  activité**, alors que `mda.neo6502` (qui remplace le BASIC en `$800`, bascule, imprime puis boucle sans plus rien
-  appeler) fonctionne ; `neo` ne reproduit pas. Différences côté BASIC : boucle `2,1` + code 24 (curseur) de `KReadLine`,
-  puis tout le reste de l'API. Piste écartée par lecture : palette (couleur 1 par défaut = rouge, pas noir). À faire sur
-  carte : protocole dans `docs/BACKLOG.md` T-16.
+  **Écran noir sur carte expliqué** : bmarty observait après `vmode 1` depuis NeoBASIC (0.3.0) un écran noir, signal
+  présent, sans activité, alors que `mda.neo6502` fonctionnait ; protocole carte : `vmode 0` tapé à l'aveugle ramène l'image
+  (BASIC vivant), idem en 0.3.0, rien ne change en attendant. Reproduit dans `neo` avec la console 0.3.0 : `vmode 1` au prompt
+  → **0 pixel allumé**. Cause : après `vmode`, NeoBASIC n'imprime rien (pas de « Ready ») et n'affiche que le curseur,
+  que la console dessinait par XOR avec l'encre courante — l'encre du prompt est le vert (2), bit 0 nul, donc **aucun pixel
+  inversé en 1 bpp** : écran vide, curseur invisible, jusqu'à ce qu'on tape quelque chose. `mda.neo6502` n'a pas de curseur.
+  Corrigé par le curseur toujours inversé (ci-dessus) ; vérifié dans `neo` (curseur visible en haut à gauche).
 
 - **0.4.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.4.0-neodos-USB.uf2`) — **NeoDOS remplace
   NeoBASIC comme environnement résident (T-15)**, décision bmarty du jour. Le firmware embarque `neodos_binary.h`
