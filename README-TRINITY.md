@@ -50,9 +50,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   UF2 406 528 o (le firmware occupe 0x63400, loin de la zone des banques). **Sur carte, à valider avec prudence** :
   première écriture flash sous DVI du projet (le fork l'avait écartée sans carte).
 
-- **0.6.2** (2026-09-21, émulateur seulement) — **NeoDOS 0.14.0 embarqué, chargé en `$B800`** (T-15 suite ; demande
+- **0.7.0, même livraison** (2026-09-21 ; préparé comme 0.6.2 mais entraîné dans le commit 0.7.0 par la session banques) — **NeoDOS 0.14.0 embarqué, chargé en `$B800`** (T-15 suite ; demande
   bmarty : NeoDOS a descendu sa base de `$C000` à `$B800` pour retrouver 2,5 Ko de marge, ADR-004 de Neo6502Msdos, et
-  externalisé `ATTRIB`). `hconvert.py … neodos B800` dans les deux Makefiles : `NEODOS_LOAD = 0xb800`, `NEODOS_SIZE =
+  externalisé `ATTRIB`). `hconvert.py … neodos B800` dans les trois Makefiles (firmware, common, emulator) : `NEODOS_LOAD = 0xb800`, `NEODOS_SIZE =
   0x27f1` (10 225 o) ; `MEMInitialiseMemory` et `1,3` pointent `jmp (0)` sur `$B800`. Programmes 6502 : `$0800-$B7FF`.
   Sans cette reprise, `EXIT` de NeoDOS 0.14.0 relançait l'ancienne image 0.12.0 en `$C000` à côté de la nouvelle.
   Vérifié dans `neo` : bannière `NeoDOS version 0.14.0`, `MEM` = 45 056 / 17 408, `EXIT` relance la 0.14.0.
