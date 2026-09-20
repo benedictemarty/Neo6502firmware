@@ -52,6 +52,7 @@ void DGBXGetActiveDisplayInfo(SDL_Rect *r,int *pxs,int *pys,int *pxc,int *pyc);
 BYTE8 DRVGFXHandler(BYTE8 key,BYTE8 isRunMode);
 BYTE8 *DBGXGetVideoRAM(void);
 BYTE8 DBGGetDisplayScale(void);
+int RNDWriteScreenshot(const char *fileName);  										// PPM capture (test hooks, T-19)
 void DBGSetDisplayScale(uint16_t scale);
 void DBGSaveArguments(int argc,char *argv[]);
 

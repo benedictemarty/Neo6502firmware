@@ -65,6 +65,22 @@ void RNDSetDisplayPage(uint8_t *displayMemory) {
 	videoRAM = displayMemory;  													// Immediate : the emulator renders from gMode.displayMemory anyway.
 }
 
+// Write the display to a binary PPM (P6) file, for automated tests (shot:C:FILE ; Trinity T-19, from the fork).
+int RNDWriteScreenshot(const char *fileName) {
+	if (videoRAM == NULL) return -1;
+	FILE *f = fopen(fileName,"wb");
+	if (f == NULL) return -1;
+	fprintf(f,"P6\n%d %d\n255\n",gMode.xGSize,gMode.yGSize);
+	for (int y = 0;y < gMode.yGSize;y++) {
+		for (int x = 0;x < gMode.xGSize;x++) {
+			uint16_t p = palette[GFXReadDisplayPixelRaw(x,y)];
+			fputc(((p >> 8) & 0x0F) * 17,f);fputc(((p >> 4) & 0x0F) * 17,f);fputc((p & 0x0F) * 17,f);
+		}
+	}
+	fclose(f);
+	return 0;
+}
+
 // *******************************************************************************************************************************
 //
 //											Get/Set emulator display scale

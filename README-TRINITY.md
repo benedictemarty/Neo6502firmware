@@ -37,6 +37,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.6.1** (2026-09-21, émulateur seulement) — **`neo` : crochets de test** (T-19, repris du fork sans sa partie IRQ) :
+  arguments `cycles:N` (sortie + `memory.dump`), `shot:C:FICHIER` (capture PPM), `text:C:FICHIER` (texte console),
+  `keys:C:TEXTE` (frappe automatique, `\n` = Entrée), `mouse:C:X,Y,B` (souris et boutons). `tests/toolbox/run_neo.sh`
+  lit `NOM.args` ; `events.asm` (groupe 33, souris + « ab ») est automatisé : sortie identique au fork.
+  `make test-toolbox` 10/10, `make test-api` 3/3.
+
 - **0.6.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.6.0-volumes-clock-USB.uf2`) — **Reprises du fork
   demandées par NeoDOS (T-18, mémo T-10)** : **volumes** (F-102 : `3,24` Volume Info, `3,25` Select Volume, `3,26` Get Current
   Volume, préfixe `n:` dans tous les chemins du groupe 3 ; carte : lecteurs logiques FatFs, clés USB montées à leur adresse

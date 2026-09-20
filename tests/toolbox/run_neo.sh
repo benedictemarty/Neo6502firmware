@@ -12,7 +12,8 @@ cp "$TDIR"/*.res "$TDIR"/*.bin "$OUT/storage/" 2>/dev/null
 mkdir -p "$OUT/storage1" && printf "un" > "$OUT/storage1/vol1.txt"                 # volume 1 (3,24-3,26)
 sed 's/^NEO = 0/NEO = 1/' "$TDIR/$NAME.asm" > "$OUT/$NAME.asm"
 64tass --mw65c02 --nostart -q -o "$OUT/$NAME.neo6502" "$OUT/$NAME.asm" || exit 2
-cd "$OUT" && timeout 60 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 > neo.log 2>&1
+ARGS=""; [ -r "$TDIR/$NAME.args" ] && ARGS=$(cat "$TDIR/$NAME.args")             # crochets neo : mouse:C:X,Y,B keys:C:TEXTE cycles:N (T-19)
+cd "$OUT" && timeout 120 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 $ARGS > neo.log 2>&1
 python3 - "$OUT/memory.dump" > "$OUT/journal.txt" <<'PY'
 import sys
 m=open(sys.argv[1],'rb').read()

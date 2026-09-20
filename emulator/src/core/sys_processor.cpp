@@ -112,6 +112,114 @@ void CPUReadNeoFile(char *fileName) {
 //
 // *******************************************************************************************************************************
 
+#include "interface/kbdcodes.h"
+#include "gfx.h"
+
+// *******************************************************************************************************************************
+//
+//		Test automation hooks (Trinity T-19, from the fork, without its IRQ part) : command line arguments
+//		  cycles:N        exit after N cycles (memory.dump written as for jmp $FFFF)
+//		  shot:C:FILE     PPM screenshot at cycle C      text:C:FILE   console text at cycle C
+//		  keys:C:TEXT     autotype TEXT from cycle C (\n = Enter, one key per 6 frames)
+//		  mouse:C:X,Y,B   mouse at (X,Y) with buttons B at cycle C
+//
+// *******************************************************************************************************************************
+
+static LONG32 totalCycles = 0;  													// Cycles since reset.
+static LONG32 exitAtCycles = 0;
+struct TestHook { LONG32 at; char kind; char arg[512]; bool done; };
+static TestHook testHooks[16];
+static int testHookCount = 0;
+static const char *typeText = NULL;  												// keys:C:TEXT autotype state.
+static int typePos = -1;
+static LONG32 typeNext = 0;
+static bool typeDown = false;
+static int typeCode = 0,typeMods = 0;
+
+static void CPUAddTestHook(char *command) {  										// "kind:C:ARG", kind = shot/text/keys/mouse
+	int plen = (command[0] == 'm') ? 6 : 5;
+	char *sep = strchr(command+plen,':');
+	if (sep == NULL || testHookCount >= 16) return;
+	*sep = '\0';
+	testHooks[testHookCount].at = atol(command+plen);
+	testHooks[testHookCount].kind = command[0];
+	strncpy(testHooks[testHookCount].arg,sep+1,sizeof(testHooks[0].arg)-1);
+	testHooks[testHookCount].arg[sizeof(testHooks[0].arg)-1] = '\0';
+	testHooks[testHookCount].done = false;
+	testHookCount++;
+}
+
+static int CPUAsciiToHID(char ch,int *mods) {
+	static const char *shifted = ")!@#$%^&*(";
+	static const char *plain  = "-=[]\\\001;'`,./";  									// 0x2D.. ; 0x32 = non-US # (never typed)
+	static const char *shift2 = "_+{}|\001:\"~<>?";
+	*mods = 0;
+	if (ch >= 'a' && ch <= 'z') return 0x04 + ch - 'a';
+	if (ch >= 'A' && ch <= 'Z') { *mods = KEY_SHIFT;return 0x04 + ch - 'A'; }
+	if (ch >= '1' && ch <= '9') return 0x1E + ch - '1';
+	if (ch == '0') return 0x27;
+	for (int i = 0;i < 10;i++) if (shifted[i] == ch) { *mods = KEY_SHIFT;return (i == 0) ? 0x27 : 0x1E + i - 1; }
+	for (int i = 0;plain[i];i++) if (plain[i] == ch) return 0x2D + i;
+	for (int i = 0;shift2[i];i++) if (shift2[i] == ch) { *mods = KEY_SHIFT;return 0x2D + i; }
+	if (ch == '\n') return 0x28;
+	if (ch == 27) return 0x29;
+	if (ch == ' ') return 0x2C;
+	if (ch == '\t') return 0x2B;
+	if (ch == 8) return 0x2A;
+	return 0;
+}
+
+static void CPUConsoleText(const char *fileName) {
+	FILE *f = fopen(fileName,"w");
+	if (f == NULL) return;
+	for (int y = 0;y < gMode.yCSize;y++) {
+		for (int x = 0;x < gMode.xCSize;x++) {
+			int ch = gMode.consoleMemory[x + y * MAXCONSOLEWIDTH] & 0xFF;
+			fputc((ch >= 32 && ch < 127) ? ch : (ch == 0 ? ' ' : '.'),f);
+		}
+		fputc('\n',f);
+	}
+	fclose(f);
+}
+
+static void CPURunHook(TestHook *h) {
+	h->done = true;
+	if (h->kind == 's') RNDWriteScreenshot(h->arg);
+	if (h->kind == 't') CPUConsoleText(h->arg);
+	if (h->kind == 'k') { typeText = h->arg;typePos = 0;typeNext = totalCycles; }
+	if (h->kind == 'm') {
+		int x = 0,y = 0,b = 0;
+		if (sscanf(h->arg,"%d,%d,%d",&x,&y,&b) == 3) { MSEEnableMouse();MSESetPosition(x,y);MSEUpdateButtonState(b); }
+	}
+}
+
+static void CPURunTestHooks(void) {
+	for (int i = 0;i < testHookCount;i++) {
+		if (!testHooks[i].done && totalCycles >= testHooks[i].at) CPURunHook(&testHooks[i]);
+	}
+	if (typePos >= 0 && typeText[typePos] != '\0' && totalCycles >= typeNext) {  		// Autotype : press, 3 frames, release, 3 frames.
+		if (!typeDown) {
+			char ch = typeText[typePos];
+			if (ch == '\\' && typeText[typePos+1] != '\0') { typePos++;ch = (typeText[typePos] == 'n') ? '\n' : typeText[typePos]; }
+			typeCode = CPUAsciiToHID(ch,&typeMods);
+			if (typeCode == 0) { typePos++;return; }
+			KBDEvent(1,typeCode,typeMods);
+			typeDown = true;
+		} else {
+			KBDEvent(0,typeCode,0);
+			typeDown = false;typePos++;
+		}
+		typeNext = totalCycles + 3 * CYCLES_PER_FRAME;
+	}
+	if (exitAtCycles != 0 && totalCycles >= exitAtCycles) {
+		for (int i = 0;i < testHookCount;i++) {  										// Flush the hooks due at exit.
+			if (!testHooks[i].done && testHooks[i].at >= exitAtCycles && testHooks[i].kind != 'k') CPURunHook(&testHooks[i]);
+		}
+		printf("cycles:%ld reached - exiting emulator\n",(long)exitAtCycles);
+		CPUExit();
+	}
+}
+
 //#include "binary.h"
 
 void CPUReset(void) {
@@ -169,6 +277,9 @@ void CPUReset(void) {
 			if (strcmp(command,"trace") == 0) { 									// Dump every CPU instruction to stdout.
 				traceMode = true;
 			}
+			if (strncmp(command,"cycles:",7) == 0) exitAtCycles = atol(command+7);	// Test hooks (T-19)
+			if (strncmp(command,"shot:",5) == 0 || strncmp(command,"text:",5) == 0 ||
+				strncmp(command,"keys:",5) == 0 || strncmp(command,"mouse:",6) == 0) CPUAddTestHook(command);
 			if (strlen(command) > 4 && 												// Load .NEO file (case-insensitive
 						strcasecmp(command+strlen(command)-4,".neo") == 0) {	// so FTD.NEO / Foo.Neo also match).
 				CPUReadNeoFile(command);
@@ -212,7 +323,10 @@ BYTE8 CPUExecuteInstruction(void) {
 		printf("%04x  %-10s %s\n", CPUGetPC(), mem, dasm);
 	}
 
+	LONG32 before = cycles;
 	forceSync = CPUExecute6502();
+	totalCycles += cycles - before;
+	CPURunTestHooks();
 
 	int cycleMax = CYCLES_PER_FRAME; 	
 	if (cycles < cycleMax && forceSync == 0) return 0;								// Not completed a frame.
