@@ -16,13 +16,9 @@
 
 #include "common.h"
 
-// Trinity (T-12, 2026-09-20) : taken from the fork. The Event Manager (33) and the Control Manager (36) are not
-// in yet : update/activate events are dropped and windows have no controls. Both hooks become real calls with
-// their groups (docs/BACKLOG.md T-12).
-static inline void EVTPostWindow(uint8_t what,uint8_t window,uint8_t message2) { (void)what;(void)window;(void)message2; }
+// Trinity (T-12, 2026-09-20) : taken from the fork. The Control Manager (36) is not in yet : windows have no
+// controls ; the hook becomes a real call with its group (docs/BACKLOG.md T-12).
 static inline void CTWindowDisposed(uint8_t id) { (void)id; }
-#define EVT_UPDATE   9
-#define EVT_ACTIVATE 10
 
 struct Window {
     bool used,visible;

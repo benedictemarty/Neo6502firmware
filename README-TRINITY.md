@@ -37,6 +37,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.1** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.1-events-USB.uf2`) — **Toolbox : groupe 33 Event
+  Manager** (T-12), repris du fork (`toolbox_events.cpp`, `events.h`, `group33_events.inc`) : file unique de 32 événements
+  (clavier down/up/auto, souris down/up/move/molette, 4 timers, update/activate des fenêtres), `33,1` Init (masque),
+  `33,2` Get Next Event, `33,3` Available, `33,4` Flush, `33,5` Set Timer, `33,6` Status. Crochets dans `keyboard.cpp`
+  (`EVTPostKey` ; touches de fonction traitées à l'appui seulement, comme le fork) et `mouse.cpp` (`EVTPostMouseMove`,
+  `EVTPostWheel`, `EVTPostMouseButtons`) ; `EVTReset` au reset ; le Window Manager poste réellement ses événements
+  (crochet no-op retiré). Tests : `wm.asm` avec `EVENTS = 1` → sortie **identique au fork, lignes `EV` comprises** ;
+  `evtimer.asm` identique ; `manuel/events.asm` (souris + « ab ») pour la carte, `neo` de Trinity n'injectant pas d'entrées.
+  RAM : +384 o (file de 32 × 8 o + timers), 36 312 o libres ; UF2 379 392 o.
+
 - **0.5.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.0-toolbox-USB.uf2`) — **Toolbox, première livraison
   (T-12) : groupe 32 QuickDraw et groupe 34 Window Manager**, repris du fork (`archive/bmarty-main-2026-09-19`,
   `toolbox_quickdraw.cpp`, `toolbox_windows.cpp`, `config/toolbox/group32_quickdraw.inc`, `group34_windows.inc`, ADR-01),

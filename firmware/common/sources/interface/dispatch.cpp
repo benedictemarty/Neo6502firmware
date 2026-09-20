@@ -89,6 +89,7 @@ void DSPReset(void) {
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	QDInitGraf();                                                               // Toolbox (T-12) : QuickDraw port
+	EVTReset();                                                                 // Event manager off
 	WMReset();                                                                  // No windows
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text

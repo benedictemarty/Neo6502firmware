@@ -23,8 +23,8 @@ GROUP 34 Window Manager
         Parameter:5, or an error (1 bad parameters, 2 no window left). The new window comes to the front. The
         firmware draws the frames (1 pixel border, 10 line title bar, close box, grow box) ; the content is drawn by
         the program : after every change of the window set the firmware erases the visible contents, repaints the
-        frames and, once the Event Manager (group 33) is in, posts one update event (type 9) per visible window, back to
-        front, and activate events (type 10) ; until then the program redraws after each call. To handle an update : Set Port (34,12), draw with group 32, then End Update (34,11).
+        frames and posts one update event (group 33, type 9) per visible window, back to front, and activate events
+        (type 10). To handle an update : Set Port (34,12), draw with group 32, then End Update (34,11).
 
     FUNCTION 2 Dispose Window
         *DERROR = WMDisposeWindow(DPARAMS[0]);

@@ -57,6 +57,7 @@ bool MSEMousePresent(void) {
 void MSESetPosition(uint16_t x, uint16_t y) {
     xCursor = x;
     yCursor = y;
+    EVTPostMouseMove();                                                         // F-42
 }
 
 void MSEOffsetPosition(int8_t dx, int8_t dy) {
@@ -73,6 +74,7 @@ void MSEOffsetPosition(int8_t dx, int8_t dy) {
 
     if(xCursor > gMode.xGSize) xCursor = gMode.xGSize;
     if(yCursor > gMode.yGSize) yCursor = gMode.yGSize;
+    EVTPostMouseMove();                                                         // F-42
 }
 
 // ***************************************************************************************
@@ -104,6 +106,7 @@ bool MSEGetCursorDrawInformation(uint16_t *pX, uint16_t *pY) {
 
 void MSEUpdateScrollWheel(int8_t ds) {
     scrollWheelState += ds;
+    EVTPostWheel(ds);                                                           // F-42
 }
 
 // ***************************************************************************************
@@ -113,7 +116,9 @@ void MSEUpdateScrollWheel(int8_t ds) {
 // ***************************************************************************************
 
 void MSEUpdateButtonState(uint8_t bs) {
+    uint8_t old = buttonState;
     buttonState = bs;
+    if (old != bs) EVTPostMouseButtons(old,bs);                                 // F-42
 }
 
 // ***************************************************************************************

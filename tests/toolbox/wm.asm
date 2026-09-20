@@ -9,7 +9,7 @@
 ; Auteur : bmarty <bmarty@mailo.com>
 ;   64tass --mw65c02 --nostart --output=wm.neo6502 wm.asm
 
-EVENTS = 0                  ; Trinity T-12 : groupe 33 pas encore repris -> pas d'événements (lignes EV absentes)
+EVENTS = 1                  ; Trinity T-12 : groupe 33 repris en 0.5.1 (0 = sans les lignes EV)
 
 NEO = 0                     ; 1 : construit pour neo (fin par jmp $FFFF) — run_neo.sh passe -D NEO=1
 ptr2   = $F4
