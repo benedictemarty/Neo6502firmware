@@ -115,6 +115,10 @@ emulator-deps-nix:
 test-toolbox:
 	for t in tests/toolbox/*.asm; do tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
 
+# Tests de l'API Trinity hors toolbox (tests/api/*.asm : 3,27, 1,20-21...)
+test-api:
+	for t in tests/api/*.asm; do TESTDIR=tests/api tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
+
 clean:
 	$(MAKE) -B -C kernel clean
 	$(MAKE) -B -C $(BASICDIR) clean

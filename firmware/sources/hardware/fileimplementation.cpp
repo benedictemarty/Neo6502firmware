@@ -214,6 +214,48 @@ uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
 
 // ***************************************************************************************
 //
+//		Volumes (bmarty F-102). A volume is a FatFs logical drive ("n:" prefix) : USB keys
+//		are mounted at their device address (usb_storage.cpp), the SD card at "0:".
+//
+// ***************************************************************************************
+
+uint8_t FISGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs) {
+	STOInitialise();
+	if (volume >= FF_VOLUMES) return FIOERROR_INVALID_DRIVE;
+	char root[4] = { (char)('0' + volume), ':', '/', 0 };
+	DIR d;																		// cheap mount test : open the root
+	FRESULT result = f_opendir(&d, root);
+	if (result != FR_OK) return convertError(result == FR_NOT_ENABLED ? FR_INVALID_DRIVE : result);
+	f_closedir(&d);
+	#ifdef USBKEY_STORAGE
+	name = "USB";
+	#else
+	name = "SD";
+	#endif
+	name += (char)('0' + volume);
+	*attribs = FIOVOL_PRESENT;													// read-only not reported by FatFs
+	return FIOERROR_OK;
+}
+
+uint8_t FISSelectVolume(uint8_t volume) {
+	std::string name; uint8_t attribs;
+	uint8_t error = FISGetVolumeInfo(volume, name, &attribs);					// refuse an unmounted drive
+	if (error != FIOERROR_OK) return error;
+	char drive[3] = { (char)('0' + volume), ':', 0 };
+	return convertError(f_chdrive(drive));
+}
+
+uint8_t FISGetCurrentVolume(uint8_t* volume) {
+	std::unique_ptr<char[]> cwd(new (std::nothrow) char[FF_MAX_LFN + 8]);		// small stack : heap buffer
+	if (!cwd) return FIOERROR_NOT_ENOUGH_CORE;
+	FRESULT result = f_getcwd(cwd.get(), FF_MAX_LFN + 8);						// "n:/..." when FF_VOLUMES > 1
+	if (result != FR_OK) return convertError(result);
+	*volume = (cwd[1] == ':' && cwd[0] >= '0' && cwd[0] <= '9') ? cwd[0] - '0' : 0;
+	return FIOERROR_OK;
+}
+
+// ***************************************************************************************
+//
 //									   Stat file
 //
 // ***************************************************************************************
@@ -459,6 +501,8 @@ uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size) {
 	FRESULT result = f_lseek(f, size);
 	if (result == FR_OK)
 		result = f_truncate(f);
+	if (result == FR_OK)													// bmarty : keep the file position, as the emulator (ftruncate) does
+		result = f_lseek(f, oldPos < size ? oldPos : size);
 	// CONWriteString("%d\r", result);
 
 	return convertError(result);

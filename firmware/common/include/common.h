@@ -75,6 +75,7 @@
 #include "interface/controls.h"  														// 36 Control Manager
 #include "interface/dialogs.h"  														// 37 Dialog Manager
 #include "interface/resources.h"  														// 38 Resource Manager
+#include "interface/clock.h"  															// Date and time (T-18, F-14 of the fork)
 #include "interface/cdcserial.h"
 #include "interface/bootmenu.h"
 

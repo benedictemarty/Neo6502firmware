@@ -237,7 +237,7 @@
 /  Note that enabling exFAT discards ANSI C (C89) compatibility. */
 
 
-#define FF_FS_NORTC		1
+#define FF_FS_NORTC		0			/* Trinity T-18 : get_fattime() from the firmware clock (hardware/clock.cpp) */
 #define FF_NORTC_MON	1
 #define FF_NORTC_MDAY	1
 #define FF_NORTC_YEAR	2022

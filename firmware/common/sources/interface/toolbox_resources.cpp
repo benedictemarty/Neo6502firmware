@@ -11,17 +11,7 @@
 
 #include "common.h"
 
-// Trinity (T-12, 2026-09-20) : taken from the fork. No 3,27 File Read Paged here : the paged read (pages of 12,2,
-// $00 6502 RAM / $90 graphics RAM) is local. The file name goes through a fixed buffer (T-13).
-
-static uint8_t _RSReadPaged(uint8_t fileno, uint8_t page, uint16_t address, uint16_t* size) {
-	if (*size == 0) return FIOERROR_OK;
-	uint32_t last = (uint32_t)address + *size - 1;
-	if (last > 0xFFFF) return FIOERROR_INVALID_PARAMETER;
-	uint8_t *dest = BLTGetRealAddress(page, address);
-	if (dest == NULL || BLTGetRealAddress(page, (uint16_t)last) == NULL) return FIOERROR_INVALID_PARAMETER;
-	return FISReadFileHandleBuffer(fileno, dest, size);
-}
+// Trinity (T-12, 2026-09-20) : taken from the fork ; the file name goes through a fixed buffer (T-13).
 
 static uint8_t rsChannel = 0xFF;                                                // Channel of the open resource file, $FF none
 static uint8_t rsCount = 0;
@@ -102,7 +92,7 @@ uint8_t RSLoad(uint8_t index,uint8_t page,uint16_t address,uint16_t *size) {
     if (n == 0) return RS_ERR_OK;
     if (FISSeekFileHandle(rsChannel,e.offset) != 0) return RS_ERR_IO;
     uint16_t got = n;
-    if (_RSReadPaged(rsChannel,page,address,&got) != 0) return (page == 0 || BLTGetRealAddress(page,address) != NULL) ? RS_ERR_IO : RS_ERR_PARAM;
+    if (FIOReadFileHandlePaged(rsChannel,page,address,&got) != 0) return (page == 0 || BLTGetRealAddress(page,address) != NULL) ? RS_ERR_IO : RS_ERR_PARAM;
     *size = got;
     return (got == n) ? RS_ERR_OK : RS_ERR_IO;
 }

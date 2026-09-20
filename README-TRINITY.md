@@ -37,6 +37,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.6.0** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.6.0-volumes-clock-USB.uf2`) — **Reprises du fork
+  demandées par NeoDOS (T-18, mémo T-10)** : **volumes** (F-102 : `3,24` Volume Info, `3,25` Select Volume, `3,26` Get Current
+  Volume, préfixe `n:` dans tous les chemins du groupe 3 ; carte : lecteurs logiques FatFs, clés USB montées à leur adresse
+  USB — `FF_VOLUMES` = 4 déjà dans `firmware/lib/fatfs` ; `neo` : `storage`, `storage1`..`3`), **`3,27` File Read Paged**
+  (F-16 : lecture directe en RAM 6502 / VRAM / RAM graphique ; le Resource Manager l'utilise désormais), **date et heure**
+  (F-14 : `1,20` Get / `1,21` Set Date Time, `clock.cpp` — PCF8563 à `$51` sur l'I2C UEXT si présent, sinon horloge
+  logicielle sur le timer 100 Hz ; `neo` modélise le PCF8563 sur l'heure de l'hôte). **Horodatage FAT** : Trinity
+  compile sa propre FatFs → `FF_FS_NORTC = 0` et `get_fattime()` calculé depuis l'horloge du firmware
+  (`firmware/sources/hardware/clock.cpp`) : les fichiers écrits par NeoDOS/NeoBASIC sur la clé sont datés (le fork ne
+  l'avait que sur SD via la RTC du RP2040, inutile ici). Diffs du fork appliqués en fusion 3 voies depuis l'amont
+  `dc70908` (conflits : `FISReadFileHandleBuffer` déjà présent) ; `neo` : répertoire courant par volume initialisé
+  paresseusement. Tests `tests/api/` (`make test-api`) : `readpaged.asm` et `datetime.asm` du fork (sorties identiques,
+  seconde en regex), `volumes.asm` nouveau (3,24-26, ouverture `1:vol1.txt`). RAM 35 344 o libres ; UF2 406 528 o.
+  Reste à faire pour NeoDOS : dates dans `3,18`/`3,16` (demande 3 du mémo).
+
 - **0.5.6** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.6-hercules-USB.uf2`) — **Toolbox en mode 1
   Hercules** (T-12, dernier point) : tout pixel de QuickDraw passe par `_QDPut` — en 1 bpp le gris de la toolbox
   (couleur 9 : barres de titre inactives, items et contrôles désactivés) devient un **damier**, les autres couleurs leur

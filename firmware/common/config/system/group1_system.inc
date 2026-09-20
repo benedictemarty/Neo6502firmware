@@ -82,3 +82,18 @@ GROUP 1 System
     DOCUMENTATION
         Reads the current version Major.Minor.Patch into Parameters:0..2 These values are guaranteed to be in the range 0.255
         
+
+    FUNCTION 20 Get Date Time
+        CLKGetParams(DPARAMS);
+    DOCUMENTATION
+        Returns the date and time (Trinity T-18, F-14 of the fork) : Parameters:0,1 year (1970-2099), Parameter:2 month (1-12),
+        Parameter:3 day (1-31), Parameter:4 hour (0-23), Parameter:5 minute, Parameter:6 second and Parameter:7 the
+        source : 0 = not set (the value is then 1970-01-01 plus the time since power on), 1 = software clock set by
+        Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51).
+
+    FUNCTION 21 Set Date Time
+        *DERROR = CLKSetParams(DPARAMS);
+    DOCUMENTATION
+        Sets the date and time (Trinity T-18, F-14 of the fork), same layout as Function 1,20 (Parameter:7 ignored) : the software
+        clock is set, and the PCF8563 too when present. Sets the error flag if a field is out of range (1970-2099,
+        valid day of month, 24 hour time).

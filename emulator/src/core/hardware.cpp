@@ -11,6 +11,8 @@
 
 #include "gfx.h"
 #include "sys_processor.h"
+#include <time.h>
+#include <string.h>
 #include "sys_debug_system.h"
 #include "hardware.h"
 #include <stdio.h>
@@ -41,18 +43,74 @@ static std::filesystem::path currentPath = storagePath;
 //
 // *******************************************************************************************************************************
 
+// bmarty F-102 : volumes. Volume 0 is the storage directory ; volumes 1..3 are the
+// sibling directories "<storage>1".."<storage>3" when they exist (paths "n:..." select them).
+
+static int currentVolume = 0;
+static std::filesystem::path volumeCurrentPath[FIO_MAX_VOLUMES];
+
+static std::filesystem::path volumeRoot(int volume) {
+	if (volume == 0) return storagePath;
+	return std::filesystem::path(storagePath.string() + std::to_string(volume));
+}
+
+static bool volumePresent(int volume) {
+	return volume >= 0 && volume < FIO_MAX_VOLUMES && std::filesystem::is_directory(volumeRoot(volume));
+}
+
+static std::filesystem::path &volumeCwd(int volume) {  								// Trinity : lazily set to the root (HWSetDefaultPath
+	if (volumeCurrentPath[volume].empty()) volumeCurrentPath[volume] = volumeRoot(volume);   // is not called without "path:")
+	return volumeCurrentPath[volume];
+}
+
 void HWSetDefaultPath(const char *defaultPath) {
 	storagePath = defaultPath;
 	currentPath = defaultPath;
+	currentVolume = 0;
+	for (int i = 0;i < FIO_MAX_VOLUMES;i++) volumeCurrentPath[i] = volumeRoot(i);
+}
+
+static int pathVolume(const std::string& path) {										// volume addressed by a path
+	if (path.size() >= 2 && path[1] == ':' && isdigit((unsigned char)path[0])) return path[0] - '0';
+	return currentVolume;
 }
 
 static std::string getAbspath(const std::string& path) {
 	std::filesystem::path newPath;
-	if (!path.empty() && (path[0] == '/'))
-		newPath = storagePath / path.substr(1);
+	int volume = currentVolume;
+	std::string rest = path;
+	if (rest.size() >= 2 && rest[1] == ':' && isdigit((unsigned char)rest[0])) {	// "n:" prefix (FatFs style)
+		volume = rest[0] - '0';
+		rest = rest.substr(2);
+		if (!volumePresent(volume)) return (volumeRoot(volume) / "?").string();	// -> not found
+	}
+	std::filesystem::path root = volumeRoot(volume);
+	std::filesystem::path cwd = (volume == currentVolume) ? currentPath : volumeCwd(volume);
+	if (!rest.empty() && (rest[0] == '/'))
+		newPath = root / rest.substr(1);
 	else
-		newPath = currentPath / path;
+		newPath = cwd / rest;
 	return newPath.string();
+}
+
+uint8_t FISGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs) {
+	if (!volumePresent(volume)) return FIOERROR_INVALID_DRIVE;
+	name = "HOST" + std::to_string(volume);
+	*attribs = FIOVOL_PRESENT;
+	return FIOERROR_OK;
+}
+
+uint8_t FISSelectVolume(uint8_t volume) {
+	if (!volumePresent(volume)) return FIOERROR_INVALID_DRIVE;
+	volumeCurrentPath[currentVolume] = currentPath;									// each volume keeps its cwd
+	currentVolume = volume;
+	currentPath = volumeCwd(volume);
+	return FIOERROR_OK;
+}
+
+uint8_t FISGetCurrentVolume(uint8_t* volume) {
+	*volume = currentVolume;
+	return FIOERROR_OK;
 }
 
 static uint8_t getAttributes(const std::string& filename) {
@@ -66,6 +124,7 @@ static uint8_t getAttributes(const std::string& filename) {
 static uint8_t convertError(const std::error_code& errcode) {
 	static const std::vector<std::pair<std::errc, FIOErrno>> errorsList = {
 		{ std::errc::no_such_device, FIOERROR_INVALID_NAME },
+		{ std::errc::no_such_file_or_directory, FIOERROR_NO_FILE },		// bmarty : as FatFs FR_NO_FILE on the board
 		{ std::errc::file_exists, FIOERROR_EXIST },
 		{ std::errc::permission_denied, FIOERROR_DENIED },
 		{ std::errc::is_a_directory, FIOERROR_DENIED },
@@ -110,6 +169,8 @@ void HWReset(void) {
 //											 Frame Sync any hardware
 //
 // *******************************************************************************************************************************
+
+void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 
 void HWSync(void) {
 	TICKProcess();
@@ -291,7 +352,8 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 
 	if (!ec && (status.type() == std::filesystem::file_type::directory)) {
 		printf("OK\n");
-		currentPath = abspath;
+		int volume = pathVolume(filename);												// "n:" : that volume's cwd, as FatFs does
+		if (volume == currentVolume) currentPath = abspath; else volumeCurrentPath[volume] = abspath;
 		return FIOERROR_OK;
 	} else {
 		return convertError(ec);
@@ -305,9 +367,14 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 // ***************************************************************************************
 
 uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
-	strcpy(target,(const char *)currentPath.c_str()+strlen(DEFAULT_STORAGE)-1);
-	*target = '/';
-	printf("FISGetCurrentDirectory() ->\n");
+	std::string root = volumeRoot(currentVolume).string();							// cwd relative to the volume root
+	std::string cwd = currentPath.string();
+	std::string rel = (cwd.compare(0, root.size(), root) == 0) ? cwd.substr(root.size()) : cwd;
+	if (rel.empty() || rel[0] != '/') rel = "/" + rel;
+	if (maxSize <= 0) return FIOERROR_INVALID_PARAMETER;
+	strncpy(target, rel.c_str(), maxSize);
+	target[maxSize-1] = '\0';
+	printf("FISGetCurrentDirectory() -> %s\n", target);
 	return FIOERROR_OK;
 }
 
@@ -661,7 +728,47 @@ int UEXTI2CInitialise(void) {
 //
 // ***************************************************************************************
 
+// F-14 : PCF8563 real time clock modelled at $51 : registers $00-$0F, the time registers
+// ($02-$08, BCD) are taken from the host clock until a program writes them (then they
+// follow the host clock offset by the difference, seconds resolution).
+static uint8_t rtcReg = 0;  														// Register pointer.
+static long rtcOffset = 0;  														// Seconds added to the host clock.
+static uint8_t rtcControl[2] = { 0,0 };
+static uint8_t rtcBCD(int v) { return ((v / 10) << 4) | (v % 10); }
+static int rtcFromBCD(uint8_t b) { return (b >> 4) * 10 + (b & 0x0F); }
+static void rtcTime(uint8_t *r) {  												// r[0..6] = $02..$08
+	time_t now = time(NULL) + rtcOffset;
+	struct tm *t = localtime(&now);
+	r[0] = rtcBCD(t->tm_sec);r[1] = rtcBCD(t->tm_min);r[2] = rtcBCD(t->tm_hour);
+	r[3] = rtcBCD(t->tm_mday);r[4] = t->tm_wday;
+	r[5] = rtcBCD(t->tm_mon + 1) | ((t->tm_year < 100) ? 0x80 : 0);r[6] = rtcBCD(t->tm_year % 100);
+}
+
+static int rtcWrite(uint8_t *data,size_t size) {
+	if (size == 0) return 1;
+	rtcReg = data[0] & 0x0F;
+	if (size >= 8 && rtcReg == 0x02) {  											// Full time write : keep the offset to the host clock.
+		struct tm t;memset(&t,0,sizeof(t));
+		t.tm_sec = rtcFromBCD(data[1] & 0x7F);t.tm_min = rtcFromBCD(data[2] & 0x7F);t.tm_hour = rtcFromBCD(data[3] & 0x3F);
+		t.tm_mday = rtcFromBCD(data[4] & 0x3F);t.tm_mon = rtcFromBCD(data[6] & 0x1F) - 1;
+		t.tm_year = rtcFromBCD(data[7]) + ((data[6] & 0x80) ? 0 : 100);t.tm_isdst = -1;
+		rtcOffset = (long)(mktime(&t) - time(NULL));
+	} else if (size >= 2 && rtcReg < 2) {
+		rtcControl[rtcReg] = data[1];
+	}
+	return 0;
+}
+
+static int rtcRead(uint8_t *data,size_t size) {
+	uint8_t r[16];memset(r,0,sizeof(r));
+	r[0] = rtcControl[0];r[1] = rtcControl[1];
+	rtcTime(r + 2);
+	for (size_t i = 0;i < size;i++) data[i] = r[(rtcReg + i) & 0x0F];
+	return 0;
+}
+
 int UEXTI2CWriteBlock(uint8_t device,uint8_t *data,size_t size) {
+	if (device == 0x51) return rtcWrite(data,size);  								// F-14 : PCF8563
 	printf("I2C Write to $%02x %d bytes\n",device,(int)size);
 	for (int i = 0;i < size;i++) {
 		printf(" $%02x",data[i]);
@@ -678,6 +785,7 @@ int UEXTI2CWriteBlock(uint8_t device,uint8_t *data,size_t size) {
 
 int UEXTI2CReadBlock(uint8_t device,uint8_t *data,size_t size) {
 	if (device == 0x7F) return 1;
+	if (device == 0x51) return rtcRead(data,size);  								// F-14 : PCF8563
 	printf("I2C Read from $%x %d bytes\n",device,(int)size);
 	for (int i = 0;i < size;i++) {
 		data[i] = device + 0x12 + i * 3;
