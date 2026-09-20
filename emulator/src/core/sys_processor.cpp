@@ -120,7 +120,7 @@ void CPUReadNeoFile(char *fileName) {
 //		Test automation hooks (Trinity T-19, from the fork, without its IRQ part) : command line arguments
 //		  cycles:N        exit after N cycles (memory.dump written as for jmp $FFFF)
 //		  shot:C:FILE     PPM screenshot at cycle C      text:C:FILE   console text at cycle C
-//		  keys:C:TEXT     autotype TEXT from cycle C (\n = Enter, one key per 6 frames)
+//		  keys:C:TEXT     autotype TEXT from cycle C (\n = Enter, \e = Esc, one key per 6 frames)
 //		  mouse:C:X,Y,B   mouse at (X,Y) with buttons B at cycle C
 //
 // *******************************************************************************************************************************
@@ -200,7 +200,9 @@ static void CPURunTestHooks(void) {
 	if (typePos >= 0 && typeText[typePos] != '\0' && totalCycles >= typeNext) {  		// Autotype : press, 3 frames, release, 3 frames.
 		if (!typeDown) {
 			char ch = typeText[typePos];
-			if (ch == '\\' && typeText[typePos+1] != '\0') { typePos++;ch = (typeText[typePos] == 'n') ? '\n' : typeText[typePos]; }
+			if (ch == '\\' && typeText[typePos+1] != '\0') {  								// \n = Enter, \e = Esc (as Phosphoneo)
+				typePos++;ch = (typeText[typePos] == 'n') ? '\n' : (typeText[typePos] == 'e') ? 27 : typeText[typePos];
+			}
 			typeCode = CPUAsciiToHID(ch,&typeMods);
 			if (typeCode == 0) { typePos++;return; }
 			KBDEvent(1,typeCode,typeMods);

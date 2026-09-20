@@ -33,7 +33,7 @@ target_sources(firmware PRIVATE main.cpp
     #
     hardware/dvi_320x240x256.cpp  hardware/usbdriver.cpp  hardware/timer.cpp  hardware/sound.cpp
     hardware/fileimplementation.cpp hardware/tick.cpp hardware/serial.cpp hardware/ports.cpp
-    hardware/GamepadController.cpp hardware/cdc.cpp hardware/cxxthrow.cpp hardware/clock.cpp ${PADSOURCES}
+    hardware/GamepadController.cpp hardware/cdc.cpp hardware/cxxthrow.cpp hardware/clock.cpp hardware/banks.cpp ${PADSOURCES}
 
     #
     #       CPU type (pretty much permanently PIO now)
@@ -80,6 +80,7 @@ target_link_libraries(firmware
     hardware_i2c
     hardware_adc
     hardware_spi
+    hardware_flash                          # T-17 : banks in flash (1,22 Write Bank)
     libdvi
     tinyusb_host
     tinyusb_device

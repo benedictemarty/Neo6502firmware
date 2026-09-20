@@ -12,7 +12,7 @@ la **0.4.0**, **NeoDOS comme environnement résident à la place de NeoBASIC** (
 
 `make -C firmware build STORAGE=USB` (SDK 1.5.1, TinyUSB 0.21, PicoDVI amont). L'image de NeoDOS est lue dans
 `$(NEODOSDIR)build/neodos.bin` (défaut `../Neo6502Msdos/`, `make NEODOSDIR=/chemin/`) et convertie en
-`firmware/common/include/data/neodos_binary.h` (`kernel/scripts/hconvert.py … neodos C000`) ; même chose pour
+`firmware/common/include/data/neodos_binary.h` (`kernel/scripts/hconvert.py … neodos B800` — `C000` jusqu'à la 0.6.1, NeoDOS 0.14.0 a descendu sa base, ADR-004 de Neo6502Msdos) ; même chose pour
 l'émulateur `neo` (`make -C emulator elinux`). Le dépôt Neo6502Basic n'est plus nécessaire au firmware ni à `neo` ;
 `BASICDIR` ne sert qu'aux cibles `examples/` et `release/` de l'amont.
 
@@ -36,6 +36,26 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 `cpuMemory` (65 536), jamais dans un nouveau tableau `static` (`docs/BACKLOG.md`, T-13).
 
 ## Versions
+
+- **0.7.0** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.7.0-banks-xip-USB.uf2`) — **Banques mémoire en
+  flash (XIP), T-17** (décision bmarty : « je veux le XIP pour les banques »). Reprise de F-23 du fork avec le stockage en
+  flash au lieu de la SRAM : **32 banques de 8 Ko** dans les 256 Ko du haut des 2 Mo (`0x1C0000`), lues en place ;
+  `1,18 Select Bank` = copie flash → fenêtre 6502 (page alignée, sous `$FF00`), **sans write-back** (la fenêtre est une
+  copie) ; `1,19 Get Bank Info` ; **`1,22 Write Bank`** (nouveau) : programme une banque depuis une fenêtre — sur carte,
+  DVI suspendu (`RNDSuspend` : core 1 garé en RAM, DMA/PIO coupés, écran noir ≈ 150 ms), IRQ coupées, `flash_range_erase`
+  + `flash_range_program` (`hardware_flash`), vérification, `RNDResume` ; une banque écrite survit aux resets et aux
+  reflashages du firmware. Pages blitter `$A0`-`$BF` = banques **en lecture seule** (`12,2` banque → VRAM ; cible banque
+  et `3,27` vers une banque refusés). `neo` : flash simulée dans `storage/banks.flash` (256 Ko, persistant). Test
+  `tests/api/banks.asm` (`make test-api` 4/4). RAM : −708 o (routines flash résidentes en RAM du SDK), **34 636 o libres** ;
+  UF2 406 528 o (le firmware occupe 0x63400, loin de la zone des banques). **Sur carte, à valider avec prudence** :
+  première écriture flash sous DVI du projet (le fork l'avait écartée sans carte).
+
+- **0.6.2** (2026-09-21, émulateur seulement) — **NeoDOS 0.14.0 embarqué, chargé en `$B800`** (T-15 suite ; demande
+  bmarty : NeoDOS a descendu sa base de `$C000` à `$B800` pour retrouver 2,5 Ko de marge, ADR-004 de Neo6502Msdos, et
+  externalisé `ATTRIB`). `hconvert.py … neodos B800` dans les deux Makefiles : `NEODOS_LOAD = 0xb800`, `NEODOS_SIZE =
+  0x27f1` (10 225 o) ; `MEMInitialiseMemory` et `1,3` pointent `jmp (0)` sur `$B800`. Programmes 6502 : `$0800-$B7FF`.
+  Sans cette reprise, `EXIT` de NeoDOS 0.14.0 relançait l'ancienne image 0.12.0 en `$C000` à côté de la nouvelle.
+  Vérifié dans `neo` : bannière `NeoDOS version 0.14.0`, `MEM` = 45 056 / 17 408, `EXIT` relance la 0.14.0.
 
 - **0.6.1** (2026-09-21, émulateur seulement) — **`neo` : crochets de test** (T-19, repris du fork sans sa partie IRQ) :
   arguments `cycles:N` (sortie + `memory.dump`), `shot:C:FICHIER` (capture PPM), `text:C:FICHIER` (texte console),

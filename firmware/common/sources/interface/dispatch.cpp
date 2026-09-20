@@ -95,6 +95,7 @@ void DSPReset(void) {
 	CTReset();                                                                  // No controls
 	DLReset();                                                                  // No dialogs
 	RSReset();                                                                  // No resource file
+	BNKReset();                                                                 // No bank mapped (T-17)
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
 	for (int i = 0;i < 19;i++) CONWrite(19); 

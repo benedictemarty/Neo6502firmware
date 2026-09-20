@@ -64,7 +64,7 @@ void MEMInitialiseMemory(void) {
 // ***************************************************************************************
 
 // Trinity 0.4.0 (bmarty) : the firmware no longer embeds NeoBASIC. 1,3 "Load BASIC" loads the resident
-// environment, NeoDOS (project Neo6502Msdos, image for $C000-$FBFF, neodos_binary.h), from the flash and points
+// environment, NeoDOS (project Neo6502Msdos, image for $B800-$FBFF since NeoDOS 0.14.0 — $C000 before —, neodos_binary.h), from the flash and points
 // jmp (0) at it. The first 1,3 after reset applies the boot/ menu choice instead (bootmenu.cpp) ; NeoBASIC is
 // started this way, as boot/neobasic.bin (image for $800).
 

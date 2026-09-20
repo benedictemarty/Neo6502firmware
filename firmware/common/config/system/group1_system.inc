@@ -97,3 +97,34 @@ GROUP 1 System
         Sets the date and time (Trinity T-18, F-14 of the fork), same layout as Function 1,20 (Parameter:7 ignored) : the software
         clock is set, and the PCF8563 too when present. Sets the error flag if a field is out of range (1970-2099,
         valid day of month, 24 hour time).
+
+    FUNCTION 18 Select Bank
+        *DERROR = BNKSelect(DPARAMS[0],DSPGetInt16(DPARAMS,1));
+    DOCUMENTATION
+        Memory banks in flash (Trinity T-17, from F-23 of the fork). Copies bank Parameter:0 (0-31, 8k each, kept in
+        the RP2040 flash and read in place) into the 8k window at Parameters:1,2 of 6502 RAM : the window address is
+        page aligned and the window ends below $FF00. The copy takes place while the 65C02 waits for the call ; the
+        window must not hold the code executing the call, its stack or its zero page. The window is a copy : changing
+        it does not change the bank (see Function 1,22). Bank $FF forgets the mapping and leaves the window as it is.
+        Sets the error flag if the bank or the address is invalid. A bank never written reads as $FF. The banks are
+        also blitter pages $A0 (bank 0) to $BF, read only, for Function 12,2 (bank to video RAM for instance).
+
+    FUNCTION 19 Get Bank Info
+        {
+            uint8_t b;uint16_t a;
+            BNKGetState(&b,&a);
+            DPARAMS[0] = b;DSPSetInt16(DPARAMS,1,a);
+            DPARAMS[3] = BANK_COUNT;DSPSetInt16(DPARAMS,4,BANK_SIZE);
+        }
+    DOCUMENTATION
+        Returns the last bank selected in Parameter:0 ($FF if none since reset) and its window address in
+        Parameters:1,2, the number of banks in Parameter:3 and the bank size in Parameters:4,5 (Trinity T-17).
+
+    FUNCTION 22 Write Bank
+        *DERROR = BNKWrite(DPARAMS[0],DSPGetInt16(DPARAMS,1));
+    DOCUMENTATION
+        Programs bank Parameter:0 with the 8k at Parameters:1,2 of 6502 RAM (same constraints as Function 1,18) : on the
+        board the flash sectors are erased and written, the display pauses for about 150 ms, and the content is verified ;
+        a written bank survives resets and reflashing of the firmware (it lives in the top 256k of the flash). The
+        emulators keep the banks in the file "banks.flash" of the storage directory. Sets the error flag if the bank or
+        the address is invalid or the verification fails (Trinity T-17). Flash wears : write banks once, not in loops.

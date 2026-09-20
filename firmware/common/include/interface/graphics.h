@@ -65,6 +65,8 @@ extern struct GraphicsMode gMode;
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b); 				// Implementation specific.
 int  RNDGetFrameCount(void);
 void RNDStartMode0(struct GraphicsMode *gMode);
+void RNDSuspend(void);  														// T-17 : display paused (flash write) ...
+void RNDResume(void);  															// ... and back
 int  RNDModeSupported(int mode); 												// Implementation specific : can this host display it ?
 
 int  GFXSetMode(int Mode);  													// General. Returns 0 if ok, 1 if unsupported.

@@ -135,7 +135,7 @@ prebuild:
 	$(MAKE) -C processor
 	$(PYTHON) scripts$(S)mapper.py >include$(S)hid2sdl.h
 	$(CCOPY) $(BINDIR)*_binary.h include
-	$(HCONVERT) $(NEODOSBIN) include$(S)neodos_binary.h neodos C000
+	$(HCONVERT) $(NEODOSBIN) include$(S)neodos_binary.h neodos B800
 
 # ***************************************************************************************
 #

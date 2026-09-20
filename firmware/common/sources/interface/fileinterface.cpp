@@ -372,6 +372,7 @@ uint8_t FIOReadFileHandlePaged(uint8_t fileno, uint8_t page, uint16_t address, u
 	if (*size == 0) return FIOERROR_OK;
 	uint32_t last = (uint32_t)address + *size - 1;
 	if (last > 0xFFFF) return FIOERROR_INVALID_PARAMETER;
+	if (page >= BANK_PAGE) return FIOERROR_INVALID_PARAMETER;  						// T-17 : banks are read only (1,22 writes them)
 	uint8_t *dest = BLTGetRealAddress(page, address);
 	if (dest == NULL || BLTGetRealAddress(page, (uint16_t)last) == NULL) return FIOERROR_INVALID_PARAMETER;
 	return FISReadFileHandleBuffer(fileno, dest, size);

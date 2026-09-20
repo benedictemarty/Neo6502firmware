@@ -65,6 +65,9 @@ void RNDSetDisplayPage(uint8_t *displayMemory) {
 	videoRAM = displayMemory;  													// Immediate : the emulator renders from gMode.displayMemory anyway.
 }
 
+void RNDSuspend(void) {}  														// T-17 : nothing to pause here
+void RNDResume(void) {}
+
 // Write the display to a binary PPM (P6) file, for automated tests (shot:C:FILE ; Trinity T-19, from the fork).
 int RNDWriteScreenshot(const char *fileName) {
 	if (videoRAM == NULL) return -1;

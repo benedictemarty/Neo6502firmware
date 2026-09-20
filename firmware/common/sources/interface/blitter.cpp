@@ -32,6 +32,9 @@ uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address) {  					// Public : Qu
 		case 0x90: 																	// Graphic storage RAM
 			if (address < GFX_MEMORY_SIZE) ptr = gfxObjectMemory + address;
 			break;
+		default:  																	// T-17 : bank n = page $A0+n, read only (flash)
+			if (page >= BANK_PAGE && page < BANK_PAGE + BANK_COUNT && address < BANK_SIZE) ptr = (uint8_t *)BNKStorage(page - BANK_PAGE) + address;
+			break;
 	}
 	return ptr;
 }
@@ -48,6 +51,7 @@ uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uin
 	uint8_t *src = BLTGetRealAddress(pageFrom,addressFrom);  						// Copy from here
 	uint8_t *dst = BLTGetRealAddress(pageTo,addressTo);  							// To here.
 	if (src == NULL || dst == NULL) return 1;  										// Start both legitimate addresses
+	if (pageTo >= BANK_PAGE) return 1;  											// T-17 : banks are read only (flash)
 	if (BLTGetRealAddress(pageFrom,addressFrom+transferSize-1) == NULL) return 1; 	// Check end both legitimate addresses
 	if (BLTGetRealAddress(pageTo,addressTo+transferSize-1) == NULL) return 1;
 	memmove(dst,src,transferSize); 													// Copy it.
@@ -665,6 +669,7 @@ uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget) {
 	struct BlitterArea source, target;
 	_BLTLoadBlitterAreaObject(aSource,&source);
 	_BLTLoadBlitterAreaObject(aTarget,&target);
+	if (target.page >= BANK_PAGE) return 1;  										// T-17 : banks are read only (flash)
 	return internalBLTComplexCopy(action, &source, &target);
 }
 

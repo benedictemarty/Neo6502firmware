@@ -333,6 +333,10 @@ static void DVIStopMode(void) {
 //
 // ***************************************************************************************
 
+// T-17 : pause the DVI around a flash write (core 1 parked in RAM, DMA and PIO off), then restart it.
+void RNDSuspend(void) { DVIStopMode(); }
+void RNDResume(void) { if (!isInitialised) DVIStart(); }
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.

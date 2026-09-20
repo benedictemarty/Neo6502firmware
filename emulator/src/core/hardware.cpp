@@ -172,6 +172,30 @@ void HWReset(void) {
 
 void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 
+// T-17 : bank "flash" = storage/banks.flash (BANK_COUNT * BANK_SIZE bytes, $FF when absent), persistent like the board's flash.
+static uint8_t *bankImage = NULL;
+static void bankLoad(void) {
+	if (bankImage != NULL) return;
+	bankImage = (uint8_t *)malloc(BANK_COUNT * BANK_SIZE);
+	memset(bankImage,0xFF,BANK_COUNT * BANK_SIZE);
+	FILE *f = fopen((storagePath / "banks.flash").c_str(),"rb");
+	if (f != NULL) { size_t n = fread(bankImage,1,BANK_COUNT * BANK_SIZE,f);(void)n;fclose(f); }
+}
+const uint8_t *HWBankStorage(uint8_t bank) {
+	if (bank >= BANK_COUNT) return NULL;
+	bankLoad();
+	return bankImage + bank * BANK_SIZE;
+}
+uint8_t HWBankWrite(uint8_t bank,const uint8_t *data) {
+	if (bank >= BANK_COUNT) return 1;
+	bankLoad();
+	memcpy(bankImage + bank * BANK_SIZE,data,BANK_SIZE);
+	FILE *f = fopen((storagePath / "banks.flash").c_str(),"wb");
+	if (f == NULL) return 1;
+	fwrite(bankImage,1,BANK_COUNT * BANK_SIZE,f);fclose(f);
+	return 0;
+}
+
 void HWSync(void) {
 	TICKProcess();
 	frameCount++;
