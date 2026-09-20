@@ -30,6 +30,8 @@ set(PICO_TINYUSB_PATH ${tinyusb_SOURCE_DIR})
 pico_sdk_init()
 
 add_compile_options(-Wall -Werror -O2)
+# T-13 : instantiate std::string in our objects (no exceptions) instead of libstdc++ string-inst.o
+add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-include${CMAKE_CURRENT_LIST_DIR}/include/cxx_no_extern_string.h>)
 
 # To change the default serial config for all apps, pass e.g.
 #   cmake -DDVI_DEFAULT_SERIAL_CONFIG=pimoroni_demo_hdmi_cfg ..

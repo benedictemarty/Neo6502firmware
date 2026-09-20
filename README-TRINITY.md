@@ -13,13 +13,34 @@ Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags :
 
 ## Budget mémoire (T-13)
 
-Mesure du 2026-09-20 (Trinity 0.3.0, `STORAGE=USB`, SDK 1.5.1, gcc 14.2.1) : `.text` 126 112 + `.rodata` 60 788 en flash
-(207 Ko sur 2 Mo) ; en RAM `.bss` 212 488 + `.data` 17 920 = 230 Ko sur 256 Ko → **≈ 41 Ko libres** (tas, piles, ajouts).
-Morpheus amont `dc70908` : 184 844 / 207 596 (UF2 370 176 o) ; Trinity : 206 636 / 214 728 (UF2 413 696 o).
-Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` / `gfxObjectMemory` / `cpuMemory`, jamais
-dans un nouveau tableau `static` (`docs/BACKLOG.md`, T-13).
+`make -C firmware size` (appelé par `build`) affiche `.text/.rodata/.data/.bss` et **échoue si `.data` + `.bss` + vecteurs
+dépasse `RAM_LIMIT`** (230 000 o par défaut) sur les 262 144 o de SRAM principale (les piles de core 0 sont dans les
+2 × 4 Ko de scratch ; `core1_stack` 2 Ko est dans `.bss`). Ce qui reste est le tas (`malloc`, FatFs, TinyUSB).
+
+| Version (USB) | .text | .rodata | .data | .bss | RAM occupée | Libres (tas) | UF2 |
+|---|---|---|---|---|---|---|---|
+| Morpheus amont `dc70908` | — | — | — | 207 596 (Berkeley) | — | — | 370 176 |
+| Trinity 0.3.0 | 126 112 | 60 788 | 17 920 | 212 488 | 230 600 | 31 544 | 413 696 |
+| Trinity 0.3.1 | 117 696 | 57 440 | 13 828 | 211 000 | **225 020** | **37 124** | 379 904 |
+
+Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (76 800) / `gfxObjectMemory` (32 768) /
+`cpuMemory` (65 536), jamais dans un nouveau tableau `static` (`docs/BACKLOG.md`, T-13).
 
 ## Versions
+
+- **0.3.1** (2026-09-20, **à valider sur carte** : modes 0 et 1, lignes noires des bordures verticales, chargement de fichiers)
+  — **budget mémoire (T-13)** : −5 580 o de RAM, −33,8 Ko d'UF2, sans changement fonctionnel. (1) `std::string` de l'API
+  fichiers tirait `functexcept.o` de libstdc++ (précompilé **avec** exceptions) → `__cxa_throw`, pool d'urgence des
+  exceptions (constructeur statique + `malloc` au démarrage) et dérouleur libgcc, que le script de lien du SDK place en
+  RAM (3,8 Ko) ; le SDK compile déjà en `-fno-exceptions`, ce n'était donc pas une option de compilation mais un effet
+  de lien. Remède : `firmware/sources/hardware/cxxthrow.cpp` (les `std::__throw_*` → `panic`, `new (nothrow)` → `malloc`)
+  et `firmware/include/cxx_no_extern_string.h` forcé par `-include` (instancie `std::string` dans nos objets, sans
+  exceptions, au lieu de `string-inst.o`) : libstdc++ ne fournit plus que `new_handler.o` et `hashtable_c++0x.o`, plus
+  aucun constructeur statique. (2) `blackChannel[360]` (1 440 o) supprimé : les lignes noires sont remplies par le mot
+  constant `TMDS_BLACK_WORD` (stores seuls, pas de lecture — ni RAM ni flash — dans le callback de ligne de core 1).
+  (3) `make -C firmware size` + `RAM_LIMIT` (ci-dessus). Le code commun (`firmware/common`) est inchangé : `neo` et
+  Phosphoneo ne sont pas concernés. Correction : les « 41 Ko libres » notés le matin omettaient `.data` ; le vrai chiffre
+  en 0.3.0 était 31,5 Ko.
 
 - **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascules 0 → 1 et 1 → 0 à chaud depuis le BASIC) — **mode vidéo 1
   Hercules** 720×350 × 1 bpp, console 80×25 en cellules 9×14 (police MDA 8×14), attributs MDA (bits de l'encre :

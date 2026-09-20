@@ -84,7 +84,6 @@ static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green
 uint16_t buffer1[MAX_SCAN_WIDTH+32],buffer2[MAX_SCAN_WIDTH+32];               	// 2 x 16 bpp scanline buffers used alternatively
 static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
-static uint32_t blackChannel[MONO_LINE_WORDS];  								// One channel of black symbols
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
 
@@ -187,8 +186,9 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
 		if (currentMode->bitsPerPixel == 1) {  										// 1 bpp : one encode into channel 0 ; the lanes point to it
 			tmds_encode_1bpp(scanbuf ? (const uint32_t *)scanbuf : monoZero, tmdsbuf, pixwidth);   // (lit) or to the black channel 2 (dark, prefilled)
-		} else if (scanbuf == 0) {  												// Black line : copy the constant channel.
-			for (int c = 0;c < 3;c++) memcpy(tmdsbuf + c * words_per_channel,blackChannel,words_per_channel * 4);
+		} else if (scanbuf == 0) {  												// Black line : fill the three channels with the
+			uint32_t *p = tmdsbuf;  												// constant pair (stores only, no table : T-13).
+			for (uint n = 3 * words_per_channel;n > 0;n--) *p++ = TMDS_BLACK_WORD;
 		} else {  																	// 16 bpp half resolution (pixel doubled) as PicoDVI does.
 			const uint32_t *pix = (const uint32_t *)scanbuf;
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 0 * words_per_channel, pixwidth / 2, DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
@@ -256,8 +256,6 @@ void DVIStart(void) {                                                           
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
 	HWClockChanged();  															// Re-derive UART baud rate and sound sample rate.
-
-	for (int i = 0;i < MONO_LINE_WORDS;i++) blackChannel[i] = TMDS_BLACK_WORD; 	// Constant black channel.
 
 	dvi0.timing = currentTiming->timing;                                        // Set up timing, config, callback.
 	dvi0.ser_cfg = pico_neo6502_cfg;

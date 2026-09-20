@@ -72,6 +72,22 @@ build: prelim always
 	$(MAKE) -C build
 	$(CCOPY) build$(S)sources$(S)$(BINARY).elf .
 	$(CCOPY) build$(S)sources$(S)$(BINARY).uf2 .
+	$(MAKE) size
+
+# ***************************************************************************************
+#
+#				Memory budget (T-13) : RAM = .data + .bss on the 256 KB of main SRAM.
+#				The build fails above RAM_LIMIT bytes (see README-TRINITY.md, docs/BACKLOG.md).
+#
+# ***************************************************************************************
+
+RAM_LIMIT ?= 230000
+
+size: always
+	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "
+	@ram=$$(arm-none-eabi-size -A $(BINARY).elf | awk '$$1==".data"||$$1==".bss"||$$1==".ram_vector_table" {s+=$$2} END {print s}') ; \
+	echo "RAM (.data+.bss+vecteurs) : $$ram octets sur 262144, limite $(RAM_LIMIT), libres (tas) : $$((262144 - ram))" ; \
+	if [ $$ram -gt $(RAM_LIMIT) ] ; then echo "*** RAM_LIMIT depasse (T-13)" ; exit 1 ; fi
 
 # ***************************************************************************************
 #
