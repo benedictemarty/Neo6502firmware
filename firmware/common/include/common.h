@@ -77,6 +77,7 @@
 #include "interface/resources.h"  														// 38 Resource Manager
 #include "interface/clock.h"  															// Date and time (T-18, F-14 of the fork)
 #include "interface/banks.h"  															// Memory banks in flash (T-17)
+#include "interface/irq.h"  															// Interrupt tick and frame IRQ (T-14)
 #include "interface/cdcserial.h"
 #include "interface/bootmenu.h"
 

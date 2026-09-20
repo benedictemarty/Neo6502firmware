@@ -46,7 +46,10 @@ BYTE8 *CPUAccessMemory(void) {
 	return cpuMemory;
 }
 
+static bool irqPending = false,irqFrame = false;  								// T-14 : IRQB level (see the hooks below)
+
 BYTE8 Read(WORD16 address) {
+	if (address == 0xFFFF) irqPending = false;  									// T-14 : reading the vector high byte releases IRQB.
 	return cpuMemory[address];
 }
 
@@ -127,6 +130,19 @@ void CPUReadNeoFile(char *fileName) {
 
 static LONG32 totalCycles = 0;  													// Cycles since reset.
 static LONG32 exitAtCycles = 0;
+
+// T-14 (F-60/F-10 of the fork) : interrupt tick and frame IRQ, level until the vector fetch at $FFFF.
+static LONG32 irqTickCycles = 0,irqTickNext = 0;
+void HWIRQSetTick(uint16_t hz) {
+	irqTickCycles = (hz == 0) ? 0 : CYCLE_RATE / hz;
+	irqTickNext = totalCycles + irqTickCycles;
+	irqPending = false;
+}
+void HWIRQSetFrame(uint8_t on) {
+	irqFrame = on != 0;
+	if (!on && irqTickCycles == 0) irqPending = false;
+}
+int CPUIRQPending(void) { return irqPending; }
 struct TestHook { LONG32 at; char kind; char arg[512]; bool done; };
 static TestHook testHooks[16];
 static int testHookCount = 0;
@@ -330,10 +346,16 @@ BYTE8 CPUExecuteInstruction(void) {
 	forceSync = CPUExecute6502();
 	totalCycles += cycles - before;
 	CPURunTestHooks();
+	if (irqTickCycles != 0 && totalCycles >= irqTickNext) {  						// T-14 : periodic IRQ (level : pending until taken).
+		irqTickNext += irqTickCycles;
+		irqPending = true;
+	}
+	if (irqPending && CPUTriggerIRQ()) irqPending = false;
 
 	int cycleMax = CYCLES_PER_FRAME; 	
 	if (cycles < cycleMax && forceSync == 0) return 0;								// Not completed a frame.
 	cycles = 0;																		// Reset cycle counter.
+	if (irqFrame) irqPending = true;  												// T-14 : frame interrupt (level, taken when I=0).
 	HWSync();																		// Update any hardware
 	return FRAME_RATE;																// Return frame rate.
 }

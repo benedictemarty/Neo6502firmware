@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "system/dvi_video.h"
+#include "system/wdc65C02cpu.h"  											// wdc65C02cpu_set_irq (T-14, F-10 of the fork)
 
 #include "pico/multicore.h"
 #include "hardware/vreg.h"
@@ -76,6 +77,7 @@ struct dvi_inst dvi0;                                                			// DVI i
 
 uint16_t palette[256];                                            				// Current DVI palette (RGB565)
 uint8_t  *screenMemory;                                           				// Page being displayed
+extern volatile bool frameIrqOn,irqAsserted;  									// tick.cpp (T-14)
 static uint8_t *pendingDisplayMemory = NULL;  									// Page to display from the next frame (F-55)
 static struct GraphicsMode *currentMode = NULL;  								// Mode being displayed
 static const struct DisplayTiming *currentTiming = NULL;
@@ -116,6 +118,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		frameCounter++;
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
+		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
 		uint8_t xHit,yHit;
 		cursorEnabled = MSEGetCursorDrawInformation(&xCursor,&yCursor); 		// Get cursor info this frame.
 		cursorImage = CURGetCurrent(&xHit,&yHit);

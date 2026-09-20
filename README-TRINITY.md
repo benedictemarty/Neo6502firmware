@@ -37,6 +37,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.8.0** (2026-09-21, **à valider sur carte avec prudence** : `~/neo-carte/trinity-0.8.0-irq-USB.uf2`) — **Tick d'interruption
+  et IRQ de trame (T-14 a, F-60/F-10 du fork)** : `1,12 Set Interrupt Tick` (1-1000 Hz, timer matériel du RP2040 sur
+  core 0), `1,13`, `1,16 Set Frame Interrupt` (IRQB au début de chaque trame, posée par le callback de ligne DVI sur core 1),
+  `1,17`. IRQB (GPIO 25) est tenue basse jusqu'à la lecture du vecteur `$FFFF` par le 65C02, vue par la boucle bus
+  (`processor_pio.cpp` : test sur l'adresse à chaque lecture, **marge de nop réduite de 14 à 11** comme dans le fork — jamais
+  mesuré sur carte) ; pas d'acquittement, pas de réentrée, ticks fusionnés sous `SEI`. Reset : tick et IRQ de trame
+  arrêtés. `neo` : IRQ par cycles et par trame, relâchée sur `$FFFF`, opcode **`WAI`** (`$CB`) — corrigé par rapport au
+  fork : l'IRQ prise pendant un `WAI` reprend à l'instruction suivante, pas sur le `WAI`. Tests `tests/api/` : `frameirq.asm`
+  du fork (identique : 60 trames comptées, arrêt vérifié) et `irqtick.asm` nouveau (100 Hz ≈ 100 ticks/s, `WAI`, arrêt,
+  2000 Hz refusé ; attendu en regex). `make test-api` 9/9, `make test-toolbox` 10/10. RAM 34 284 o libres ; UF2 410 624 o.
+  **Carte** : première IRQ jamais délivrée au 65C02 par ce firmware ; à vérifier d'abord que le mode 1 Hercules et le modem
+  CDC fonctionnent encore (timing de la boucle bus), puis `frameirq.neo6502` et `irqtick.neo6502`.
+
 - **0.7.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.7.1-latin1-USB.uf2`) — **Latin-1, locale FR, police
   console, écho de débogage (T-20, F-17/F-95/F-92 du fork)**. Console : caractères `$A0-$BF` = symboles Latin-1 en flash
   (`latin1font.h` généré par `scripts/latin1.py` depuis `font_5x7.h`), `$C0-$FF` = police utilisateur initialisée aux lettres

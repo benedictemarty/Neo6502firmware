@@ -57,6 +57,8 @@ int CPUUseDebugKeys(void);
 BYTE8 _Read(WORD16 address);														// Need to be forward defined as 
 void _Write(WORD16 address,BYTE8 data);												// used in support functions.
 WORD16 CPUGetPC(void);
+int CPUIRQPending(void);  															// T-14 : IRQB asserted (WAI)
+int CPUTriggerIRQ(void);  														// T-14 : take the IRQ if I=0
 
 BYTE8 CPUExecute(WORD16 breakPoint1,WORD16 breakPoint2);
 WORD16 CPUGetStepOverBreakpoint(void);

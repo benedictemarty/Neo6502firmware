@@ -54,6 +54,8 @@ void CPUReset6502(void) {
 //
 // *******************************************************************************************************************************
 
+static int cpuWaiting = 0;  														// Inside a WAI (pc points at it, T-14)
+
 BYTE8 CPUExecute6502(void) {
 	BYTE8 opcode = Fetch();															// Fetch opcode.
 	BYTE8 forceSync = 0;
@@ -62,6 +64,10 @@ BYTE8 CPUExecute6502(void) {
 
 		case 0xF3: 	 																// $F3 forces sync in emulator. Not needed in real hardware.
 			forceSync = 1;break;
+		case 0xCB:  																// WAI (WDC) : wait until IRQB is asserted, then continue
+			if (!CPUIRQPending()) { pc--;cpuWaiting = 1; }  						// (taken at the next instruction if I=0). bmarty F-61 ;
+			else cpuWaiting = 0;  													// Trinity : the IRQ returns after the WAI, not on it.
+			Cycles(3);break;
 	}
 	return forceSync;
 }
@@ -71,6 +77,17 @@ BYTE8 CPUExecute6502(void) {
 //															Get 6502 PC
 //
 // *******************************************************************************************************************************
+
+//
+//		Interrupt request (F-60 tick) : level sampled once, like a short IRQB pulse.
+//
+//		Returns 1 if taken (I=0), 0 if masked (the caller keeps it pending, like a level).
+int CPUTriggerIRQ(void) {
+	if (interruptDisableFlag) return 0;
+	if (cpuWaiting) { pc++;cpuWaiting = 0; }  										// Leave the WAI : return address = next instruction
+	irqCode();
+	return 1;
+}
 
 WORD16 CPUGetPC65(void) {
 	return pc;
