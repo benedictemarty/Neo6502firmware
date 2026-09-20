@@ -11,6 +11,14 @@ un port USB-A de la carte — F-90 (groupe 14, `cdc.cpp`, `cdcserial.cpp`, TinyU
 Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags : `v0.0.1-N-gXXXXXXX`). Compilation : comme l'amont
 (`make -C firmware build STORAGE=USB`, SDK 1.5.1, TinyUSB 0.16.0, PicoDVI amont non modifié).
 
+## Budget mémoire (T-13)
+
+Mesure du 2026-09-20 (Trinity 0.3.0, `STORAGE=USB`, SDK 1.5.1, gcc 14.2.1) : `.text` 126 112 + `.rodata` 60 788 en flash
+(207 Ko sur 2 Mo) ; en RAM `.bss` 212 488 + `.data` 17 920 = 230 Ko sur 256 Ko → **≈ 41 Ko libres** (tas, piles, ajouts).
+Morpheus amont `dc70908` : 184 844 / 207 596 (UF2 370 176 o) ; Trinity : 206 636 / 214 728 (UF2 413 696 o).
+Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` / `gfxObjectMemory` / `cpuMemory`, jamais
+dans un nouveau tableau `static` (`docs/BACKLOG.md`, T-13).
+
 ## Versions
 
 - **0.3.0** (2026-09-20, **validé sur carte** : `mda.neo6502` en Hercules, bascules 0 → 1 et 1 → 0 à chaud depuis le BASIC) — **mode vidéo 1
