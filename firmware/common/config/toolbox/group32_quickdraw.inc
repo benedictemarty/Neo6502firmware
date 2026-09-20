@@ -96,7 +96,8 @@ GROUP 32 QuickDraw
         Blits the source area described at Parameters:1,2 (the 12 byte structure of Function 12,3, any source
         format) at Parameters:3,4 (X) and Parameters:5,6 (Y) of the draw page, with the blit action of
         Parameter:0 (0 copy, 1 masked, 2 solid), clipped to the clip rectangle. As Function 12,4, the left clip is
-        rounded up to a whole source byte. Error 2 outside mode 0 (the blitter writes byte pixels).
+        rounded up to a whole source byte. Outside mode 0 the copy is done pixel by pixel (source values are reduced to
+        their bit 0 in monochrome).
 
     FUNCTION 15 Set Font
         *DERROR = QDSetFont(DPARAMS[0],DSPGetInt16(DPARAMS,1));

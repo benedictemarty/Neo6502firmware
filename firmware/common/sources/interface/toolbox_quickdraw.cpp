@@ -10,6 +10,11 @@
 //      Drawing goes through GFXWritePixelRaw/GFXReadPixelRaw : any video mode, draw
 //      page, no sprite layer, always clipped to the current clip rectangle.
 //
+//      Trinity (T-12, 2026-09-20) : taken from the fork (archive/bmarty-main-2026-09-19) without the
+//      bank pages ($A0+) and the 2 bit / doubled blitter sources. Mode 1 Hercules (1 bpp) : every
+//      pixel goes through _QDPut, where the toolbox grey (colour 9 : inactive title bars, disabled
+//      items) becomes a checkerboard and any other colour its bit 0 ; CopyBits has a pixel path.
+//
 // ***************************************************************************************
 // ***************************************************************************************
 
@@ -60,6 +65,14 @@ static struct QDRect _QDScreenRect(void) {
     return r;
 }
 
+#define QD_COL_GREY 9                                                           // Toolbox grey (WM/MN/CT_COL_DISABLED)
+
+// Every toolbox pixel : monochrome renders the grey as a checkerboard (T-12, mode 1).
+static inline void _QDPut(int x,int y,uint8_t colour) {
+    if (gMode.bitsPerPixel == 1 && colour == QD_COL_GREY) colour = (x ^ y) & 1;
+    GFXWritePixelRaw(x,y,colour);
+}
+
 // Fill (or invert) the intersection of r and the clip.
 static void _QDFill(const struct QDRect *r,int colour) {                        // colour < 0 : invert
     struct QDRect c = _QDIntersect(r,&clipRect);
@@ -67,7 +80,7 @@ static void _QDFill(const struct QDRect *r,int colour) {                        
     for (int y = c.top;y < c.bottom;y++) {
         for (int x = c.left;x < c.right;x++) {
             if (colour < 0) GFXWritePixelRaw(x,y,GFXReadPixelRaw(x,y) ^ mask);
-            else GFXWritePixelRaw(x,y,(uint8_t)colour);
+            else _QDPut(x,y,(uint8_t)colour);
         }
     }
 }
@@ -166,7 +179,7 @@ uint8_t QDLineTo(int16_t x,int16_t y) {
     int dy = -abs(y1-y0),sy = y0 < y1 ? 1 : -1;
     int err = dx + dy;
     while (true) {
-        if (_QDInClip(x0,y0)) GFXWritePixelRaw(x0,y0,penColour);
+        if (_QDInClip(x0,y0)) _QDPut(x0,y0,penColour);
         if (x0 == x1 && y0 == y1) break;
         int e2 = 2 * err;
         if (e2 >= dy) { err += dy;x0 += sx; }
@@ -195,7 +208,7 @@ uint8_t QDFillRect(uint16_t rectAddr,uint8_t backColour) {
     for (int y = c.top;y < c.bottom;y++) {
         uint8_t row = pattern[y & 7];                                           // Pattern aligned on screen coordinates
         for (int x = c.left;x < c.right;x++) {
-            GFXWritePixelRaw(x,y,(row & (0x80 >> (x & 7))) ? penColour : backColour);
+            _QDPut(x,y,(row & (0x80 >> (x & 7))) ? penColour : backColour);
         }
     }
     return QD_ERR_OK;
@@ -224,7 +237,21 @@ uint8_t QDCopyBits(uint8_t action,uint16_t areaAddr,int16_t x,int16_t y) {
     if (y + h > clipRect.bottom) h = clipRect.bottom - y;
     if (w <= 0 || h <= 0) return QD_ERR_OK;                                     // Fully clipped
     src.width = w;src.height = h;
-    if (gMode.bitsPerPixel != 8) return QD_ERR_NOGFX;                          // Blitter targets are byte pixels (mode 0)
+    if (gMode.bitsPerPixel != 8) {                                              // Packed modes (mode 1) : pixel path, the
+        const uint8_t *base = BLTGetRealAddress(src.page,src.address);          // blitter only writes byte pixels.
+        uint32_t last = (uint32_t)src.address + (uint32_t)(h - 1) * src.stride + (w + unit - 1) / unit - 1;
+        if (base == NULL || last > 0xFFFF || BLTGetRealAddress(src.page,(uint16_t)last) == NULL) return QD_ERR_PARAM;
+        for (int r = 0;r < h;r++) {
+            const uint8_t *line = base + r * src.stride;
+            for (int c = 0;c < w;c++) {
+                uint8_t v = (unit == 1) ? line[c] : (unit == 2) ? ((c & 1) ? (line[c >> 1] & 0x0F) : (line[c >> 1] >> 4))
+                                                                : ((line[c >> 3] >> (7 - (c & 7))) & 1);
+                if (action == BLTACT_COPY) _QDPut(x + c,y + r,v);
+                else if (v != src.transparent) _QDPut(x + c,y + r,(action == BLTACT_SOLID) ? src.solid : v);
+            }
+        }
+        return QD_ERR_OK;
+    }
     uint32_t offset = (uint32_t)y * gMode.stride + x + (uint32_t)(gMode.graphicsMemory - graphicsMemory);
     struct BlitterArea target;
     target.address = (uint16_t)(offset & 0xFFFF);target.page = (uint8_t)(0x80 + (offset >> 16));
@@ -283,7 +310,7 @@ static void _QDDrawGlyph(const uint8_t *rows,uint8_t width,int x,int y) {
         for (int c = 0;c < width;c++) {
             int px = x + c;
             if (px < clipRect.left || px >= clipRect.right) continue;
-            if (row[c >> 3] & (0x80 >> (c & 7))) GFXWritePixelRaw(px,py,penColour);
+            if (row[c >> 3] & (0x80 >> (c & 7))) _QDPut(px,py,penColour);
         }
     }
 }

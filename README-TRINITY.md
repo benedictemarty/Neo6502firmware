@@ -37,6 +37,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.5.6** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.6-hercules-USB.uf2`) — **Toolbox en mode 1
+  Hercules** (T-12, dernier point) : tout pixel de QuickDraw passe par `_QDPut` — en 1 bpp le gris de la toolbox
+  (couleur 9 : barres de titre inactives, items et contrôles désactivés) devient un **damier**, les autres couleurs leur
+  bit 0 (15 = allumé, 0 = éteint : cadres blancs, barres blanches à texte noir, comme en mode 0) ; `32,14 CopyBits`
+  a un chemin pixel par pixel hors mode 0 (sources BYTE/PAIR/BITS, actions copy/masked/solid) au lieu de l'erreur 2.
+  Police 6×8 système conservée (lisible en 720×350). Test `tests/toolbox/hercules.asm` (5,9 → 1, PaintRect, gris,
+  CopyBits BITS, fenêtre « Herc », retour en mode 0 ; pixels lus par `5,33`) : OK dans `neo`, capture conforme.
+  `make test-toolbox` 9/9. RAM inchangée (35 620 o libres) ; UF2 401 408 o. **T-12 est complète côté `neo`** ;
+  toute la 0.5.x reste à valider sur carte.
+
 - **0.5.5** (2026-09-20, **à valider sur carte** : `~/neo-carte/trinity-0.5.5-resources-USB.uf2`) — **Toolbox : groupe 38
   Resource Manager** (T-12), repris du fork : fichier de ressources NR1 sur le stockage (`tools/toolbox/mkres.py`,
   `mkfont.py` repris de l'archive), ouvert sur un canal (`38,1`), table lue à la demande (`38,3` Count, `38,4` Find
