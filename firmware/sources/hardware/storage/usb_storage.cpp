@@ -122,8 +122,8 @@ void tuh_msc_umount_cb(uint8_t dev_addr) {
 //
 // ***************************************************************************************
 
-static void wait_for_disk_io(BYTE pdrv) {
-    while (msc_volume_busy[pdrv]) {
+static void wait_for_disk_io(uint8_t dev_addr) {                                // Indexed by USB device address (T-24)
+    while (msc_volume_busy[dev_addr]) {
         tuh_task();
     }
 }
@@ -149,9 +149,9 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const dev_addr = deviceOf(pdrv);
     if (dev_addr == 0) return RES_NOTRDY;
     uint8_t const lun = 0;
-    msc_volume_busy[pdrv] = true;
-    tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);
-    wait_for_disk_io(pdrv);
+    msc_volume_busy[dev_addr] = true;                                           // Busy flag by device : the completion
+    tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);   // callback only knows dev_addr (T-24)
+    wait_for_disk_io(dev_addr);
     return RES_OK;
 }
 
@@ -159,9 +159,9 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const dev_addr = deviceOf(pdrv);
     if (dev_addr == 0) return RES_NOTRDY;
     uint8_t const lun = 0;
-    msc_volume_busy[pdrv] = true;
+    msc_volume_busy[dev_addr] = true;
     tuh_msc_write10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);
-    wait_for_disk_io(pdrv);
+    wait_for_disk_io(dev_addr);
     return RES_OK;
 }
 

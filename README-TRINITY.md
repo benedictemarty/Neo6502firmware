@@ -37,6 +37,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.8.3** (2026-09-21, **0.8.2 sur carte : gel** — invite `A:\>` affichée puis clavier mort, Échap au boot inopérant) —
+  **correctif du correctif** : le diskio USB posait le drapeau « occupé » sur l'index lecteur (`pdrv`, désormais 0) et la fin
+  de transfert TinyUSB l'effaçait sur l'index adresse USB (`dev_addr`) ; égaux jusqu'en 0.8.1, différents depuis le montage
+  de la première clé en `0:` → le premier accès disque attendait sans fin dans `tuh_task` (le clavier était lu, jamais
+  servi au 6502). Drapeau indexé par `dev_addr` partout (`usb_storage.cpp`). UF2 `~/neo-carte/trinity-0.8.3-diskio-fix-USB.uf2`.
+
 - **0.8.2** (2026-09-21, **carte : 0.8.1 flashée le jour même**, retour bmarty en NeoDOS : invite `!:\>`, `A:` refusé, `B:` →
   `b:1:\>`) — **volumes sur carte corrigés (T-24)** : (1) l'amont montait une clé USB à son **adresse USB** (`1:` derrière
   le hub) → pas de volume 0, `A:` inexistant ; désormais la n-ième clé montée est le lecteur logique `n-1` (`0:` = `A:`,
