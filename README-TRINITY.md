@@ -37,6 +37,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.5** (2026-09-21, retour carte bmarty : « la date est toujours en 1970 ») — synchro modem rendue robuste : (1) la
+  tentative automatique exigeait une liaison CDC inactive, or le Pico W émet des messages non sollicités au démarrage qui
+  restent dans le FIFO → condition retirée tant que l'horloge n'est pas réglée (l'entrée en attente est jetée) ; (2) le SNTP
+  du modem est **désactivé d'usine** : si `AT+CIPSNTPCFG?` répond `0`, le firmware l'active lui-même
+  (`AT+CIPSNTPCFG=1,0,"pool.ntp.org"`, sauvé par le modem) et l'heure vient à la tentative suivante (≤ 30 s après la
+  connexion Wi-Fi). `CLKModemCommand` factorise l'échange AT. Modem factice de test complété (`+CIPSNTPCFG:1,0,…`).
+  `~/neo-carte/trinity-0.9.5-sntp-fix-USB.uf2`.
+
 - **0.9.4** (2026-09-21, retour carte bmarty : « le 3 s Esc ne fonctionne pas ») — le clavier USB n'est pas encore énuméré
   quand la fenêtre s'ouvre (le hub monte la clé, le modem, puis le clavier). Le menu attend maintenant qu'un **clavier soit
   monté** (message `USB keyboard found`, `KBDIsPresent`, jusqu'à 8 s) puis ouvre les 3 s pour Échap (T-28).

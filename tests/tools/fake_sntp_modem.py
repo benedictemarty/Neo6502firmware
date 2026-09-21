@@ -17,5 +17,6 @@ while True:
         line, buf = buf[:i].strip(), buf[i+1:]
         if not line: continue
         if line == b"AT+CIPSNTPTIME?": os.write(master, b"+CIPSNTPTIME:Tue Sep 15 12:34:56 2026\r\nOK\r\n")
+        elif line == b"AT+CIPSNTPCFG?": os.write(master, b"+CIPSNTPCFG:1,0,\"pool.ntp.org\"\r\nOK\r\n")
         elif line.startswith(b"AT"): os.write(master, b"OK\r\n")
         else: os.write(master, b"ERROR\r\n")

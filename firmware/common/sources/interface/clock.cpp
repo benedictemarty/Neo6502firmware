@@ -170,8 +170,8 @@ void CLKGet(CLOCK_TIME *t) {
 		if (CLKReadRTC(&u)) { CLKFromSeconds(CLKToSeconds(&u),t);t->source = CLK_SOURCE_RTC;return; }   // RTC in UTC, shown local
 	}
 	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && (int32_t)(TMRRead() - modemNextTry) >= 0) {   // T-25 : unset and a
-		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries)
-		if (HWCDCReadAvailable(0) == 0) CLKSyncFromModem();  						// Only when the link is idle (a program may use it)
+		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries ;
+		CLKSyncFromModem();  														// unsolicited modem text is dropped meanwhile)
 	}
 	uint32_t secs = CLKSeconds();
 	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime (UTC, no zone)
@@ -236,43 +236,43 @@ uint8_t CLKParseModemTime(const char *line,CLOCK_TIME *t) {
 	return 0;
 }
 
-uint8_t CLKSyncFromModem(void) {
-	if (!HWCDCConnected(0)) return 1;
+// Send an AT command, wait (1 s at most, USB host served) for OK/ERROR, keep the last "+PREFIX:" line in answer.
+static bool CLKModemCommand(const char *cmd,const char *prefix,char *answer,int answerSize) {
 	uint8_t junk[64];
 	while (HWCDCRead(0,junk,sizeof(junk)) > 0) ;  									// Drop pending input
-	static const char cmd[] = "AT+CIPSNTPTIME?\r\n";
-	if (HWCDCWrite(0,(const uint8_t *)cmd,sizeof(cmd) - 1) != sizeof(cmd) - 1) return 2;
-	char line[96];int n = 0;uint8_t result = 2;CLOCK_TIME t;
-	uint32_t timeOut = TMRRead() + 100;  											// 1 s
-	while ((int32_t)(TMRRead() - timeOut) < 0) {
+	if (HWCDCWrite(0,(const uint8_t *)cmd,strlen(cmd)) != strlen(cmd)) return false;
+	char line[96];int n = 0;bool done = false;
+	answer[0] = 0;
+	uint32_t timeOut = TMRRead() + 100;
+	while (!done && (int32_t)(TMRRead() - timeOut) < 0) {
 		uint8_t c;
-		if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }  							// Serve the USB host meanwhile
+		if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }
 		if (c == '\n' || c == '\r') {
 			line[n] = 0;
-			if (n > 0 && strcmp(line,"OK") == 0) break;
-			if (n > 0 && strcmp(line,"ERROR") == 0) break;
-			if (n > 0 && CLKParseModemTime(line,&t) == 0) result = 0;
+			if (n > 0 && (strcmp(line,"OK") == 0 || strcmp(line,"ERROR") == 0)) done = true;
+			else if (n > 0 && strstr(line,prefix) != NULL) { strncpy(answer,line,answerSize - 1);answer[answerSize - 1] = 0; }
 			n = 0;
 		} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
 	}
-	if (result != 0) return 2;
-	if (!CLKValid(&t)) return 2;
-	int modemTz = 0;                                                                // AT+CIPSNTPCFG? -> +CIPSNTPCFG:en,tz,"server"
-	static const char cfg[] = "AT+CIPSNTPCFG?\r\n";                                 // (the modem adds tz hours : take it out, T-26)
-	if (HWCDCWrite(0,(const uint8_t *)cfg,sizeof(cfg) - 1) == sizeof(cfg) - 1) {
-		n = 0;timeOut = TMRRead() + 100;
-		while ((int32_t)(TMRRead() - timeOut) < 0) {
-			uint8_t c;
-			if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }
-			if (c == '\n' || c == '\r') {
-				line[n] = 0;
-				if (n > 0 && (strcmp(line,"OK") == 0 || strcmp(line,"ERROR") == 0)) break;
-				const char *p = strstr(line,"+CIPSNTPCFG:");
-				if (p != NULL) { p = strchr(p,',');if (p != NULL) modemTz = atoi(p + 1); }
-				n = 0;
-			} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
+	return done;
+}
+
+uint8_t CLKSyncFromModem(void) {
+	if (!HWCDCConnected(0)) return 1;
+	char answer[96];
+	int modemTz = 0;
+	if (CLKModemCommand("AT+CIPSNTPCFG?\r\n","+CIPSNTPCFG:",answer,sizeof(answer)) && answer[0]) {
+		int enabled = atoi(answer + 12);
+		const char *p = strchr(answer,',');
+		if (p != NULL) modemTz = atoi(p + 1);
+		if (!enabled) {  																// Factory default : SNTP off. Switch it on (UTC,
+			CLKModemCommand("AT+CIPSNTPCFG=1,0,\"pool.ntp.org\"\r\n","+",answer,sizeof(answer));   // saved by the modem) : time at a later try
+			return 2;
 		}
 	}
+	if (!CLKModemCommand("AT+CIPSNTPTIME?\r\n","+CIPSNTPTIME:",answer,sizeof(answer)) || !answer[0]) return 2;
+	CLOCK_TIME t;
+	if (CLKParseModemTime(answer,&t) != 0 || !CLKValid(&t)) return 2;
 	CLKSetUTC(CLKToSeconds(&t) - (int32_t)modemTz * 3600,CLK_SOURCE_MODEM);
 	return 0;
 }
