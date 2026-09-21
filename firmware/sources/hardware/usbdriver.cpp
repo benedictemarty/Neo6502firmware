@@ -84,6 +84,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
     switch(tuh_hid_interface_protocol(dev_addr, instance)) {
 
     case HID_ITF_PROTOCOL_KEYBOARD:
+        KBDSetPresent(true);                                                    // Boot menu waits for it (T-28)
+        CONWriteString("USB keyboard found\r");
         break;
 
     case HID_ITF_PROTOCOL_MOUSE:

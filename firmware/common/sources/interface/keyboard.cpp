@@ -330,3 +330,12 @@ uint8_t KBDKeyboardController(void) {
 //		13-03-26  Optimized keyboard queue
 //	
 // ***************************************************************************************
+
+// T-28 : keyboard presence (the board reports the HID mount ; the emulators always have one).
+#ifdef PICO
+static bool keyboardPresent = false;
+#else
+static bool keyboardPresent = true;
+#endif
+void KBDSetPresent(bool present) { keyboardPresent = present; }
+bool KBDIsPresent(void) { return keyboardPresent; }

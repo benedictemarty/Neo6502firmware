@@ -22,6 +22,7 @@
 #define BOOT_NAME_MAX   24
 #define BOOT_TIMEOUT    300                                                     // 100 Hz ticks : 3 s
 #define BOOT_AUTO       "auto.txt"                                              // Name of the entry to start automatically
+#define BOOT_KEYBOARD_WAIT 800                                                  // Up to 8 s for a USB keyboard to enumerate (T-28)
 #define BOOT_AUTO_TIMEOUT 300                                                   // 3 s to press Escape for the menu (bmarty 2026-09-21 : 1 s was too short, the USB keyboard enumerates meanwhile)
 
 void BOOTSelect(void);                                                          // DSPReset : show the menu, if any

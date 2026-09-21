@@ -53,7 +53,9 @@ void BOOTSelect(void) {
     if (autoChoice >= 0) {                                                      // Auto : start it unless Escape within 1 s
         CONWriteString("Boot : auto %s (Esc = menu, 3 s)\r",bootNames[autoChoice]);
         bootChoice = autoChoice;
-        uint32_t end = TMRRead() + BOOT_AUTO_TIMEOUT;
+        uint32_t end = TMRRead() + BOOT_KEYBOARD_WAIT;                          // T-28 : wait for the USB keyboard first
+        while (!KBDIsPresent() && (int32_t)(end - TMRRead()) > 0) KBDSync();  // (enumerated after the key and the modem)
+        end = TMRRead() + BOOT_AUTO_TIMEOUT;                                    // then 3 s for Escape
         bool menu = false;
         while ((int32_t)(end - TMRRead()) > 0) {
             KBDSync();

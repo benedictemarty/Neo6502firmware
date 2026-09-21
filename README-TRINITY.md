@@ -37,6 +37,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.4** (2026-09-21, retour carte bmarty : « le 3 s Esc ne fonctionne pas ») — le clavier USB n'est pas encore énuméré
+  quand la fenêtre s'ouvre (le hub monte la clé, le modem, puis le clavier). Le menu attend maintenant qu'un **clavier soit
+  monté** (message `USB keyboard found`, `KBDIsPresent`, jusqu'à 8 s) puis ouvre les 3 s pour Échap (T-28).
+  `~/neo-carte/trinity-0.9.4-esc-kbd-USB.uf2`.
+
 - **0.9.3** (2026-09-21) — curseur souris : l'automatisme de 0.9.1 (T-27) est **retiré** sur décision bmarty : le curseur reste
   caché au reset et n'apparaît que par `11,2` (c'est au programme de le montrer). `~/neo-carte/trinity-0.9.3-USB.uf2`.
 

@@ -14,6 +14,8 @@
 #define _KEYBOARD_H
 
 void KBDInitialise(void);
+void KBDSetPresent(bool present);  												// Board : a HID keyboard is mounted (T-28)
+bool KBDIsPresent(void);
 void KBDSync(void);
 
 void KBDCheckTimer(void);
