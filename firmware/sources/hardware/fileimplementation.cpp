@@ -209,7 +209,10 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 // ***************************************************************************************
 
 uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
-	return convertError(f_getcwd(target,maxSize));
+	FRESULT result = f_getcwd(target,maxSize);
+	if (result == FR_OK && target[0] >= '0' && target[0] <= '9' && target[1] == ':')	// T-24 : "n:/dir" -> "/dir", relative to
+		memmove(target,target + 2,strlen(target + 2) + 1);  								// the volume root (as the emulators, 3,23)
+	return convertError(result);
 }
 
 // ***************************************************************************************
@@ -237,20 +240,22 @@ uint8_t FISGetVolumeInfo(uint8_t volume, std::string& name, uint8_t* attribs) {
 	return FIOERROR_OK;
 }
 
+static uint8_t currentVolume = 0;  												// T-24 : tracked here (f_getcwd fails before any mount)
+
+void FISNoteCurrentVolume(uint8_t volume) { currentVolume = volume; }			// usb_storage.cpp : first key mounted
+
 uint8_t FISSelectVolume(uint8_t volume) {
 	std::string name; uint8_t attribs;
 	uint8_t error = FISGetVolumeInfo(volume, name, &attribs);					// refuse an unmounted drive
 	if (error != FIOERROR_OK) return error;
 	char drive[3] = { (char)('0' + volume), ':', 0 };
-	return convertError(f_chdrive(drive));
+	FRESULT result = f_chdrive(drive);
+	if (result == FR_OK) currentVolume = volume;
+	return convertError(result);
 }
 
 uint8_t FISGetCurrentVolume(uint8_t* volume) {
-	std::unique_ptr<char[]> cwd(new (std::nothrow) char[FF_MAX_LFN + 8]);		// small stack : heap buffer
-	if (!cwd) return FIOERROR_NOT_ENOUGH_CORE;
-	FRESULT result = f_getcwd(cwd.get(), FF_MAX_LFN + 8);						// "n:/..." when FF_VOLUMES > 1
-	if (result != FR_OK) return convertError(result);
-	*volume = (cwd[1] == ':' && cwd[0] >= '0' && cwd[0] <= '9') ? cwd[0] - '0' : 0;
+	*volume = currentVolume;
 	return FIOERROR_OK;
 }
 

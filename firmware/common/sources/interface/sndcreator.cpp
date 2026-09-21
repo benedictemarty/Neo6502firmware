@@ -107,6 +107,16 @@ void SNDUpdateSoundChannel(uint8_t channel,SOUND_CHANNEL *c) {
 
 // ***************************************************************************************
 //
+//		F-12 : set the output level of a channel in place (no phase reset, so no click)
+//
+// ***************************************************************************************
+
+void SNDSetCreatorVolume(uint8_t channel,int volume) {
+    if (channel < CHANNEL_COUNT) audio[channel].volume = volume;
+}
+
+// ***************************************************************************************
+//
 //		Date 		Revision
 //		==== 		========
 //

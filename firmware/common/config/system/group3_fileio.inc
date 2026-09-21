@@ -346,7 +346,7 @@ GROUP 3 File I/O
 
     FUNCTION 26 Get Current Volume
         {
-            uint8_t v;
+            uint8_t v = 0;
             *DERROR = FIOGetCurrentVolume(&v);
             DPARAMS[0] = v;
         }

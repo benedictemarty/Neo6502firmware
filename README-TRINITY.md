@@ -37,6 +37,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.8.2** (2026-09-21, **carte : 0.8.1 flashée le jour même**, retour bmarty en NeoDOS : invite `!:\>`, `A:` refusé, `B:` →
+  `b:1:\>`) — **volumes sur carte corrigés (T-24)** : (1) l'amont montait une clé USB à son **adresse USB** (`1:` derrière
+  le hub) → pas de volume 0, `A:` inexistant ; désormais la n-ième clé montée est le lecteur logique `n-1` (`0:` = `A:`,
+  table lecteur ↔ adresse dans `usb_storage.cpp`, diskio traduit), message `Volume 0: (A:)` au montage ; (2) `3,26` échouait
+  avant le premier montage (`f_getcwd`) et renvoyait une variable **non initialisée** (`'A' + $E0` = `!`) → volume courant
+  suivi par le firmware (`FISNoteCurrentVolume`, `FISSelectVolume`), `v = 0` par défaut dans le dispatch ; (3) `3,23`
+  renvoyait `1:/…` brut sur carte alors que les émulateurs donnent `/…` relatif au volume → préfixe `n:` retiré.
+  **Volume par canal son (T-22, F-12 du fork)** : `8,9 Set Channel Volume` (0-100, rampe en 1/100 s, sans redémarrer
+  l'onde), `8,10 Get Channel Volume` ; test `sndvol.asm` du fork (regex sur la valeur de rampe). `make test-api` 12/12.
+  RAM 34 340 o libres ; UF2 413 696 o (`~/neo-carte/trinity-0.8.2-volumes-fix-USB.uf2`).
+
 - **0.8.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.8.1-rtos-USB.uf2`) — **Noyau RTOS 6502 (T-14 b, F-61 du
   fork)** : `kernel/rtos.asm` + `rtos_data.asm` (TCB en `$FF10-$FF6D`) compilés dans le noyau (`$FC00-$FEFB`, 5 octets de
   marge avant `$FF00`) : 4 tâches (pile `$0100` en 4 × 64 o, page zéro privée `$E0-$EF`), tourniquet sur le tick 1,12,

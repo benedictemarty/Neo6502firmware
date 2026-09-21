@@ -36,6 +36,7 @@ void SNDResetAll(void) {
 uint8_t SNDResetChannel(int channelID) {
 	if (channelID >= SNDGetChannelCount()) return 1;
 	SOUND_CHANNEL *c = &channel[channelID];  									// Initialise channel
+	c->fadeStep = 0;c->fadeTarget = 0;  											// F-12
 	c->isPlayingNote = false;
 	c->tick50Remaining = 0;
 	c->queueCount = 0;
@@ -86,6 +87,7 @@ void SNDPlayNextNote(int channelID) {
 	c->currentSlide = qe->slide;
 	c->currentType = qe->type;
 	c->currentVolume = qe->volume;
+	c->fadeStep = 0;  															// F-12 : a new note cancels any ramp
 	c->isPlayingNote = true;  													// Set up the channel data
 	c->tick50Remaining = qe->timeCS / 2;  
 	SNDUpdateSoundChannel(channelID,c);  										// Update it
@@ -124,6 +126,39 @@ uint8_t SNDPlay(int channelID,SOUND_UPDATE *u) {
 
 // ***************************************************************************************
 //
+//		F-12 : volume of the note being played, 0-127, reached over timeCS hundredths of a
+//		second (0 = at once) by a linear ramp run by SNDManager (50 Hz). The queued notes keep
+//		their own volume. Error if the channel does not exist or nothing is playing.
+//
+// ***************************************************************************************
+
+uint8_t SNDSetChannelVolume(int channelID,int volume,int timeCS) {
+	if (channelID < 0 || channelID >= SNDGetChannelCount()) return 1;
+	SOUND_CHANNEL *c = &channel[channelID];
+	if (!c->isPlayingNote) return 1;
+	if (volume < 0) volume = 0;
+	if (volume > 127) volume = 127;
+	int ticks = timeCS / 2;
+	if (ticks <= 0 || volume == c->currentVolume) {  							// At once.
+		c->currentVolume = volume;
+		c->fadeStep = 0;
+		SNDSetCreatorVolume(channelID,volume);
+	} else {
+		c->fadeTarget = volume;
+		c->fadeStep = (volume - c->currentVolume) / ticks;  					// Per 50 Hz tick, at least 1 in magnitude.
+		if (c->fadeStep == 0) c->fadeStep = (volume > c->currentVolume) ? 1 : -1;
+	}
+	return 0;
+}
+
+int SNDGetChannelVolume(int channelID) {
+	if (channelID < 0 || channelID >= SNDGetChannelCount()) return -1;
+	SOUND_CHANNEL *c = &channel[channelID];
+	return c->isPlayingNote ? c->currentVolume : 0;
+}
+
+// ***************************************************************************************
+//
 //									Called at 50 Hz
 //
 // ***************************************************************************************
@@ -146,6 +181,15 @@ void SNDManager(void) {
 				}
 			} else {  															// Decrement the timer.
 				c->tick50Remaining--;
+				if (c->fadeStep != 0) {  										// F-12 : volume ramp.
+					c->currentVolume += c->fadeStep;
+					if ((c->fadeStep > 0 && c->currentVolume >= c->fadeTarget) ||
+						(c->fadeStep < 0 && c->currentVolume <= c->fadeTarget)) {
+						c->currentVolume = c->fadeTarget;
+						c->fadeStep = 0;
+					}
+					SNDSetCreatorVolume(channelID,c->currentVolume);
+				}
 				if (c->currentSlide != 0) {
 					c->currentFrequency += c->currentSlide;
 					if (c->currentFrequency < 100) c->currentFrequency += 1100;
