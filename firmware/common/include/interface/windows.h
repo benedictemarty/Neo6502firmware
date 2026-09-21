@@ -15,7 +15,6 @@
 
 #define WM_MAX_WINDOWS   8
 #define WM_TITLE_HEIGHT  10                                                     // Title bar (inside the frame)
-#define WM_TITLE_MAX     31
 #define WM_GROW_SIZE     8                                                      // Grow box, bottom right of the content
 
 #define WM_FLAG_TITLE    0x01                                                   // Has a title bar (drag, close box)

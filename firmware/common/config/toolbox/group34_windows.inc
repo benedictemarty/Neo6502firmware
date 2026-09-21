@@ -18,7 +18,8 @@ GROUP 34 Window Manager
         }
     DOCUMENTATION
         Toolbox (Trinity, T-12, ADR-01 of the fork). Creates a visible window whose frame is the Rect at Parameters:0,1 (screen
-        coordinates, see group 32) with the length-prefixed title at Parameters:2,3 (31 characters at most) and
+        coordinates, see group 32) with the length-prefixed title at Parameters:2,3 (up to 255 characters, read in place : the program keeps
+        the string intact while the window exists ; T-21) and
         the flags of Parameter:4 (bit 0 title bar, bit 1 close box, bit 2 grow box) ; returns its number (1-8) in
         Parameter:5, or an error (1 bad parameters, 2 no window left). The new window comes to the front. The
         firmware draws the frames (1 pixel border, 10 line title bar, close box, grow box) ; the content is drawn by
@@ -71,7 +72,8 @@ GROUP 34 Window Manager
     FUNCTION 9 Set Window Title
         *DERROR = WMSetTitle(DPARAMS[0],DSPGetInt16(DPARAMS,1));
     DOCUMENTATION
-        Changes the title of window Parameter:0 to the length-prefixed string at Parameters:1,2 and repaints its frame.
+        Changes the title of window Parameter:0 to the length-prefixed string at Parameters:1,2 (read in place, see New Window)
+        and repaints its frame.
 
     FUNCTION 10 Front Window
         DPARAMS[0] = WMFrontWindow();

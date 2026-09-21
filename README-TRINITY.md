@@ -37,6 +37,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.8.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.8.1-rtos-USB.uf2`) — **Noyau RTOS 6502 (T-14 b, F-61 du
+  fork)** : `kernel/rtos.asm` + `rtos_data.asm` (TCB en `$FF10-$FF6D`) compilés dans le noyau (`$FC00-$FEFB`, 5 octets de
+  marge avant `$FF00`) : 4 tâches (pile `$0100` en 4 × 64 o, page zéro privée `$E0-$EF`), tourniquet sur le tick 1,12,
+  `KTaskInit/Create/Yield/Sleep/Exit/Lock/Unlock/Ticks`, `KSemWait/Signal` (vecteurs `$FFC1-$FFDC`, `neo6502.inc`
+  régénéré), `WAI` + lecture de `$FFFF` quand rien n'est prêt ; `$FFFE` → `KIrqHandler` (reset si l'ordonnanceur est
+  inactif, comme l'amont). L'API `$FF00` n'est pas réentrante : `KTaskLock`/`KTaskUnlock` autour des appels ; NeoBASIC
+  incompatible (page zéro, pile) ; NeoDOS en `$B800` n'est pas concerné. Tests `tests/api/rtos.asm` et `rtos_idle.asm`
+  (démos Phosphoneo du fork, coupées par `cycles:`) : sortie **identique à la référence golden du fork**
+  (`AAAAAT=0032 ABAAAAT=0064 ABAAAAT=0096 AB…`). **Titres de fenêtre sans limite (T-21)** : demande d'un autre projet
+  (`WM_TITLE_MAX` 31) — le Window Manager lit le titre **en place** dans la RAM 6502 (pointeur + longueur, comme les
+  menus) au lieu de le copier : jusqu'à 255 caractères, −248 o de RAM ; le programme garde la chaîne intacte tant que
+  la fenêtre existe (`34,1`, `34,9`, documenté). `make test-api` 11/11, `make test-toolbox` 10/10. RAM 34 492 o libres ;
+  UF2 412 160 o.
+
 - **0.8.0** (2026-09-21, **à valider sur carte avec prudence** : `~/neo-carte/trinity-0.8.0-irq-USB.uf2`) — **Tick d'interruption
   et IRQ de trame (T-14 a, F-60/F-10 du fork)** : `1,12 Set Interrupt Tick` (1-1000 Hz, timer matériel du RP2040 sur
   core 0), `1,13`, `1,16 Set Frame Interrupt` (IRQB au début de chaque trame, posée par le callback de ligne DVI sur core 1),

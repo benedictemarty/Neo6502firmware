@@ -13,6 +13,16 @@
 import sys
 
 vectors = [
+		"KSemSignal",						# F-61 scheduler (bmarty) : new vectors first (table grows downwards)
+		"KSemWait",
+		"KTaskTicks",
+		"KTaskUnlock",
+		"KTaskLock",
+		"KTaskExit",
+		"KTaskSleep",
+		"KTaskYield",
+		"KTaskCreate",
+		"KTaskInit",
 		"KChainBasicOnlyProgram",
 		"KChainBasicProgram",	
 		"KWriteCharacterInline",

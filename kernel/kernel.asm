@@ -45,13 +45,16 @@ start
 	jmp 	(0)								; and start it.
 
 	.include 	"support.asm"
+	.include 	"rtos.asm"
 
 	* = ControlPort
 	.word 	0,0,0,0,0,0,0,0
 
+	.include 	"rtos_data.asm"
+
 	.include "build/_vectors.inc"
 	
 	* = $FFFA
-	.word 	start
-	.word 	start
-	.word 	start
+	.word 	start 							; NMI
+	.word 	start 							; RESET
+	.word 	KIrqHandler 					; IRQ/BRK : reset unless the scheduler is active (F-61)

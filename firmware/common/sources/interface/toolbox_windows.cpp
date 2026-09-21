@@ -23,7 +23,7 @@ struct Window {
     uint8_t flags;
     struct QDRect frame;                                                        // Screen coordinates, exclusive
     uint8_t titleLen;
-    uint8_t title[WM_TITLE_MAX];
+    const uint8_t *title;                                                       // Read in place (6502 RAM or firmware memory, T-21)
 };
 
 static struct Window windows[WM_MAX_WINDOWS];                                   // id = index + 1
@@ -153,12 +153,11 @@ static bool _WMReadRect(uint16_t addr,struct QDRect *r) {
     return r->right > r->left && r->bottom > r->top;
 }
 
-static bool _WMReadTitle(uint16_t addr,struct Window *w) {
+static bool _WMReadTitle(uint16_t addr,struct Window *w) {                     // Title kept in 6502 RAM, read at each repaint
     if (addr > 0xFF00 - 1) return false;
     uint8_t len = cpuMemory[addr];
-    if (len > WM_TITLE_MAX) len = WM_TITLE_MAX;
     if ((uint32_t)addr + len > 0xFF00 - 1) return false;
-    memcpy(w->title,cpuMemory + addr + 1,len);
+    w->title = cpuMemory + addr + 1;
     w->titleLen = len;
     return true;
 }
@@ -171,8 +170,7 @@ uint8_t WMNewWindowRaw(const struct QDRect *rect,const uint8_t *title,uint8_t ti
     if (rect->right <= rect->left || rect->bottom <= rect->top) return 1;
     struct Window *w = &windows[slot];
     w->frame = *rect;
-    if (titleLen > WM_TITLE_MAX) titleLen = WM_TITLE_MAX;
-    memcpy(w->title,title,titleLen);w->titleLen = titleLen;
+    w->title = title;w->titleLen = titleLen;                                    // In place (T-21 : no copy, no length limit)
     w->flags = flags;w->used = true;w->visible = true;
     zOrder[zCount++] = slot + 1;
     *id = slot + 1;
@@ -185,7 +183,6 @@ uint8_t WMNewWindow(uint16_t rectAddr,uint16_t titleAddr,uint8_t flags,uint8_t *
     if (!_WMReadRect(rectAddr,&r)) return 1;
     if (titleAddr > 0xFF00 - 1) return 1;
     uint8_t len = cpuMemory[titleAddr];
-    if (len > WM_TITLE_MAX) len = WM_TITLE_MAX;
     if ((uint32_t)titleAddr + len > 0xFF00 - 1) return 1;
     return WMNewWindowRaw(&r,cpuMemory + titleAddr + 1,len,flags,id);
 }
