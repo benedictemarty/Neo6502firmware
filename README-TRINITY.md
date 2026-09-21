@@ -37,6 +37,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.0** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.9.0-sntp-USB.uf2`) — **Heure par le modem (T-25)**,
+  demande bmarty (`DATE` = 1970 sans RTC). `1,23 Sync Clock From Modem` : `AT+CIPSNTPTIME?` sur la CDC (1 s max, hôte
+  USB servi), réponse `+CIPSNTPTIME:Www Mmm dd hh:mm:ss yyyy` analysée (`CLKParseModemTime`), 1970 = pas encore d'heure
+  (erreur 2), pas de modem (erreur 1) ; entrée en attente sur la liaison jetée. **Automatique** : `1,20` avec horloge non
+  réglée et modem présent interroge le modem (au plus toutes les 30 s, seulement liaison inactive) — NeoDOS appelle `1,20`
+  au démarrage, l'heure suit dès que le modem a son SNTP. Source `1,20` P7 = 3. **Fuseau** : réglé dans le modem
+  (`AT+CIPSNTPCFG=1,tz,"serveur"`, heures entières, sauvé dans sa flash, pas de règle été/hiver) ; le firmware reçoit
+  l'heure locale, cohérent avec les horodatages FAT. Test `tests/api/clocksync.asm` + modem factice sur pty
+  (`tests/tools/fake_sntp_modem.py`, `NOM.modem` dans `run_neo.sh`) ; `neo` modélisant un PCF8563, la source y vaut 2.
+  `make test-api` 13/13. RAM 34 304 o libres ; UF2 415 744 o.
+
 - **0.8.3** (2026-09-21, **validé sur carte** le soir même : `Volume 0: (A:)`, invite `A:\>`, clavier, NeoBASIC lancé ; `DATE` = 1970 sans RTC, normal. **0.8.2 sur carte : gel** — invite `A:\>` affichée puis clavier mort, Échap au boot inopérant) —
   **correctif du correctif** : le diskio USB posait le drapeau « occupé » sur l'index lecteur (`pdrv`, désormais 0) et la fin
   de transfert TinyUSB l'effaçait sur l'index adresse USB (`dev_addr`) ; égaux jusqu'en 0.8.1, différents depuis le montage

@@ -126,9 +126,15 @@ static uint32_t CLKSeconds(void) {  												// Elapsed seconds since the tim
 	return (uint32_t)(ticks / 100);
 }
 
+static uint32_t modemNextTry = 0;  												// T-25 : next automatic attempt (100 Hz ticks)
+
 void CLKGet(CLOCK_TIME *t) {
 	if (!clkInitialised) CLKInitialise();
 	if (rtcPresent && CLKReadRTC(t)) return;
+	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && (int32_t)(TMRRead() - modemNextTry) >= 0) {   // T-25 : unset and a
+		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries)
+		if (HWCDCReadAvailable(0) == 0) CLKSyncFromModem();  						// Only when the link is idle (a program may use it)
+	}
 	uint32_t secs = CLKSeconds();
 	t->source = swSource;
 	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime.
@@ -168,4 +174,54 @@ uint8_t CLKSetParams(const uint8_t *p) {
 	t.year = p[0] | (p[1] << 8);
 	t.month = p[2];t.day = p[3];t.hour = p[4];t.minute = p[5];t.second = p[6];t.source = 0;
 	return CLKSet(&t);
+}
+
+// ***************************************************************************************
+//
+//		T-25 : time from the USB modem (Pico W, Neo6502picowifi) : AT+CIPSNTPTIME? answers
+//		"+CIPSNTPTIME:Tue Sep 15 12:00:00 2026" (local time : the modem adds its tz offset,
+//		whole hours, AT+CIPSNTPCFG) then OK ; "Thu Jan 01 00:00:00 1970" while SNTP has not
+//		synchronised. The host is served (KBDSync) while waiting, 1 s at most.
+//
+// ***************************************************************************************
+
+uint8_t CLKParseModemTime(const char *line,CLOCK_TIME *t) {
+	static const char months[] = "JanFebMarAprMayJunJulAugSepOctNovDec";
+	const char *p = strstr(line,"+CIPSNTPTIME:");
+	if (p == NULL) return 2;
+	p += 13;
+	while (*p == ' ') p++;
+	if (strlen(p) < 24) return 2;  													// "Www Mmm dd hh:mm:ss yyyy"
+	const char *m = strstr(months,std::string(p + 4,3).c_str());
+	if (m == NULL || (m - months) % 3 != 0) return 2;
+	int month = (m - months) / 3 + 1;
+	int day = atoi(p + 8),hour = atoi(p + 11),minute = atoi(p + 14),second = atoi(p + 17),year = atoi(p + 20);
+	if (year < 1980) return 2;  														// 1970 : SNTP not synchronised yet
+	t->year = year;t->month = month;t->day = day;t->hour = hour;t->minute = minute;t->second = second;t->source = CLK_SOURCE_MODEM;
+	return 0;
+}
+
+uint8_t CLKSyncFromModem(void) {
+	if (!HWCDCConnected(0)) return 1;
+	uint8_t junk[64];
+	while (HWCDCRead(0,junk,sizeof(junk)) > 0) ;  									// Drop pending input
+	static const char cmd[] = "AT+CIPSNTPTIME?\r\n";
+	if (HWCDCWrite(0,(const uint8_t *)cmd,sizeof(cmd) - 1) != sizeof(cmd) - 1) return 2;
+	char line[96];int n = 0;uint8_t result = 2;CLOCK_TIME t;
+	uint32_t timeOut = TMRRead() + 100;  											// 1 s
+	while ((int32_t)(TMRRead() - timeOut) < 0) {
+		uint8_t c;
+		if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }  							// Serve the USB host meanwhile
+		if (c == '\n' || c == '\r') {
+			line[n] = 0;
+			if (n > 0 && strcmp(line,"OK") == 0) break;
+			if (n > 0 && strcmp(line,"ERROR") == 0) break;
+			if (n > 0 && CLKParseModemTime(line,&t) == 0) result = 0;
+			n = 0;
+		} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
+	}
+	if (result != 0) return 2;
+	if (CLKSet(&t) != 0) return 2;
+	swSource = CLK_SOURCE_MODEM;
+	return 0;
 }

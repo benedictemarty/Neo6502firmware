@@ -13,7 +13,13 @@ mkdir -p "$OUT/storage1" && printf "un" > "$OUT/storage1/vol1.txt"              
 sed 's/^NEO = 0/NEO = 1/' "$TDIR/$NAME.asm" > "$OUT/$NAME.asm"
 64tass --mw65c02 --nostart -q -o "$OUT/$NAME.neo6502" "$OUT/$NAME.asm" || exit 2
 ARGS=""; [ -r "$TDIR/$NAME.args" ] && ARGS=$(cat "$TDIR/$NAME.args")             # crochets neo : mouse:C:X,Y,B keys:C:TEXTE cycles:N (T-19)
+MODEM=""; if [ -r "$TDIR/$NAME.modem" ]; then                                   # NOM.modem : modem factice (tests/tools/NOM.py) sur un pty
+    python3 "$HERE/tests/tools/$(cat "$TDIR/$NAME.modem")" "$OUT/pty.txt" & MODEM=$!
+    for i in $(seq 1 50); do [ -s "$OUT/pty.txt" ] && break; sleep 0.1; done
+    export NEO_CDC_TTY=$(cat "$OUT/pty.txt")
+fi
 cd "$OUT" && timeout 120 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 $ARGS > neo.log 2>&1
+[ -n "$MODEM" ] && kill $MODEM 2>/dev/null
 python3 - "$OUT/memory.dump" > "$OUT/journal.txt" <<'PY'
 import sys
 m=open(sys.argv[1],'rb').read()

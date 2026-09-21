@@ -89,7 +89,9 @@ GROUP 1 System
         Returns the date and time (Trinity T-18, F-14 of the fork) : Parameters:0,1 year (1970-2099), Parameter:2 month (1-12),
         Parameter:3 day (1-31), Parameter:4 hour (0-23), Parameter:5 minute, Parameter:6 second and Parameter:7 the
         source : 0 = not set (the value is then 1970-01-01 plus the time since power on), 1 = software clock set by
-        Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51).
+        Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51),
+        3 = set from the SNTP time of the USB modem (Function 1,23). While the clock is not set and a USB modem is present,
+        this function asks the modem itself, at most once every 30 seconds and only when the modem link is idle (T-25).
 
     FUNCTION 21 Set Date Time
         *DERROR = CLKSetParams(DPARAMS);
@@ -157,3 +159,11 @@ GROUP 1 System
         DPARAMS[0] = IRQGetFrame();
     DOCUMENTATION
         Returns in Parameter:0 whether the frame interrupt (Function 1,16) is on.
+
+    FUNCTION 23 Sync Clock From Modem
+        *DERROR = CLKSyncFromModem();
+    DOCUMENTATION
+        Sets the date and time from the USB modem (Pico W, Neo6502picowifi) : sends AT+CIPSNTPTIME? on the CDC link and
+        applies the answer (local time : the modem adds the time zone offset of its SNTP configuration, AT+CIPSNTPCFG,
+        whole hours, no daylight saving rule). Waits 1 second at most. Error 1 if no modem is connected, 2 if the modem
+        has no SNTP time yet (answer 1970) or does not answer. Pending input on the modem link is discarded (Trinity T-25).
