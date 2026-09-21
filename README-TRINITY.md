@@ -37,6 +37,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.3** (2026-09-21) — curseur souris : l'automatisme de 0.9.1 (T-27) est **retiré** sur décision bmarty : le curseur reste
+  caché au reset et n'apparaît que par `11,2` (c'est au programme de le montrer). `~/neo-carte/trinity-0.9.3-USB.uf2`.
+
 - **0.9.2** (2026-09-21) — menu de démarrage : **3 s** (au lieu de 1 s) pour appuyer sur Échap quand `boot/auto.txt` lance une
   entrée (demande bmarty : le clavier USB s'énumère pendant ce délai derrière le hub) ; message `(Esc = menu, 3 s)`.
   `~/neo-carte/trinity-0.9.2-esc-USB.uf2`.

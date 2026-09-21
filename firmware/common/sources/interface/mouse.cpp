@@ -19,7 +19,6 @@ static bool isCursorVisible;                                                    
 static uint8_t buttonState;
 static uint8_t scrollWheelState;
 static bool hasMouse = false;
-static bool autoShow = true;                                                    // T-27 : cursor shown on the first move until 11,2 is used
 
 // ***************************************************************************************
 //
@@ -33,7 +32,6 @@ void MSEInitialise(void) {
     scrollWheelState = 0;
     isCursorVisible = false;
     hasMouse = false;
-    autoShow = true;                                                            // T-27
 }
 
 // ***************************************************************************************
@@ -76,7 +74,6 @@ void MSEOffsetPosition(int8_t dx, int8_t dy) {
 
     if(xCursor > gMode.xGSize) xCursor = gMode.xGSize;
     if(yCursor > gMode.yGSize) yCursor = gMode.yGSize;
-    if (autoShow && (dx != 0 || dy != 0)) isCursorVisible = true;              // T-27 (bmarty 2026-09-21) : a moving mouse shows its cursor
     EVTPostMouseMove();                                                         // F-42
 }
 
@@ -87,7 +84,6 @@ void MSEOffsetPosition(int8_t dx, int8_t dy) {
 // ***************************************************************************************
 
 void MSESetVisible(bool isVisible) {
-    autoShow = false;                                                           // T-27 : the program decides from now on
     isCursorVisible = isVisible;
 }
 
