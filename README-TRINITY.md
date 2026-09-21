@@ -37,7 +37,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
-- **0.8.3** (2026-09-21, **0.8.2 sur carte : gel** — invite `A:\>` affichée puis clavier mort, Échap au boot inopérant) —
+- **0.8.3** (2026-09-21, **validé sur carte** le soir même : `Volume 0: (A:)`, invite `A:\>`, clavier, NeoBASIC lancé ; `DATE` = 1970 sans RTC, normal. **0.8.2 sur carte : gel** — invite `A:\>` affichée puis clavier mort, Échap au boot inopérant) —
   **correctif du correctif** : le diskio USB posait le drapeau « occupé » sur l'index lecteur (`pdrv`, désormais 0) et la fin
   de transfert TinyUSB l'effaçait sur l'index adresse USB (`dev_addr`) ; égaux jusqu'en 0.8.1, différents depuis le montage
   de la première clé en `0:` → le premier accès disque attendait sans fin dans `tuh_task` (le clavier était lu, jamais
