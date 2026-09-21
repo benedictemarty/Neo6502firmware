@@ -172,6 +172,26 @@ void HWReset(void) {
 
 void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 
+// T-26 : settings "flash" = storage/settings.flash
+static uint8_t settingsImage[SETTINGS_SIZE];
+static bool settingsLoaded = false;
+const uint8_t *HWSettingsStorage(void) {
+	if (!settingsLoaded) {
+		memset(settingsImage,0xFF,SETTINGS_SIZE);
+		FILE *f = fopen((storagePath / "settings.flash").c_str(),"rb");
+		if (f != NULL) { size_t n = fread(settingsImage,1,SETTINGS_SIZE,f);(void)n;fclose(f); }
+		settingsLoaded = true;
+	}
+	return settingsImage;
+}
+uint8_t HWSettingsWrite(const uint8_t *data) {
+	memcpy(settingsImage,data,SETTINGS_SIZE);settingsLoaded = true;
+	FILE *f = fopen((storagePath / "settings.flash").c_str(),"wb");
+	if (f == NULL) return 1;
+	fwrite(settingsImage,1,SETTINGS_SIZE,f);fclose(f);
+	return 0;
+}
+
 // T-17 : bank "flash" = storage/banks.flash (BANK_COUNT * BANK_SIZE bytes, $FF when absent), persistent like the board's flash.
 static uint8_t *bankImage = NULL;
 static void bankLoad(void) {

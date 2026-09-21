@@ -25,7 +25,8 @@ GROUP 11 Mouse
     FUNCTION 2 Set mouse display cursor on/off
         MSESetVisible(DCOMMAND[4] != 0);
     DOCUMENTATION
-        Shows or hides the mouse cursor depending on the Parameter:0
+        Shows or hides the mouse cursor depending on the Parameter:0. Until this function is called (and again after a
+        reset), the cursor appears by itself as soon as the mouse moves (Trinity T-27) ; once called, the program decides.
 
     FUNCTION 3 Get mouse state
         MSEGetState((uint16_t*)DPARAMS, (uint16_t*)(DPARAMS + 2), DPARAMS + 4, DPARAMS + 5);

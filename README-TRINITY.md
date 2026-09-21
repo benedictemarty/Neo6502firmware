@@ -37,6 +37,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.9.1-timezone-USB.uf2`) — **Fuseaux horaires (T-26)**,
+  demande bmarty (« Europe/Paris, Europe/Belgrade… pas nécessairement la France ») : l'horloge garde l'**UTC** ; `1,20`,
+  `1,21` et les horodatages FAT sont en heure locale du fuseau choisi. **`1,24 Set Time Zone`** : nom de style IANA parmi
+  ~120 zones en flash (`timezone.cpp` : Europe, Afrique, Amériques, Asie, Océanie) ou décalage fixe (`UTC+2`, `UTC-3:30`,
+  `+0530`) ; règles d'heure d'été Union européenne, Amérique du Nord, Australie, Nouvelle-Zélande (état 2026, sans
+  historique) ; **`1,25 Get Time Zone`** (nom, décalage courant en minutes, été en cours). Réglage **persistant sur la carte**
+  (pas sur la clé, remarque bmarty) : nouveau **secteur de réglages en flash** (`settings.cpp`, 4 Ko à `0x1BF000` sous les
+  banques, enregistrement `NST1`, écrit par `1,24` seulement au changement, DVI suspendu ≈ 100 ms ; `neo` :
+  `storage/settings.flash`), appliqué au démarrage (`Time zone Europe/Paris`). `1,23` lit aussi `AT+CIPSNTPCFG?` et retranche
+  le `tz` du modem : l'heure devient UTC quel que soit le réglage du Pico W. **Curseur souris automatique (T-27)** : le curseur
+  apparaît au premier mouvement de la souris tant qu'un programme n'a pas appelé `11,2` (reset = automatisme). Tests
+  `timezone.asm` (Paris été, sync modem 12:34:56 UTC → 14:34:56, réglage local relu, Montréal en décembre −300, zone
+  inconnue, `UTC-3:30`), `clocksync` (correctif : initialisation de l'horloge avant écriture). `make test-api` 14/14,
+  `make test-toolbox` 10/10. RAM 33 372 o libres (table des zones en flash, enregistrement 256 o) ; UF2 429 568 o.
+
 - **0.9.0** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.9.0-sntp-USB.uf2`) — **Heure par le modem (T-25)**,
   demande bmarty (`DATE` = 1970 sans RTC). `1,23 Sync Clock From Modem` : `AT+CIPSNTPTIME?` sur la CDC (1 s max, hôte
   USB servi), réponse `+CIPSNTPTIME:Www Mmm dd hh:mm:ss yyyy` analysée (`CLKParseModemTime`), 1970 = pas encore d'heure

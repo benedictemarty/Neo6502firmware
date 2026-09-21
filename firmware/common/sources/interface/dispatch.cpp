@@ -111,6 +111,7 @@ void DSPReset(void) {
 	SNDManager();                                                               // Initialise sound manager
 	CONWrite(0x80+6);
 	STOSynchronise();                                                           // Synchronise storage
+	TZLoadFromStorage();                                                        // Time zone from the settings sector (T-26)
 	BOOTSelect();                                                               // Trinity : boot menu from boot/
 	CONWrite(0x80+2);
 	IOInitialise(); 															// UEXT Initialise.

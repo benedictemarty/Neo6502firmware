@@ -86,7 +86,7 @@ GROUP 1 System
     FUNCTION 20 Get Date Time
         CLKGetParams(DPARAMS);
     DOCUMENTATION
-        Returns the date and time (Trinity T-18, F-14 of the fork) : Parameters:0,1 year (1970-2099), Parameter:2 month (1-12),
+        Returns the date and time (Trinity T-18, F-14 of the fork), local time of the zone of Function 1,24 : Parameters:0,1 year (1970-2099), Parameter:2 month (1-12),
         Parameter:3 day (1-31), Parameter:4 hour (0-23), Parameter:5 minute, Parameter:6 second and Parameter:7 the
         source : 0 = not set (the value is then 1970-01-01 plus the time since power on), 1 = software clock set by
         Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51),
@@ -164,6 +164,35 @@ GROUP 1 System
         *DERROR = CLKSyncFromModem();
     DOCUMENTATION
         Sets the date and time from the USB modem (Pico W, Neo6502picowifi) : sends AT+CIPSNTPTIME? on the CDC link and
-        applies the answer (local time : the modem adds the time zone offset of its SNTP configuration, AT+CIPSNTPCFG,
-        whole hours, no daylight saving rule). Waits 1 second at most. Error 1 if no modem is connected, 2 if the modem
+        applies the answer ; the tz offset of the modem (AT+CIPSNTPCFG?, whole hours) is taken out so the clock holds UTC
+        and Function 1,20 shows the local time of the zone selected by Function 1,24. Waits 2 seconds at most. Error 1 if no modem is connected, 2 if the modem
         has no SNTP time yet (answer 1970) or does not answer. Pending input on the modem link is discarded (Trinity T-25).
+
+    FUNCTION 24 Set Time Zone
+        {
+            char name[TZ_NAME_MAX + 1];
+            uint16_t a = DSPGetInt16(DPARAMS,0);
+            uint8_t len = cpuMemory[a];
+            if (len > TZ_NAME_MAX) len = TZ_NAME_MAX;
+            memcpy(name,cpuMemory + a + 1,len);name[len] = 0;
+            *DERROR = TZSetAndSave(name);
+        }
+    DOCUMENTATION
+        Selects the time zone (Trinity T-26) from the length-prefixed name at Parameters:0,1 : an IANA style name of the
+        built in table ("Europe/Paris", "Europe/Belgrade", "America/Montreal", "Asia/Tokyo"...) or a fixed offset
+        ("UTC+2", "UTC-3:30", "+0530"). The clock keeps UTC ; Functions 1,20 and 1,21 and the FAT timestamps use the local
+        time of the zone, daylight saving included (rules of the European Union, North America, Australia and New Zealand).
+        The zone is saved in the settings sector of the flash and applied at every start up. Error 1 if the name is
+        unknown, 2 if the flash write failed.
+
+    FUNCTION 25 Get Time Zone
+        {
+            uint8_t dst;
+            int16_t off = TZOffsetAt(CLKUTCNow(),&dst);
+            DSPSetStdString(DPARAMS,0,std::string(TZGetName()));
+            DSPSetInt16(DPARAMS,2,(uint16_t)off);DPARAMS[4] = dst;
+        }
+    DOCUMENTATION
+        Writes the current time zone name into the length-prefixed buffer at Parameters:0,1 ("UTC" by default), the current
+        offset from UTC in minutes (signed, daylight saving included) in Parameters:2,3 and whether daylight saving time is
+        in force in Parameter:4 (Trinity T-26).

@@ -128,30 +128,65 @@ static uint32_t CLKSeconds(void) {  												// Elapsed seconds since the tim
 
 static uint32_t modemNextTry = 0;  												// T-25 : next automatic attempt (100 Hz ticks)
 
-void CLKGet(CLOCK_TIME *t) {
-	if (!clkInitialised) CLKInitialise();
-	if (rtcPresent && CLKReadRTC(t)) return;
-	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && (int32_t)(TMRRead() - modemNextTry) >= 0) {   // T-25 : unset and a
-		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries)
-		if (HWCDCReadAvailable(0) == 0) CLKSyncFromModem();  						// Only when the link is idle (a program may use it)
-	}
-	uint32_t secs = CLKSeconds();
-	t->source = swSource;
-	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime.
+static void CLKFromSeconds(uint32_t secs,CLOCK_TIME *t) {  						// UTC seconds -> local civil time (T-26)
+	uint8_t dst;
+	secs += (int32_t)TZOffsetAt(secs,&dst) * 60;
 	int y,m,d;
 	CLKCivilFromDays(secs / 86400,&y,&m,&d);
 	t->year = y;t->month = m;t->day = d;
 	t->hour = (secs / 3600) % 24;t->minute = (secs / 60) % 60;t->second = secs % 60;
 }
 
-uint8_t CLKSet(const CLOCK_TIME *t) {
+static uint32_t CLKToSeconds(const CLOCK_TIME *t) {  								// Civil time -> seconds (no zone)
+	return CLKDaysFromCivil(t->year,t->month,t->day) * 86400 + t->hour * 3600 + t->minute * 60 + t->second;
+}
+
+// Set the clock from UTC seconds (source given) : software clock, RTC (kept in UTC) and host.
+static void CLKSetUTC(uint32_t utc,uint8_t source) {
+	if (!clkInitialised) CLKInitialise();  											// Before any state is written (it resets it)
+	swEpoch = utc;
+	swBaseTick = CLKSeconds();
+	swSource = source;
+	CLOCK_TIME u;
+	int y,m,d;
+	CLKCivilFromDays(utc / 86400,&y,&m,&d);
+	u.year = y;u.month = m;u.day = d;u.hour = (utc / 3600) % 24;u.minute = (utc / 60) % 60;u.second = utc % 60;u.source = source;
+	if (rtcPresent) CLKWriteRTC(&u);
+	HWClockSet(&u);
+}
+
+uint32_t CLKUTCNow(void) {  														// Current UTC seconds (T-26)
+	if (!clkInitialised) CLKInitialise();
+	CLOCK_TIME u;
+	if (rtcPresent && CLKReadRTC(&u)) return CLKToSeconds(&u);
+	uint32_t secs = CLKSeconds();
+	return (swSource != CLK_SOURCE_UNSET) ? swEpoch + (secs - swBaseTick) : secs;
+}
+
+void CLKGet(CLOCK_TIME *t) {
+	if (!clkInitialised) CLKInitialise();
+	if (rtcPresent) {
+		CLOCK_TIME u;
+		if (CLKReadRTC(&u)) { CLKFromSeconds(CLKToSeconds(&u),t);t->source = CLK_SOURCE_RTC;return; }   // RTC in UTC, shown local
+	}
+	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && (int32_t)(TMRRead() - modemNextTry) >= 0) {   // T-25 : unset and a
+		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries)
+		if (HWCDCReadAvailable(0) == 0) CLKSyncFromModem();  						// Only when the link is idle (a program may use it)
+	}
+	uint32_t secs = CLKSeconds();
+	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime (UTC, no zone)
+	if (swSource == CLK_SOURCE_UNSET) {
+		int y,m,d;
+		CLKCivilFromDays(secs / 86400,&y,&m,&d);
+		t->year = y;t->month = m;t->day = d;t->hour = (secs / 3600) % 24;t->minute = (secs / 60) % 60;t->second = secs % 60;
+	} else CLKFromSeconds(secs,t);
+	t->source = swSource;
+}
+
+uint8_t CLKSet(const CLOCK_TIME *t) {  											// 1,21 : local time of the zone (T-26)
 	if (!clkInitialised) CLKInitialise();
 	if (!CLKValid(t)) return 1;
-	swEpoch = CLKDaysFromCivil(t->year,t->month,t->day) * 86400 + t->hour * 3600 + t->minute * 60 + t->second;
-	swBaseTick = CLKSeconds();
-	swSource = CLK_SOURCE_SOFTWARE;
-	if (rtcPresent) CLKWriteRTC(t);
-	HWClockSet(t);  																// RP2040 RTC : FatFs get_fattime() on SD (USB : FF_FS_NORTC).
+	CLKSetUTC(TZLocalToUTC(CLKToSeconds(t)),CLK_SOURCE_SOFTWARE);
 	return 0;
 }
 
@@ -221,7 +256,23 @@ uint8_t CLKSyncFromModem(void) {
 		} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
 	}
 	if (result != 0) return 2;
-	if (CLKSet(&t) != 0) return 2;
-	swSource = CLK_SOURCE_MODEM;
+	if (!CLKValid(&t)) return 2;
+	int modemTz = 0;                                                                // AT+CIPSNTPCFG? -> +CIPSNTPCFG:en,tz,"server"
+	static const char cfg[] = "AT+CIPSNTPCFG?\r\n";                                 // (the modem adds tz hours : take it out, T-26)
+	if (HWCDCWrite(0,(const uint8_t *)cfg,sizeof(cfg) - 1) == sizeof(cfg) - 1) {
+		n = 0;timeOut = TMRRead() + 100;
+		while ((int32_t)(TMRRead() - timeOut) < 0) {
+			uint8_t c;
+			if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }
+			if (c == '\n' || c == '\r') {
+				line[n] = 0;
+				if (n > 0 && (strcmp(line,"OK") == 0 || strcmp(line,"ERROR") == 0)) break;
+				const char *p = strstr(line,"+CIPSNTPCFG:");
+				if (p != NULL) { p = strchr(p,',');if (p != NULL) modemTz = atoi(p + 1); }
+				n = 0;
+			} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
+		}
+	}
+	CLKSetUTC(CLKToSeconds(&t) - (int32_t)modemTz * 3600,CLK_SOURCE_MODEM);
 	return 0;
 }
