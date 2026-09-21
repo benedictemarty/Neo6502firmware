@@ -51,7 +51,7 @@ void BOOTSelect(void) {
         }
     }
     if (autoChoice >= 0) {                                                      // Auto : start it unless Escape within 1 s
-        CONWriteString("Boot : auto %s (Esc = menu)\r",bootNames[autoChoice]);
+        CONWriteString("Boot : auto %s (Esc = menu, 3 s)\r",bootNames[autoChoice]);
         bootChoice = autoChoice;
         uint32_t end = TMRRead() + BOOT_AUTO_TIMEOUT;
         bool menu = false;

@@ -37,6 +37,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.2** (2026-09-21) — menu de démarrage : **3 s** (au lieu de 1 s) pour appuyer sur Échap quand `boot/auto.txt` lance une
+  entrée (demande bmarty : le clavier USB s'énumère pendant ce délai derrière le hub) ; message `(Esc = menu, 3 s)`.
+  `~/neo-carte/trinity-0.9.2-esc-USB.uf2`.
+
 - **0.9.1** (2026-09-21, **à valider sur carte** : `~/neo-carte/trinity-0.9.1-timezone-USB.uf2`) — **Fuseaux horaires (T-26)**,
   demande bmarty (« Europe/Paris, Europe/Belgrade… pas nécessairement la France ») : l'horloge garde l'**UTC** ; `1,20`,
   `1,21` et les horodatages FAT sont en heure locale du fuseau choisi. **`1,24 Set Time Zone`** : nom de style IANA parmi
