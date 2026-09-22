@@ -152,6 +152,13 @@ uint32_t GMPReadDigitalController(uint8_t index) {
 //
 // ***************************************************************************************
 
+// T-30 : after a flash write (interrupts off on both cores, ~50-150 ms) the USB host controller has missed its
+// interrupts : pump the stack hard for a moment so TinyUSB catches up (endpoints resumed, reports flowing again).
+void HWUSBRecover(void) {
+    uint32_t end = TMRRead() + 30;                                              // 300 ms
+    while ((int32_t)(end - TMRRead()) > 0) tuh_task_ext(0,false);
+}
+
 void __time_critical_func(KBDSync)(void) {
     if (tuh_task_event_ready()) {
       tuh_task_ext(0, false);

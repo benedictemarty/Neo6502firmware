@@ -37,6 +37,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.11** (2026-09-22, retour carte bmarty : après `TZPARIS` sur 0.9.10, écran conservé mais **clavier muet pendant ~10 s**,
+  périphériques toujours détectés) — pendant l'écriture flash les interruptions sont coupées sur les deux cores : l'hôte USB
+  perd les siennes et TinyUSB ne se resynchronise qu'après une dizaine de secondes. `HWUSBRecover()` (T-30) pompe
+  `tuh_task` pendant 300 ms juste après l'écriture (et `KBDSync()` juste avant) : la reprise est immédiate.
+  `~/neo-carte/trinity-0.9.11-USB.uf2`.
+
 - **0.9.10** (2026-09-22, retour carte bmarty : après `TZPARIS` (écriture du secteur de réglages) l'écran reste noir) — les
   écritures flash (`1,22 Write Bank`, `1,24`) ne démontent plus le DVI (`RNDSuspend`/`RNDResume` : pour un même mode, le
   moniteur ne re-verrouillait pas) : **lockout multicore du SDK** (`multicore_lockout_victim_init` sur core 1 au démarrage,

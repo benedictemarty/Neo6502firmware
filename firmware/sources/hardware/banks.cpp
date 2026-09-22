@@ -27,12 +27,14 @@ const uint8_t *HWSettingsStorage(void) { return (const uint8_t *)(XIP_BASE + SET
 uint8_t HWSettingsWrite(const uint8_t *data) {
 	static uint8_t page[FLASH_PAGE_SIZE];                                          // 256 bytes : one flash page
 	memcpy(page,data,SETTINGS_SIZE);
+	KBDSync();                                                                     // Serve the USB host before going deaf
 	multicore_lockout_start_blocking();
 	uint32_t ints = save_and_disable_interrupts();
 	flash_range_erase(SETTINGS_FLASH_OFFSET,FLASH_SECTOR_SIZE);
 	flash_range_program(SETTINGS_FLASH_OFFSET,page,FLASH_PAGE_SIZE);
 	restore_interrupts(ints);
 	multicore_lockout_end_blocking();
+	HWUSBRecover();                                                                // USB host missed its interrupts (T-30)
 	return memcmp(page,HWSettingsStorage(),SETTINGS_SIZE) == 0 ? 0 : 1;
 }
 
@@ -43,11 +45,13 @@ const uint8_t *HWBankStorage(uint8_t bank) {
 
 uint8_t HWBankWrite(uint8_t bank,const uint8_t *data) {
 	if (bank >= BANK_COUNT) return 1;
+	KBDSync();                                                                     // Serve the USB host before going deaf
 	multicore_lockout_start_blocking();                                            // Core 1 spins in RAM, interrupts off (picture frozen)
 	uint32_t ints = save_and_disable_interrupts();
 	flash_range_erase(BANK_FLASH_OFFSET + bank * BANK_SIZE,BANK_SIZE);            // 2 sectors of 4k ; data is in cpuMemory (RAM), no copy
 	flash_range_program(BANK_FLASH_OFFSET + bank * BANK_SIZE,data,BANK_SIZE);
 	restore_interrupts(ints);
 	multicore_lockout_end_blocking();
+	HWUSBRecover();                                                                // USB host missed its interrupts (T-30)
 	return memcmp(data,HWBankStorage(bank),BANK_SIZE) == 0 ? 0 : 1;              // Verify
 }

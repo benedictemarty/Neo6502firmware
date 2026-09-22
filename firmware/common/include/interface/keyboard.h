@@ -14,6 +14,7 @@
 #define _KEYBOARD_H
 
 void KBDInitialise(void);
+void HWUSBRecover(void);  														// Board : recover the USB host after a flash write (T-30)
 void KBDSetPresent(bool present);  												// Board : a HID keyboard is mounted (T-28)
 bool KBDIsPresent(void);
 void KBDSync(void);
