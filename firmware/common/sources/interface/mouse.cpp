@@ -31,6 +31,7 @@ void MSEInitialise(void) {
     buttonState = 0;
     scrollWheelState = 0;
     isCursorVisible = false;
+    RNDCursorUpdate();                                                          // T-46 : publish, never poll
     hasMouse = false;
 }
 
@@ -57,6 +58,7 @@ bool MSEMousePresent(void) {
 void MSESetPosition(uint16_t x, uint16_t y) {
     xCursor = x;
     yCursor = y;
+    RNDCursorUpdate();                                                          // T-46
     EVTPostMouseMove();                                                         // F-42
 }
 
@@ -74,6 +76,7 @@ void MSEOffsetPosition(int8_t dx, int8_t dy) {
 
     if(xCursor > gMode.xGSize) xCursor = gMode.xGSize;
     if(yCursor > gMode.yGSize) yCursor = gMode.yGSize;
+    RNDCursorUpdate();                                                          // T-46
     EVTPostMouseMove();                                                         // F-42
 }
 
@@ -85,6 +88,7 @@ void MSEOffsetPosition(int8_t dx, int8_t dy) {
 
 void MSESetVisible(bool isVisible) {
     isCursorVisible = isVisible;
+    RNDCursorUpdate();                                                          // T-46
 }
 
 // ***************************************************************************************

@@ -122,6 +122,7 @@ int GFXSetMode(int Mode) {
 	GFXDefaultPalette();   														// Standard palette
 	if (gMode.bitsPerPixel == 1) GFXSetPalette(1,255,255,255); 					// Monochrome : "on" is white (changeable with 5,32)
 	CONInitialise(&gMode);  													// Initialise the console.
+	RNDCursorUpdate();  														// T-46 : the screen size changed, republish
 	return 0;
 }
 

@@ -37,6 +37,24 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.12** (2026-09-23, **deux régressions carte trouvées par bissection avec bmarty**, validées sur carte) — depuis la
+  0.10.3, **tout programme mourait peu après son lancement sur la carte** (`legdiag` de NeoLegacy, le jeu lui-même), sans
+  que `neo` ni Phosphoneo n'en montrent rien. Neuf flashs ont isolé **deux causes indépendantes** :
+  **(1) T-46 — le sondage du curseur dans `DSPSync`.** 0.10.3 y avait ajouté `RNDCursorUpdate()`, qui vit en flash et
+  s'exécute en entier ~95 fois par seconde, alors que `DSPSync` est `TIMECRITICAL` — placée en RAM — et appelée depuis la
+  boucle qui sert le bus du 6502. Les deux autres fonctions qu'elle appelle respectaient la règle : `KBDSync` est
+  `__time_critical_func`, `CONBlinkSync` sort immédiatement sauf deux fois par seconde. Le sondage disparaît : l'état du
+  curseur est désormais **publié là où il change** (`MSESetPosition`, `MSEOffsetPosition`, `MSESetVisible`,
+  `MSEInitialise`, `CURSetCurrent`, `GFXSetMode`). Le bénéfice visé par 0.10.3 est conservé — avec T-44, le callback de
+  ligne ne touche ni code ni données en flash.
+  **(2) T-40 retirée — les LED des touches de verrouillage.** Les allumer suppose d'envoyer un rapport de sortie HID,
+  c'est-à-dire un transfert de contrôle ; émis depuis `tuh_hid_mount_cb` et depuis le callback de rapport — donc depuis
+  `tuh_task` — il détruisait la pile USB hôte. C'est le terrain de T-31 : sur RP2040, TinyUSB partage l'endpoint EPX
+  entre les transferts bulk du MSC et les interrupt du HID. L'état des verrous et `2,23 Get Lock Keys` **restent**
+  (T-41 en dépend pour lire les touches) ; seules les diodes s'en vont, à refaire avec une demande mise en file et
+  émise depuis la boucle principale, hors de tout callback.
+  `make test-api` 15/15, `make test-toolbox` 10/10 ; RAM 32 544 o libres ; `~/neo-carte/trinity-0.10.12-USB.uf2`.
+
 - **0.10.10** (2026-09-23, retour carte bmarty : « late plante à nouveau ») — **outil `LATE` réellement reconstruit**.
   La 0.10.5 avait retiré de `late.asm` son journal de débogage en RAM **et, par mégarde, la routine `cr`** qu'il utilise
   encore ligne 38 : l'assemblage échouait, `LATE.NEO` n'a donc jamais été régénéré et la clé a gardé la version qui se

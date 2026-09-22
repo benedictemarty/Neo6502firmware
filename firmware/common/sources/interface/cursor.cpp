@@ -45,6 +45,7 @@ const uint8_t *CURGetCurrent(uint8_t *xHit,uint8_t *yHit) {
 bool CURSetCurrent(uint8_t cursorID) {
 	bool isOk = cursorID < CURSOR_IMAGE_COUNT; 									// Number of cursors
 	currentCursor = isOk ? cursorID : 0;  										// Bad value sets default
+	RNDCursorUpdate();  														// T-46 : the image changed, publish it
 	return !isOk; 																// Return false on error
 }
 

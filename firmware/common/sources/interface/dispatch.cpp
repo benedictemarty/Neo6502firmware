@@ -69,10 +69,14 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 //
 // ***************************************************************************************
 
+//		T-46 : nothing here may live in flash. KBDSync is __time_critical_func (RAM) and
+//		CONBlinkSync returns at once except twice a second ; RNDCursorUpdate, added here by
+//		0.10.3, was in flash and ran in full ~95 times a second — it broke every program on
+//		the board (bissection bmarty 2026-09-23). The cursor state is published when it
+//		changes instead (mouse.cpp, cursor.cpp).
 void TIMECRITICAL(DSPSync)(void) 
 {
 	KBDSync();
-	RNDCursorUpdate();  														// T-32c : keep the line callback free of flash code
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 
