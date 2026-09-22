@@ -38,7 +38,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 ## Versions
 
 - **0.10.12** (2026-09-23) — ⚠️ **la bissection de cette nuit n'a PAS trouvé la cause : elle a mesuré un effet de
-  placement du code.** `bisect-I` et 0.10.12 sont fonctionnellement identiques (même taille d'UF2, même RAM, seules
+  placement du code, et c'est désormais prouvé.** `trinity-0.10.12-USB.uf2` et `trinity-0.10.12b-banniere-USB.uf2` sont
+  compilées du **même code source** et ne diffèrent que par la chaîne de version affichée au démarrage : la première
+  échoue systématiquement, la seconde fait tourner `legdiag` et le jeu (carte, 2026-09-23). Voir T-48. `bisect-I` et 0.10.12 sont fonctionnellement identiques (même taille d'UF2, même RAM, seules
   quelques instructions déplacées) et pourtant la première fait tourner `legdiag` et le jeu de façon stable, la seconde
   non. Les deux corrections ci-dessous restent justes en elles-mêmes — elles suppriment de vraies fautes — mais **rien
   ne prouve qu'elles corrigent la panne**, et les verdicts « OK / KO » des neuf flashs sont à relire comme des tirages
