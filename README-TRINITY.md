@@ -37,6 +37,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.4** (2026-09-22, demande bmarty : « prendre en charge le driver pour 1A2C 0B2A », message `No driver found` au
+  démarrage) — **touches multimédia du clavier USB (T-39)**. Relevé sur le PC : ce clavier (China Resource Semico) expose
+  deux interfaces HID — **0** boot keyboard (déjà gérée) et **1** sans protocole boot, portant une collection *Consumer
+  Control* (page d'usage `$0C`, report ID 1, usage 16 bits) et une *System Control* (report ID 2 : sleep, power, wake).
+  Faute de protocole, elle tombait dans le gestionnaire de manettes, qui n'avait que « No driver found » à en dire.
+  Le clavier la revendique désormais d'après son descripteur (`KBDMediaClaim`), consomme ses rapports, et la dernière
+  touche est lisible par **`2,22 Get Media Key`** (P0-1 = usage Consumer — `$00E9` volume +, `$00EA` volume −, `$00E2`
+  sourdine, `$00CD` lecture/pause… —, P2 = bits système ; effacés à la lecture). Message `USB media keys found`.
+  `~/neo-carte/trinity-0.10.4-media-USB.uf2`.
+
 - **0.10.3** (2026-09-22, les traits rouges de 0.10.2 ont « un peu diminué, pas assez ») — deux mesures : (1) le callback
   de ligne DVI (core 1) n'appelle plus **aucun code en flash** : les informations du curseur souris (`MSEGetCursorDrawInformation`,
   `CURGetCurrent`, en flash) sont préparées par core 0 dans `DSPSync` et publiées en RAM (`RNDCursorUpdate`, T-32c) — un accès

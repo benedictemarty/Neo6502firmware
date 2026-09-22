@@ -153,3 +153,16 @@ GROUP 2 Console
         selected. The whole console is repainted. Characters $A0-$BF keep the built in Latin-1 symbols and $C0-$FF the
         user defined characters (Function 2,5 ; Latin-1 letters by default). The built in font is restored by a mode
         change (5,9) and at reset. Sets the error flag if the glyphs would run past the end of memory.
+
+    FUNCTION 22 Get Media Key
+        {
+            uint16_t usage;uint8_t system;
+            KBDGetMediaKey(&usage,&system);
+            DSPSetInt16(DPARAMS,0,usage);DPARAMS[2] = system;
+        }
+    DOCUMENTATION
+        Returns the last media key pressed on the USB keyboard in Parameters:0,1 (Consumer Control usage, HID usage page
+        $0C : $00E9 volume up, $00EA volume down, $00E2 mute, $00CD play/pause, $00B5 next, $00B6 previous, $0223 home...)
+        and the system keys in Parameter:2 (bit 0 sleep, bit 1 power, bit 2 wake). Both are cleared by this call, so a
+        program polls it ; 0 means nothing pressed since the last call. Keyboards expose these keys on a second HID
+        interface without boot protocol, which the firmware claims from the gamepad manager (Trinity T-39).

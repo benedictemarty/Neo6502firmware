@@ -94,6 +94,10 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
         break;
 
     case HID_ITF_PROTOCOL_NONE:
+        if (KBDMediaClaim(dev_addr,instance,desc_report,desc_len)) {            // T-39 : consumer / system control interface of a
+            CONWriteString("USB media keys found\r");                           // keyboard (e.g. 1A2C:0B2A) — not a gamepad
+            break;
+        }
         gamepad_controller.add(vid, pid, dev_addr, instance, desc_report, desc_len);
         break;
     }
@@ -102,6 +106,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
     USBNoteEvent();                                                             // T-32
+    KBDMediaRelease(dev_addr,instance);                                         // T-39
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {
@@ -116,6 +121,7 @@ void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t cons
         break;
 
     case HID_ITF_PROTOCOL_NONE:
+        if (KBDMediaReport(dev_addr,instance,report,len)) break;                // T-39 : media / system keys
         gamepad_controller.update(dev_addr, instance, report, len);
         break;
     }

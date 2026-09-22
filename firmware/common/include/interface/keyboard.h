@@ -15,6 +15,10 @@
 
 void KBDInitialise(void);
 void HWUSBRecover(void);  														// Board : recover the USB host after a flash write (T-30)
+bool KBDMediaClaim(uint8_t dev_addr,uint8_t instance,const uint8_t *desc,uint16_t len);  // T-39 : media/system keys interface
+void KBDMediaRelease(uint8_t dev_addr,uint8_t instance);
+bool KBDMediaReport(uint8_t dev_addr,uint8_t instance,const uint8_t *report,uint16_t len);
+void KBDGetMediaKey(uint16_t *usage,uint8_t *system);  							// 2,22
 void KBDSetPresent(bool present);  												// Board : a HID keyboard is mounted (T-28)
 bool KBDIsPresent(void);
 void KBDSync(void);

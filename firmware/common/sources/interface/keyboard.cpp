@@ -339,3 +339,61 @@ static bool keyboardPresent = true;
 #endif
 void KBDSetPresent(bool present) { keyboardPresent = present; }
 bool KBDIsPresent(void) { return keyboardPresent; }
+
+// ***************************************************************************************
+//
+//		T-39 : media keys of a USB keyboard. Many keyboards (e.g. 1A2C:0B2A) expose a second
+//		HID interface with no boot protocol, carrying a Consumer Control collection (usage
+//		page $0C : volume, play, browser...) and often a System Control one (sleep, power,
+//		wake). It is claimed here — not by the gamepad manager, which only had "no driver
+//		found" to say about it. The last key pressed is kept for the 6502 (Function 2,22).
+//
+// ***************************************************************************************
+
+#define KBD_MEDIA_MAX 4                                                         // Claimed interfaces
+static uint16_t mediaKey[KBD_MEDIA_MAX];                                        // Unused : 0
+static uint8_t mediaDev[KBD_MEDIA_MAX],mediaInst[KBD_MEDIA_MAX],mediaUsed = 0;
+static uint16_t lastMediaKey = 0;                                               // Last consumer usage, cleared when read
+static uint8_t lastSystemKey = 0;                                               // Bits : 1 sleep, 2 power, 4 wake
+
+// The descriptor is claimed when it starts a Consumer Control or System Control collection.
+bool KBDMediaClaim(uint8_t dev_addr,uint8_t instance,const uint8_t *desc,uint16_t len) {
+	bool isMedia = false;
+	for (uint16_t i = 0;i + 3 < len;i++) {
+		if (desc[i] == 0x05 && desc[i+1] == 0x0C && desc[i+2] == 0x09 && desc[i+3] == 0x01) isMedia = true;   // Consumer Control
+		if (desc[i] == 0x05 && desc[i+1] == 0x01 && desc[i+2] == 0x09 && desc[i+3] == 0x80) isMedia = true;   // System Control
+	}
+	if (!isMedia || mediaUsed >= KBD_MEDIA_MAX) return false;
+	mediaDev[mediaUsed] = dev_addr;mediaInst[mediaUsed] = instance;mediaKey[mediaUsed] = 0;
+	mediaUsed++;
+	return true;
+}
+
+void KBDMediaRelease(uint8_t dev_addr,uint8_t instance) {
+	for (int i = 0;i < mediaUsed;i++) {
+		if (mediaDev[i] == dev_addr && mediaInst[i] == instance) {
+			for (int j = i;j + 1 < mediaUsed;j++) { mediaDev[j] = mediaDev[j+1];mediaInst[j] = mediaInst[j+1];mediaKey[j] = mediaKey[j+1]; }
+			mediaUsed--;
+			return;
+		}
+	}
+}
+
+// Report of a claimed interface : ID 1 = consumer usage (16 bits, 0 = released), ID 2 = system bits.
+bool KBDMediaReport(uint8_t dev_addr,uint8_t instance,const uint8_t *report,uint16_t len) {
+	bool mine = false;
+	for (int i = 0;i < mediaUsed;i++) if (mediaDev[i] == dev_addr && mediaInst[i] == instance) mine = true;
+	if (!mine || len < 2) return mine;
+	if (report[0] == 1 && len >= 3) {  											// Consumer : keep the press, ignore the release
+		uint16_t usage = report[1] | (report[2] << 8);
+		if (usage != 0) lastMediaKey = usage;
+	} else if (report[0] == 2) {
+		if (report[1] != 0) lastSystemKey = report[1];
+	}
+	return true;
+}
+
+void KBDGetMediaKey(uint16_t *usage,uint8_t *system) {  							// 2,22 : reading clears them
+	*usage = lastMediaKey;*system = lastSystemKey;
+	lastMediaKey = 0;lastSystemKey = 0;
+}
