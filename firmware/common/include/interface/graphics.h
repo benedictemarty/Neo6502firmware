@@ -67,6 +67,8 @@ int  RNDGetFrameCount(void);
 void RNDStartMode0(struct GraphicsMode *gMode);
 void RNDSuspend(void);  														// T-17 : full teardown (unused)
 void RNDResume(void);
+void RNDCursorUpdate(void);  													// T-32c : core 0 prepares the cursor for the line callback
+uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (diagnostic)
 void RNDFlashPause(void);  														// T-32b : park core 1 (RAM) around a flash write ...
 void RNDFlashResume(void);  													// ... and let it go
 int  RNDModeSupported(int mode); 												// Implementation specific : can this host display it ?

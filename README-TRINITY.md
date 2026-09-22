@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.3** (2026-09-22, les traits rouges de 0.10.2 ont « un peu diminué, pas assez ») — deux mesures : (1) le callback
+  de ligne DVI (core 1) n'appelle plus **aucun code en flash** : les informations du curseur souris (`MSEGetCursorDrawInformation`,
+  `CURGetCurrent`, en flash) sont préparées par core 0 dans `DSPSync` et publiées en RAM (`RNDCursorUpdate`, T-32c) — un accès
+  XIP depuis core 1 s'allonge fortement quand core 0 martèle la flash (USB, FatFs, console), d'où des lignes non prêtes ;
+  (2) **`5,40 Get Late Scanlines`** expose le compteur de lignes en retard de PicoDVI, pour mesurer au lieu d'estimer
+  (outil `LATE.NEO` / `late.neo6502`, boucle d'affichage, Échap pour sortir). `~/neo-carte/trinity-0.10.3-scanline-USB.uf2`.
+
 - **0.10.2** (2026-09-22, retour carte bmarty : traits rouges nombreux à la frappe et à l'affichage) — le **lockout
   multicore du SDK** (0.9.10, pour les écritures flash) installait sur core 1 un gestionnaire d'IRQ (FIFO inter-cœurs)
   **situé en flash** : chaque interruption volait des cycles à l'encodeur TMDS, d'où des lignes non prêtes à temps (traits

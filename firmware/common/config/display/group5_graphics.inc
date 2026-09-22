@@ -160,3 +160,12 @@ GROUP 5 Graphics
         Set Flip Bits
         Sets the flip bits for drawing images. Bit 0 set causes a horizontal flip, bit 1 set causes a vertical flip.
 
+    FUNCTION 40 Get Late Scanlines
+        {
+            uint32_t n = RNDLateScanlines();
+            DPARAMS[0] = n & 0xFF;DPARAMS[1] = (n >> 8) & 0xFF;DPARAMS[2] = (n >> 16) & 0xFF;DPARAMS[3] = n >> 24;
+        }
+    DOCUMENTATION
+        Returns in Parameters:0-3 the number of scanlines the display could not encode in time since the last mode
+        change (Trinity T-32c, Function 5,40, diagnostic : these show as coloured streaks on the board ; 0 in the emulators). A
+        counter that keeps growing while a program runs means the second core is starved.

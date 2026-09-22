@@ -72,6 +72,7 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 void TIMECRITICAL(DSPSync)(void) 
 {
 	KBDSync();
+	RNDCursorUpdate();  														// T-32c : keep the line callback free of flash code
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 

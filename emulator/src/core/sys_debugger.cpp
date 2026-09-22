@@ -67,6 +67,10 @@ void RNDSetDisplayPage(uint8_t *displayMemory) {
 
 void RNDSuspend(void) {}  														// T-17 : nothing to pause here
 void RNDResume(void) {}
+void RNDFlashPause(void) {}  													// T-32b
+void RNDFlashResume(void) {}
+void RNDCursorUpdate(void) {}  													// T-32c : the emulator draws the cursor when it renders
+uint32_t RNDLateScanlines(void) { return 0; }
 
 // Write the display to a binary PPM (P6) file, for automated tests (shot:C:FILE ; Trinity T-19, from the fork).
 int RNDWriteScreenshot(const char *fileName) {

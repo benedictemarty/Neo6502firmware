@@ -92,6 +92,9 @@ uint16_t frameCounter = 0,lineCounter = 0;                              		// Tra
 bool  isInitialised = false;                                      				// DVI running.
 
 const uint8_t *cursorImage = NULL; 												// Cursor status
+static volatile bool nextCursorEnabled = false;  								// T-32c : published by core 0 for the next frame
+static const uint8_t * volatile nextCursorImage = NULL;
+static volatile uint16_t nextXCursor = 0,nextYCursor = 0,nextWCursor = 0,nextHCursor = 0;
 uint16_t xCursor,yCursor,wCursor,hCursor;
 bool cursorEnabled = false;
 
@@ -119,15 +122,10 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
 		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
-		uint8_t xHit,yHit;
-		cursorEnabled = MSEGetCursorDrawInformation(&xCursor,&yCursor); 		// Get cursor info this frame.
-		cursorImage = CURGetCurrent(&xHit,&yHit);
-		xCursor -= xHit;yCursor -= yHit;
-		if (cursorEnabled) {  													// If enabled work out physical drawing height.
-				wCursor = hCursor = 16;  										// Could be partially drawn.
-				if (xCursor + 16 >= currentMode->xGSize) wCursor = currentMode->xGSize-xCursor;
-				if (yCursor + 16 >= currentMode->yGSize) hCursor = currentMode->yGSize-yCursor;
-		}
+		cursorEnabled = nextCursorEnabled;  									// T-32c : computed on core 0 (RNDCursorUpdate) ;
+		cursorImage = nextCursorImage;  										// no flash code in this callback, whose XIP
+		xCursor = nextXCursor;yCursor = nextYCursor;  							// access stalls when core 0 hammers the flash
+		wCursor = nextWCursor;hCursor = nextHCursor;  							// (red late lines, board 2026-09-22)
 	}
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
@@ -359,6 +357,24 @@ void RNDResume(void) { if (!isInitialised) DVIStart(); }
 
 // T-32b : park core 1 in RAM for a flash write. The DVI hardware is left alone : the picture freezes
 // for the duration (the DMA is no longer rearmed) and resumes at once, without re-locking the monitor.
+// T-32c : core 0 prepares what the line callback needs about the mouse cursor (these calls live in flash).
+void RNDCursorUpdate(void) {
+	uint16_t x,y;uint8_t xHit,yHit;
+	bool on = MSEGetCursorDrawInformation(&x,&y);
+	const uint8_t *image = CURGetCurrent(&xHit,&yHit);
+	x -= xHit;y -= yHit;
+	uint16_t w = 16,h = 16;
+	if (currentMode != NULL) {
+		if (x + 16 >= currentMode->xGSize) w = currentMode->xGSize - x;
+		if (y + 16 >= currentMode->yGSize) h = currentMode->yGSize - y;
+	}
+	nextCursorImage = image;nextXCursor = x;nextYCursor = y;nextWCursor = w;nextHCursor = h;
+	nextCursorEnabled = on;
+}
+
+// T-32c : late scanlines counted by PicoDVI (diagnostic, read by 5,38).
+uint32_t RNDLateScanlines(void) { return dvi0.late_scanline_ctr; }
+
 void RNDFlashPause(void) {
 	if (!isInitialised) return;
 	core1InFlashPause = false;core1FlashPause = true;
