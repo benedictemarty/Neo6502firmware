@@ -37,6 +37,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.7** (2026-09-22, trouvé en cherchant la régression de NeoLegacy sur carte) — **curseur souris aux bords de l'écran
+  (T-42)**. `RNDCursorUpdate`, introduite en 0.10.3 pour sortir le calcul du curseur du callback de ligne, faisait ses
+  soustractions en **non signé** : `x -= xHit` (le point chaud) passe à ~65530 dès que le pointeur approche le bord gauche
+  ou haut, et `w = xGSize - x` donnait 1 726 au lieu d'une largeur tronquée. Les gardes du callback rejetaient ces valeurs,
+  donc le curseur **disparaissait** au lieu d'être découpé (aucune corruption mémoire : les tampons de ligne ont assez de
+  marge). Le calcul est désormais signé et découpe les quatre bords : `skipX`/`skipY` disent combien de colonnes et de
+  lignes de l'image du curseur sauter, `w`/`h` ce qui reste, et le curseur est désactivé s'il sort complètement — modes 0
+  et 1. Ce fichier n'est compilé que pour la carte (ni `neo` ni Phosphoneo ne l'ont), donc **aucun test automatique ne le
+  couvre** : vérifié par compilation, à valider carte.
+  `make test-api` 15/15, `make test-toolbox` 10/10 (inchangés : aucun ne voit ce fichier).
+  `~/neo-carte/trinity-0.10.7-cursor-clip-USB.uf2` (435 712 o), RAM 32 764 o libres.
+
 - **0.10.6** (2026-09-22, retour carte bmarty : « num lock ou caps lock ne rendent pas leur service ») — **les touches de
   verrouillage agissent enfin (T-41)**. La 0.10.5 n'allumait que les diodes : l'amont ne consulte jamais les verrous
   (`KBDMapToASCII` ne regarde que Shift) et remappait le pavé numérique sur les chiffres **sans condition**, en laissant

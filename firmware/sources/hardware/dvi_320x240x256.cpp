@@ -95,7 +95,9 @@ const uint8_t *cursorImage = NULL; 												// Cursor status
 static volatile bool nextCursorEnabled = false;  								// T-32c : published by core 0 for the next frame
 static const uint8_t * volatile nextCursorImage = NULL;
 static volatile uint16_t nextXCursor = 0,nextYCursor = 0,nextWCursor = 0,nextHCursor = 0;
+static volatile uint8_t nextSkipXCursor = 0,nextSkipYCursor = 0;  				// T-42 : columns/rows of the image clipped off
 uint16_t xCursor,yCursor,wCursor,hCursor;
+static uint8_t skipXCursor = 0,skipYCursor = 0;
 bool cursorEnabled = false;
 
 // ***************************************************************************************
@@ -126,6 +128,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		cursorImage = nextCursorImage;  										// no flash code in this callback, whose XIP
 		xCursor = nextXCursor;yCursor = nextYCursor;  							// access stalls when core 0 hammers the flash
 		wCursor = nextWCursor;hCursor = nextHCursor;  							// (red late lines, board 2026-09-22)
+		skipXCursor = nextSkipXCursor;skipYCursor = nextSkipYCursor;  			// T-42 : clipping on the left/top edges
 	}
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
@@ -133,8 +136,8 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
 		uint32_t *mono = (lineCounter & 1) ? monoLine1 : monoLine2;
 		memcpy(mono,screenMemory + y * currentMode->stride,currentMode->stride);
-		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor && xCursor < currentMode->xGSize-16) {   // Mouse cursor in
-			const uint8_t *cursorData = cursorImage + (y-yCursor) * 16;  				// monochrome (T-29) : colour 0 = off,
+		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) {   					// Mouse cursor in
+			const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // monochrome (T-29) : colour 0 = off,
 			uint8_t *bits = (uint8_t *)mono;  											// any other colour = on, $FF transparent
 			for (uint16_t i = 0;i < wCursor;i++) {
 				uint8_t pixel = *cursorData++;
@@ -161,14 +164,12 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		}
 	}
 	if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) { 					// Cursor drawing on this line.
-		if (xCursor >= 0 && xCursor < currentMode->xGSize-16) {  					// On Screen ?
-			const uint8_t *cursorData = cursorImage + (y-yCursor) * 16;
-			cursline += xCursor;  												// Position on this line.
-			for (uint16_t i = 0;i < wCursor;i++) { 								// Each pixel.
-				uint8_t pixel = *cursorData++;
-				if (pixel != 0xFF) *cursline = palette[pixel];  				// Check for transparency
-				cursline++;
-			}
+		const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // T-42 : clipped by RNDCursorUpdate
+		cursline += xCursor;  													// Position on this line.
+		for (uint16_t i = 0;i < wCursor;i++) { 									// Each pixel.
+			uint8_t pixel = *cursorData++;
+			if (pixel != 0xFF) *cursline = palette[pixel];  					// Check for transparency
+			cursline++;
 		}
 	}
 }
@@ -359,16 +360,21 @@ void RNDResume(void) { if (!isInitialised) DVIStart(); }
 // for the duration (the DMA is no longer rearmed) and resumes at once, without re-locking the monitor.
 // T-32c : core 0 prepares what the line callback needs about the mouse cursor (these calls live in flash).
 void RNDCursorUpdate(void) {
-	uint16_t x,y;uint8_t xHit,yHit;
-	bool on = MSEGetCursorDrawInformation(&x,&y);
+	uint16_t mx,my;uint8_t xHit,yHit;
+	bool on = MSEGetCursorDrawInformation(&mx,&my);
 	const uint8_t *image = CURGetCurrent(&xHit,&yHit);
-	x -= xHit;y -= yHit;
-	uint16_t w = 16,h = 16;
+	int x = (int)mx - xHit,y = (int)my - yHit;  								// T-42 : signed. The hot spot puts the top left
+	int skipX = 0,skipY = 0,w = 16,h = 16;  									// corner off screen when the pointer nears an edge,
+	if (x < 0) { skipX = -x;w -= skipX;x = 0; }  								// and an unsigned x wrapped to ~65530 : the cursor
+	if (y < 0) { skipY = -y;h -= skipY;y = 0; }  								// then vanished instead of being clipped.
 	if (currentMode != NULL) {
-		if (x + 16 >= currentMode->xGSize) w = currentMode->xGSize - x;
-		if (y + 16 >= currentMode->yGSize) h = currentMode->yGSize - y;
+		if (x + w > currentMode->xGSize) w = currentMode->xGSize - x;
+		if (y + h > currentMode->yGSize) h = currentMode->yGSize - y;
 	}
-	nextCursorImage = image;nextXCursor = x;nextYCursor = y;nextWCursor = w;nextHCursor = h;
+	if (w <= 0 || h <= 0) on = false;  											// Entirely off screen.
+	nextCursorImage = image;nextXCursor = x;nextYCursor = y;
+	nextWCursor = (w > 0) ? w : 0;nextHCursor = (h > 0) ? h : 0;
+	nextSkipXCursor = skipX;nextSkipYCursor = skipY;
 	nextCursorEnabled = on;
 }
 
