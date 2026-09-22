@@ -37,6 +37,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.6** (2026-09-22, remarque bmarty : « ne pas jeter les messages ») — **tampon de report CDC** (`cdcserial.cpp`,
+  256 o, périphérique 0) : ce que le firmware lit du modem pour ses propres échanges (synchro de l'horloge) et qui n'est
+  pas sa réponse (`ready`, `WIFI GOT IP`, `+IPD…`) est rendu au programme : les lectures du groupe 14 et du routage UART
+  servent d'abord ce tampon, puis le FIFO (`CDCRead`, `CDCReadAvailable`). L'échange AT lit le FIFO en direct (sinon il
+  relirait son propre report). La synchro ne part toujours que sur une **lecture** de la date (`1,20`) ou `1,23`, jamais
+  d'elle-même ; ce qu'on voit au démarrage est la sonde `1,20` de NeoDOS. Test `clocksync` : le modem factice émet
+  `WIFI GOT IP` avant sa réponse, relu intact par `14,4`. `make test-api` 14/14. `~/neo-carte/trinity-0.9.6-pushback-USB.uf2`.
+
 - **0.9.5** (2026-09-21, retour carte bmarty : « la date est toujours en 1970 ») — synchro modem rendue robuste : (1) la
   tentative automatique exigeait une liaison CDC inactive, or le Pico W émet des messages non sollicités au démarrage qui
   restent dans le FIFO → condition retirée tant que l'horloge n'est pas réglée (l'entrée en attente est jetée) ; (2) le SNTP

@@ -1,6 +1,6 @@
 ; clocksync.asm — 1,23 Sync Clock From Modem (Trinity T-25) : modem factice sur la CDC (tests/tools/fake_sntp_modem.py)
 ; qui répond +CIPSNTPTIME:Tue Sep 15 12:34:56 2026. Sortie attendue (console) :
-;   SYNC 00 GET 07EA 09 0F 0C 22 38 03 END   (année $07EA, mois, jour, heure, minute, seconde, source 3 = modem ;
+;   SYNC 00 GET 07EA 09 0F 0C 22 38 03 KEPT WIFI GOT IP END   (année $07EA, mois, jour, heure, minute, seconde, source 3 = modem ;
 ;   02 dans neo, qui modélise un PCF8563 : la synchro l'écrit aussi et la RTC prime en lecture)
 ; Auteur : bmarty <bmarty@mailo.com>
 
@@ -17,6 +17,7 @@ API_PARAMETERS = $FF04
 
 ptr   = $F0
 buf   = $B00
+rbuf  = $B40
 
 start:
   stz logLen                ; journal vide ($2000)
@@ -61,6 +62,36 @@ g2:
   inx
   cpx #8
   bne g2
+  lda #' '
+  jsr wchar
+  ldx #<skept               ; KEPT : 14,4 lecture bloc -> le message non sollicité conservé ("WIFI GOT IP")
+  ldy #>skept
+  jsr print
+  lda #<rbuf
+  sta API_PARAMETERS
+  lda #>rbuf
+  sta API_PARAMETERS+1
+  lda #64
+  sta API_PARAMETERS+2
+  stz API_PARAMETERS+3
+  stz API_PARAMETERS+7
+  lda #4
+  ldx #14
+  jsr api
+  ldx #0
+k1:
+  cpx API_PARAMETERS+2
+  beq k2
+  lda rbuf,x
+  cmp #' '
+  bcc k3
+  phx
+  jsr wchar
+  plx
+k3:
+  inx
+  bra k1
+k2:
   lda #' '
   jsr wchar
   ldx #<sfin
@@ -140,4 +171,5 @@ digit:
 
 ssync:   .text "SYNC ", 0
 sget:    .text "GET ", 0
+skept:   .text "KEPT ", 0
 sfin:    .text "END", 0

@@ -237,23 +237,24 @@ uint8_t CLKParseModemTime(const char *line,CLOCK_TIME *t) {
 }
 
 // Send an AT command, wait (1 s at most, USB host served) for OK/ERROR, keep the last "+PREFIX:" line in answer.
+// Lines that are not the answer (unsolicited modem text : ready, WIFI GOT IP, +IPD...) are pushed back for the program.
 static bool CLKModemCommand(const char *cmd,const char *prefix,char *answer,int answerSize) {
-	uint8_t junk[64];
-	while (HWCDCRead(0,junk,sizeof(junk)) > 0) ;  									// Drop pending input
 	if (HWCDCWrite(0,(const uint8_t *)cmd,strlen(cmd)) != strlen(cmd)) return false;
 	char line[96];int n = 0;bool done = false;
 	answer[0] = 0;
 	uint32_t timeOut = TMRRead() + 100;
 	while (!done && (int32_t)(TMRRead() - timeOut) < 0) {
 		uint8_t c;
-		if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }
+		if (HWCDCRead(0,&c,1) == 0) { KBDSync();continue; }  								// Live FIFO only : the push back is for the program
 		if (c == '\n' || c == '\r') {
 			line[n] = 0;
 			if (n > 0 && (strcmp(line,"OK") == 0 || strcmp(line,"ERROR") == 0)) done = true;
 			else if (n > 0 && strstr(line,prefix) != NULL) { strncpy(answer,line,answerSize - 1);answer[answerSize - 1] = 0; }
+			else if (n > 0 && strcmp(line,cmd) != 0 && strncmp(line,cmd,n) != 0) { line[n] = '\r';CDCPushBack((uint8_t *)line,n + 1);line[n] = 0; }   // Not ours (echo excluded) : keep it
 			n = 0;
 		} else if (n < (int)sizeof(line) - 1) line[n++] = (char)c;
 	}
+	if (n > 0) CDCPushBack((uint8_t *)line,n);  										// Partial line at timeout : keep it too
 	return done;
 }
 

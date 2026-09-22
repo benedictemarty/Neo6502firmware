@@ -21,6 +21,9 @@ uint16_t HWCDCRead(uint8_t dev, uint8_t *buffer, uint16_t max);
 uint16_t HWCDCWrite(uint8_t dev, const uint8_t *buffer, uint16_t count);
 uint8_t HWCDCSetLineCoding(uint8_t dev, uint32_t baud, uint8_t dataBits, uint8_t parity, uint8_t stopBits);
 
+void     CDCPushBack(const uint8_t *data,uint16_t count);  						// Device 0 : give bytes back to the next reader (T-25)
+uint16_t CDCRead(uint8_t dev,uint8_t *buffer,uint16_t max);  					// Pushed back bytes first, then the FIFO
+uint16_t CDCReadAvailable(uint8_t dev);
 uint8_t CDCStatus(uint8_t *params);  											// Group 14 handlers (common)
 uint8_t CDCReadByte(uint8_t *params);
 uint8_t CDCWriteByte(uint8_t *params);
