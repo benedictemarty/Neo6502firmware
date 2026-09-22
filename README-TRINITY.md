@@ -37,8 +37,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
-- **0.10.12** (2026-09-23, **deux régressions carte trouvées par bissection avec bmarty**, validées sur carte) — depuis la
-  0.10.3, **tout programme mourait peu après son lancement sur la carte** (`legdiag` de NeoLegacy, le jeu lui-même), sans
+- **0.10.12** (2026-09-23) — ⚠️ **la bissection de cette nuit n'a PAS trouvé la cause : elle a mesuré un effet de
+  placement du code.** `bisect-I` et 0.10.12 sont fonctionnellement identiques (même taille d'UF2, même RAM, seules
+  quelques instructions déplacées) et pourtant la première fait tourner `legdiag` et le jeu de façon stable, la seconde
+  non. Les deux corrections ci-dessous restent justes en elles-mêmes — elles suppriment de vraies fautes — mais **rien
+  ne prouve qu'elles corrigent la panne**, et les verdicts « OK / KO » des neuf flashs sont à relire comme des tirages
+  dépendant du binaire, pas comme des causes. La vraie piste devient un défaut marginal en temps (boucle du bus du
+  6502, IRQ USB sur core 0, cache XIP), que le moindre déplacement de code fait basculer. Ce qui a quand même été
+  corrigé — depuis la 0.10.3, **tout programme mourait peu après son lancement sur la carte** (`legdiag` de NeoLegacy, le jeu lui-même), sans
   que `neo` ni Phosphoneo n'en montrent rien. Neuf flashs ont isolé **deux causes indépendantes** :
   **(1) T-46 — le sondage du curseur dans `DSPSync`.** 0.10.3 y avait ajouté `RNDCursorUpdate()`, qui vit en flash et
   s'exécute en entier ~95 fois par seconde, alors que `DSPSync` est `TIMECRITICAL` — placée en RAM — et appelée depuis la
@@ -53,7 +59,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   entre les transferts bulk du MSC et les interrupt du HID. L'état des verrous et `2,23 Get Lock Keys` **restent**
   (T-41 en dépend pour lire les touches) ; seules les diodes s'en vont, à refaire avec une demande mise en file et
   émise depuis la boucle principale, hors de tout callback.
-  `make test-api` 15/15, `make test-toolbox` 10/10 ; RAM 32 544 o libres ; `~/neo-carte/trinity-0.10.12-USB.uf2`.
+  `make test-api` 15/15, `make test-toolbox` 10/10 ; RAM 32 544 o libres ; `~/neo-carte/trinity-0.10.12-USB.uf2`
+  (**ne fonctionne pas sur carte** ; `~/neo-carte/bisect-I-sans-led-USB.uf2`, de contenu équivalent, fonctionne).
 
 - **0.10.10** (2026-09-23, retour carte bmarty : « late plante à nouveau ») — **outil `LATE` réellement reconstruit**.
   La 0.10.5 avait retiré de `late.asm` son journal de débogage en RAM **et, par mégarde, la routine `cr`** qu'il utilise
