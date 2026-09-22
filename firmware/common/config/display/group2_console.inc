@@ -166,3 +166,11 @@ GROUP 2 Console
         and the system keys in Parameter:2 (bit 0 sleep, bit 1 power, bit 2 wake). Both are cleared by this call, so a
         program polls it ; 0 means nothing pressed since the last call. Keyboards expose these keys on a second HID
         interface without boot protocol, which the firmware claims from the gamepad manager (Trinity T-39).
+
+    FUNCTION 23 Get Lock Keys
+        DPARAMS[0] = KBDGetLocks();
+    DOCUMENTATION
+        Returns in Parameter:0 the state of the lock keys of the USB keyboard : bit 0 Num Lock, bit 1 Caps Lock, bit 2
+        Scroll Lock (Trinity T-40). The firmware toggles them on each press and lights the matching LEDs on the keyboard,
+        which the upstream never did. The lock keys do not change how characters are read : a program that wants capitals
+        or a numeric keypad reads this state itself.

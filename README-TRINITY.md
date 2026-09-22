@@ -37,6 +37,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.5** (2026-09-22, retours carte bmarty : `LATE` planté après 20 s, Num/Caps Lock n'allument rien) — **LED des touches
+  de verrouillage (T-40)** : le firmware amont ne renvoyait jamais le rapport de sortie HID, donc les diodes Num/Caps/Scroll
+  Lock restaient éteintes ; l'état est tenu par le firmware (basculé à chaque appui), envoyé au clavier
+  (`tuh_hid_set_report`) et lisible par **`2,23 Get Lock Keys`** (bit 0 Num, 1 Caps, 2 Scroll ; la lecture des caractères
+  n'en dépend pas). **Outil `LATE` corrigé** : sa temporisation écrasait le registre X (boucle à vide) et son journal de
+  débogage en RAM — utile seulement sous `neo` — finissait par écraser la mémoire ; il attend maintenant le timer `1,1`
+  et n'écrit plus rien. `~/neo-carte/trinity-0.10.5-leds-USB.uf2`, `cle-usb/LATE.NEO` régénéré.
+
 - **0.10.4** (2026-09-22, demande bmarty : « prendre en charge le driver pour 1A2C 0B2A », message `No driver found` au
   démarrage) — **touches multimédia du clavier USB (T-39)**. Relevé sur le PC : ce clavier (China Resource Semico) expose
   deux interfaces HID — **0** boot keyboard (déjà gérée) et **1** sans protocole boot, portant une collection *Consumer

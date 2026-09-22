@@ -32,6 +32,35 @@
 
 static short lastReport[KBD_MAX_KEYCODE] = { 0 };                               // state at last HID report.
 
+// T-40 : lock keys and their LEDs. The upstream never sent the HID output report, so Caps/Num/Scroll
+// Lock never lit up. State kept here, sent to every keyboard interface on change (bmarty, board 2026-09-22).
+#define HID_KEY_CAPSLOCK   0x39
+#define HID_KEY_SCROLLLOCK 0x47
+#define HID_KEY_NUMLOCK    0x53
+#define HID_LED_NUM        0x01
+#define HID_LED_CAPS       0x02
+#define HID_LED_SCROLL     0x04
+
+static uint8_t kbdLeds = 0;                                                     // Bits : num, caps, scroll
+static uint8_t kbdLedDev = 0xFF,kbdLedInst = 0;                                 // Keyboard interface to talk to
+
+static void usbSendLeds(void) {
+    if (kbdLedDev == 0xFF) return;
+    static uint8_t leds;                                                        // Must outlive the call (async transfer)
+    leds = kbdLeds;
+    tuh_hid_set_report(kbdLedDev,kbdLedInst,0,HID_REPORT_TYPE_OUTPUT,&leds,1);
+}
+
+static void usbLockKey(uint8_t key) {                                           // Toggle on key down
+    if (key == HID_KEY_CAPSLOCK) kbdLeds ^= HID_LED_CAPS;
+    else if (key == HID_KEY_NUMLOCK) kbdLeds ^= HID_LED_NUM;
+    else if (key == HID_KEY_SCROLLLOCK) kbdLeds ^= HID_LED_SCROLL;
+    else return;
+    usbSendLeds();
+}
+
+uint8_t KBDGetLocks(void) { return kbdLeds; }                                   // 2,23
+
 static void usbProcessReport(uint8_t const *report) {
 
     for (int i = 0;i < KBD_MAX_KEYCODE;i++) lastReport[i] = -lastReport[i];     // So if -ve was present last time.
@@ -47,7 +76,7 @@ static void usbProcessReport(uint8_t const *report) {
         }
         
         if (key != 0 && key < KBD_MAX_KEYCODE) {                                // If key is down, and not too high.
-            if (lastReport[key] == 0) KBDEvent(1,key,report[0]);                // It wasn't down before so key press.
+            if (lastReport[key] == 0) { KBDEvent(1,key,report[0]);usbLockKey(report[i]); }   // Press (T-40 : lock keys drive the LEDs)
             lastReport[key] = 1;                                                // Flag it as now being down.
         }
     } 
@@ -86,6 +115,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     case HID_ITF_PROTOCOL_KEYBOARD:
         KBDSetPresent(true);                                                    // Boot menu waits for it (T-28)
+        kbdLedDev = dev_addr;kbdLedInst = instance;                             // T-40 : where to send the LED report
+        usbSendLeds();
         CONWriteString("USB keyboard found\r");
         break;
 

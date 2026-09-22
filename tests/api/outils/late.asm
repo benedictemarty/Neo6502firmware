@@ -1,9 +1,7 @@
-; late.asm — 5,40 Get Late Scanlines (Trinity T-32c) : affiche le compteur de lignes DVI non encodées
-; à temps (traits colorés sur carte). Tape des touches pendant qu'il tourne : le compteur monte si le
-; second cœur est affamé. Échap (ou Ctrl+C) : sortie. Auteur : bmarty <bmarty@mailo.com>
-NEO = 0
-ptr2   = $F4
-logLen = $1FFE
+; late.asm — 5,40 Get Late Scanlines (Trinity T-32c) : compteur des lignes DVI non encodées à temps
+; (traits colorés sur carte). Tape des touches pendant qu'il tourne : le compteur monte si le second
+; coeur est affamé. Une touche quelconque : sortie. Outil carte (pas de journal RAM).
+; Auteur : bmarty <bmarty@mailo.com>
 
 * = $800
 
@@ -14,11 +12,8 @@ API_PARAMETERS = $FF04
 
 ptr   = $F0
 buf   = $B00
+count = $B10
 
-start:
-  stz logLen
-  lda #$20
-  sta logLen+1
 loop:
   lda #40                   ; 5,40 -> P0-3 compteur 32 bits
   ldx #5
@@ -41,26 +36,29 @@ c1:
   lda buf
   jsr hex
   jsr cr
-  ldx #50                   ; ~0,5 s
+  lda #30                   ; ~0,3 s : 30 lectures du timer espacées
+  sta count
 w1:
-  lda #1                    ; 1,1 timer
+  lda #1                    ; 1,1 Timer -> P0-3 (centièmes)
   ldx #1
   jsr api
-  dex
+  lda API_PARAMETERS
+  sta buf+4
+w2:
+  lda #1
+  ldx #1
+  jsr api
+  lda API_PARAMETERS
+  cmp buf+4
+  beq w2                    ; attend le centième suivant
+  dec count
   bne w1
-  lda #1                    ; 2,2 : touche disponible ?
+  lda #1                    ; 2,1 Read Character : 0 = rien
   ldx #2
   jsr api
   lda API_PARAMETERS
   beq loop
-  cmp #27
-  bne loop
-halt:
-  rts                       ; retour à l'appelant
-
-cr:
-  lda #13
-  jmp wchar
+  rts                       ; une touche : retour à l'appelant
 
 api:
   sta API_FUNCTION
@@ -71,20 +69,6 @@ wait:
   rts
 
 wchar:
-  pha                       ; journal en RAM $2000.. (longueur 16 bits en $1FFE) : tests/toolbox/run_neo.sh
-  phy
-  ldy logLen
-  sty ptr2
-  ldy logLen+1
-  sty ptr2+1
-  ldy #0
-  sta (ptr2),y
-  inc logLen
-  bne wc1
-  inc logLen+1
-wc1:
-  ply
-  pla
   sta API_PARAMETERS
   lda #6
   sta API_FUNCTION
