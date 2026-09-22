@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.10** (2026-09-22, retour carte bmarty : après `TZPARIS` (écriture du secteur de réglages) l'écran reste noir) — les
+  écritures flash (`1,22 Write Bank`, `1,24`) ne démontent plus le DVI (`RNDSuspend`/`RNDResume` : pour un même mode, le
+  moniteur ne re-verrouillait pas) : **lockout multicore du SDK** (`multicore_lockout_victim_init` sur core 1 au démarrage,
+  `multicore_lockout_start/end_blocking` autour de l'effacement/programmation, IRQ coupées sur les deux cores ≈ 50-150 ms) —
+  l'image se fige quelques trames, l'horloge DVI continue. `RNDSuspend`/`RNDResume` restent disponibles mais inutilisés.
+  `~/neo-carte/trinity-0.9.10-USB.uf2`.
+
 - **0.9.9** (2026-09-22, demande bmarty : « No mouse cursor overlay in monochrome ») — **curseur souris en mode 1 Hercules**
   (T-29) : superposition du curseur 16×16 sur la ligne 1 bpp dans le callback DVI (couleur 0 = pixel éteint, autre couleur =
   allumé, `$FF` transparent), même contrat qu'en mode 0 (`11,2` pour l'afficher). `neo` le faisait déjà.

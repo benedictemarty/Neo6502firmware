@@ -219,6 +219,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 // ***************************************************************************************
 
 static void __not_in_flash_func(core1_main)() {
+	multicore_lockout_victim_init();  											// Flash writes (banks, settings) pause this core (T-17/T-26)
 	while (1) {  																// Restartable : a mode switch parks core 1 here
 		dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);                      	// Enable IRQs
 		dvi_start(&dvi0);                                           			// Start DVI library
