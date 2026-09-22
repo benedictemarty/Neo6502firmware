@@ -100,13 +100,21 @@ const uint8_t *cursorImage = NULL; 												// Cursor status
 //		"enabled" with an image pointer not yet stored) ; the index below is a single byte, whose
 //		store is atomic on the M0+, and core 0 always fills the slot core 1 is not reading.
 //
+//		T-44 : the image itself is copied here, in RAM. CURGetCurrent returns a pointer into
+//		cursor_data, which is const, hence in flash : reading it from the callback was an XIP
+//		access per cursor pixel, on the very core whose line must be encoded on time, while
+//		core 0 hammers the flash — the late lines 0.10.3 set out to remove (T-38).
 struct CursorState {
-	const uint8_t *image;
 	uint16_t x,y,w,h;
 	uint8_t skipX,skipY;
 	bool on;
 };
-static struct CursorState cursorSlot[2] = {};
+//		One shared image buffer rather than one per slot : it is only rewritten when the program
+//		changes cursor (CURSetCurrent), and a change costs at worst one frame showing two halves
+//		of two cursors. The 256 bytes saved matter (RAM_LIMIT, T-13).
+static uint8_t cursorPixels[CURSOR_IMAGE_BYTES];
+static const uint8_t *cursorPixelSource = NULL;  								// What cursorPixels holds
+static struct CursorState cursorSlot[2] = {};  									// 2 x 272 bytes of RAM (T-44)
 static volatile uint8_t cursorSlotIndex = 0;  									// Slot core 1 must read
 uint16_t xCursor,yCursor,wCursor,hCursor;
 static uint8_t skipXCursor = 0,skipYCursor = 0;
@@ -137,10 +145,9 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
 		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
 		const struct CursorState *c = &cursorSlot[cursorSlotIndex];  			// T-43 : one consistent state, published
-		cursorEnabled = c->on;cursorImage = c->image;  							// as a whole by core 0
-		xCursor = c->x;yCursor = c->y;wCursor = c->w;hCursor = c->h;
+		cursorEnabled = c->on;cursorImage = cursorPixels;  						// as a whole by core 0 ; the image is in
+		xCursor = c->x;yCursor = c->y;wCursor = c->w;hCursor = c->h;  			// RAM (T-44), never read from flash here
 		skipXCursor = c->skipX;skipYCursor = c->skipY;
-		if (cursorImage == NULL) cursorEnabled = false;  						// Never drawn from a null image
 	}
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
@@ -385,7 +392,10 @@ void RNDCursorUpdate(void) {
 	}
 	if (w <= 0 || h <= 0 || image == NULL) on = false;  							// Entirely off screen, or no image.
 	uint8_t slot = cursorSlotIndex ^ 1;  										// T-43 : fill the slot core 1 is not reading,
-	cursorSlot[slot].image = image;  											// then publish it with one byte store.
+	if (cursorPixelSource != image && image != NULL) {  							// then publish it with one byte store.
+		memcpy(cursorPixels,image,CURSOR_IMAGE_BYTES);  						// T-44 : flash -> RAM, on core 0
+		cursorPixelSource = image;
+	}
 	cursorSlot[slot].x = x;cursorSlot[slot].y = y;
 	cursorSlot[slot].w = (w > 0) ? w : 0;cursorSlot[slot].h = (h > 0) ? h : 0;
 	cursorSlot[slot].skipX = skipX;cursorSlot[slot].skipY = skipY;

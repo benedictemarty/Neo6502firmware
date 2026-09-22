@@ -37,6 +37,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.9** (2026-09-22, piste pour la régression de NeoLegacy sur carte) — **l'image du curseur ne sort plus de la flash
+  dans le callback DVI (T-44)**. 0.10.3 a sorti du callback de ligne les *appels de fonction* en flash, mais **pas les
+  données** : `CURGetCurrent` renvoie un pointeur dans `cursor_data`, tableau `const` donc en flash, et le callback y
+  lisait un octet par pixel de curseur — jusqu'à 256 accès XIP par trame, sur le cœur dont la ligne doit être encodée à
+  l'heure, pendant que core 0 martèle la flash. C'est la contention que T-38 traque. Elle ne se voyait pas tant que le
+  curseur restait caché (il l'est au reset depuis 0.9.3) ; **NeoLegacy 0.29.1 est le premier programme à l'afficher**
+  (`11,2`). `RNDCursorUpdate` copie désormais l'image en RAM (256 o, seulement quand le curseur change) et le callback ne
+  lit plus que de la RAM. Mesurable sur carte : à curseur visible, `5,40 Get Late Scanlines` (outil `LATE.NEO`) doit
+  donner moins de lignes en retard qu'en 0.10.8. **C'est une hypothèse sur la panne de NeoLegacy, pas une preuve** :
+  seule la carte tranchera. RAM 32 508 o libres (−256 o) ; `~/neo-carte/trinity-0.10.9-cursor-ram-USB.uf2`.
+
 - **0.10.8** (2026-09-22, revue du code des 0.10.x en cherchant la régression de NeoLegacy) — **état du curseur publié
   d'un bloc (T-43)**. `RNDCursorUpdate` (0.10.3) écrivait ses sept champs un par un dans des variables `volatile` que
   core 1 recopiait au début de trame : core 1 pouvait lire un **mélange de deux états** — une position neuve avec une
