@@ -37,6 +37,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.8** (2026-09-22, revue du code des 0.10.x en cherchant la régression de NeoLegacy) — **état du curseur publié
+  d'un bloc (T-43)**. `RNDCursorUpdate` (0.10.3) écrivait ses sept champs un par un dans des variables `volatile` que
+  core 1 recopiait au début de trame : core 1 pouvait lire un **mélange de deux états** — une position neuve avec une
+  largeur ancienne, ou `enabled` alors que le pointeur d'image n'était pas encore écrit — là où l'ancien code (0.10.2 et
+  avant) calculait tout d'un bloc dans le callback. Deux emplacements désormais (`cursorSlot[2]`) : core 0 remplit celui
+  que core 1 ne lit pas, puis publie l'index par une écriture d'un octet, atomique sur le M0+ et précédée d'un `__dmb()`.
+  Le curseur n'est plus jamais dessiné depuis une image nulle. Même réserve que 0.10.7 : fichier compilé pour la carte
+  seulement, aucun test automatique, à valider carte.
+  `~/neo-carte/trinity-0.10.8-cursor-slot-USB.uf2`, RAM 32 760 o libres.
+
 - **0.10.7** (2026-09-22, trouvé en cherchant la régression de NeoLegacy sur carte) — **curseur souris aux bords de l'écran
   (T-42)**. `RNDCursorUpdate`, introduite en 0.10.3 pour sortir le calcul du curseur du callback de ligne, faisait ses
   soustractions en **non signé** : `x -= xHit` (le point chaud) passe à ~65530 dès que le pointeur approche le bord gauche

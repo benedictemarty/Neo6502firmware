@@ -92,10 +92,22 @@ uint16_t frameCounter = 0,lineCounter = 0;                              		// Tra
 bool  isInitialised = false;                                      				// DVI running.
 
 const uint8_t *cursorImage = NULL; 												// Cursor status
-static volatile bool nextCursorEnabled = false;  								// T-32c : published by core 0 for the next frame
-static const uint8_t * volatile nextCursorImage = NULL;
-static volatile uint16_t nextXCursor = 0,nextYCursor = 0,nextWCursor = 0,nextHCursor = 0;
-static volatile uint8_t nextSkipXCursor = 0,nextSkipYCursor = 0;  				// T-42 : columns/rows of the image clipped off
+//
+//		T-32c : core 0 (RNDCursorUpdate, in DSPSync) prepares what the line callback needs about
+//		the mouse cursor, because those calls live in flash and the callback must not stall on XIP.
+//		T-43 : it publishes a whole slot at once. Writing the seven fields one by one let core 1
+//		read a mix of two states at the start of a frame (a new position with an old width, or
+//		"enabled" with an image pointer not yet stored) ; the index below is a single byte, whose
+//		store is atomic on the M0+, and core 0 always fills the slot core 1 is not reading.
+//
+struct CursorState {
+	const uint8_t *image;
+	uint16_t x,y,w,h;
+	uint8_t skipX,skipY;
+	bool on;
+};
+static struct CursorState cursorSlot[2] = {};
+static volatile uint8_t cursorSlotIndex = 0;  									// Slot core 1 must read
 uint16_t xCursor,yCursor,wCursor,hCursor;
 static uint8_t skipXCursor = 0,skipYCursor = 0;
 bool cursorEnabled = false;
@@ -124,11 +136,11 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
 		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
-		cursorEnabled = nextCursorEnabled;  									// T-32c : computed on core 0 (RNDCursorUpdate) ;
-		cursorImage = nextCursorImage;  										// no flash code in this callback, whose XIP
-		xCursor = nextXCursor;yCursor = nextYCursor;  							// access stalls when core 0 hammers the flash
-		wCursor = nextWCursor;hCursor = nextHCursor;  							// (red late lines, board 2026-09-22)
-		skipXCursor = nextSkipXCursor;skipYCursor = nextSkipYCursor;  			// T-42 : clipping on the left/top edges
+		const struct CursorState *c = &cursorSlot[cursorSlotIndex];  			// T-43 : one consistent state, published
+		cursorEnabled = c->on;cursorImage = c->image;  							// as a whole by core 0
+		xCursor = c->x;yCursor = c->y;wCursor = c->w;hCursor = c->h;
+		skipXCursor = c->skipX;skipYCursor = c->skipY;
+		if (cursorImage == NULL) cursorEnabled = false;  						// Never drawn from a null image
 	}
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
@@ -371,11 +383,15 @@ void RNDCursorUpdate(void) {
 		if (x + w > currentMode->xGSize) w = currentMode->xGSize - x;
 		if (y + h > currentMode->yGSize) h = currentMode->yGSize - y;
 	}
-	if (w <= 0 || h <= 0) on = false;  											// Entirely off screen.
-	nextCursorImage = image;nextXCursor = x;nextYCursor = y;
-	nextWCursor = (w > 0) ? w : 0;nextHCursor = (h > 0) ? h : 0;
-	nextSkipXCursor = skipX;nextSkipYCursor = skipY;
-	nextCursorEnabled = on;
+	if (w <= 0 || h <= 0 || image == NULL) on = false;  							// Entirely off screen, or no image.
+	uint8_t slot = cursorSlotIndex ^ 1;  										// T-43 : fill the slot core 1 is not reading,
+	cursorSlot[slot].image = image;  											// then publish it with one byte store.
+	cursorSlot[slot].x = x;cursorSlot[slot].y = y;
+	cursorSlot[slot].w = (w > 0) ? w : 0;cursorSlot[slot].h = (h > 0) ? h : 0;
+	cursorSlot[slot].skipX = skipX;cursorSlot[slot].skipY = skipY;
+	cursorSlot[slot].on = on;
+	__dmb();  																	// Slot written before it is published
+	cursorSlotIndex = slot;
 }
 
 // T-32c : late scanlines counted by PicoDVI (diagnostic, read by 5,38).
