@@ -68,6 +68,10 @@ wait:
   bne wait
   rts
 
+cr:
+  lda #13
+  ; tombe dans wchar
+
 wchar:
   sta API_PARAMETERS
   lda #6

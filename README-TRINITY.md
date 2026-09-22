@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.10** (2026-09-23, retour carte bmarty : « late plante à nouveau ») — **outil `LATE` réellement reconstruit**.
+  La 0.10.5 avait retiré de `late.asm` son journal de débogage en RAM **et, par mégarde, la routine `cr`** qu'il utilise
+  encore ligne 38 : l'assemblage échouait, `LATE.NEO` n'a donc jamais été régénéré et la clé a gardé la version qui se
+  plante. `cr` est rétablie, et les outils carte ont désormais une cible de construction, **`make outils`**
+  (`tests/api/outils/*.asm` → `~/neo-carte/cle-usb/*.NEO` via `mkneo.py` de Neo6502Msdos), pour qu'un binaire périmé ne
+  puisse plus se faire passer pour une correction. `LATE.NEO` 198 o, `TZPARIS.NEO` inchangé. Firmware inchangé.
+
 - **0.10.9** (2026-09-22, piste pour la régression de NeoLegacy sur carte) — **l'image du curseur ne sort plus de la flash
   dans le callback DVI (T-44)**. 0.10.3 a sorti du callback de ligne les *appels de fonction* en flash, mais **pas les
   données** : `CURGetCurrent` renvoie un pointeur dans `cursor_data`, tableau `const` donc en flash, et le callback y
@@ -95,7 +102,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   (`tuh_hid_set_report`) et lisible par **`2,23 Get Lock Keys`** (bit 0 Num, 1 Caps, 2 Scroll ; à ce stade la lecture des
   caractères n'en dépendait pas — c'est la 0.10.6 qui l'a corrigé). **Outil `LATE` corrigé** : sa temporisation écrasait le registre X (boucle à vide) et son journal de
   débogage en RAM — utile seulement sous `neo` — finissait par écraser la mémoire ; il attend maintenant le timer `1,1`
-  et n'écrit plus rien. `~/neo-carte/trinity-0.10.5-leds-USB.uf2`, `cle-usb/LATE.NEO` régénéré.
+  et n'écrit plus rien. `~/neo-carte/trinity-0.10.5-leds-USB.uf2`. (La note disait « `cle-usb/LATE.NEO` régénéré » : c'était faux —
+  l'assemblage était cassé et le binaire est resté périmé jusqu'à la 0.10.10.)
 
 - **0.10.4** (2026-09-22, demande bmarty : « prendre en charge le driver pour 1A2C 0B2A », message `No driver found` au
   démarrage) — **touches multimédia du clavier USB (T-39)**. Relevé sur le PC : ce clavier (China Resource Semico) expose

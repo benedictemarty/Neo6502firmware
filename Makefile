@@ -119,6 +119,20 @@ test-toolbox:
 test-api:
 	for t in tests/api/*.asm; do TESTDIR=tests/api tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
 
+# Outils carte (tests/api/outils/*.asm) : assemblés puis emballés en .NEO dans ~/neo-carte/cle-usb.
+# Une cible, parce que la 0.10.5 a corrigé late.asm sans pouvoir le reconstruire (routine cr retirée
+# par erreur, assemblage cassé) et que la clé a gardé des mois un binaire périmé.
+CLEUSB ?= $(HOME)/neo-carte/cle-usb
+MKNEO  ?= $(NEODOSDIR)tools/mkneo.py
+
+outils:
+	@mkdir -p $(CLEUSB)
+	@for t in tests/api/outils/*.asm; do \
+		n=$$(basename $$t .asm); \
+		64tass --mw65c02 --nostart -q -o $(CLEUSB)/$$n.neo6502 $$t || exit 1; \
+		$(PYTHON) $(MKNEO) $(CLEUSB)/$$n.neo6502 $(CLEUSB)/$$(echo $$n | tr a-z A-Z).NEO 800 800 $$n || exit 1; \
+	done
+
 clean:
 	$(MAKE) -B -C kernel clean
 	$(MAKE) -B -C $(BASICDIR) clean
