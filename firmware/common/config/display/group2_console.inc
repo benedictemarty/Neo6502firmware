@@ -172,5 +172,6 @@ GROUP 2 Console
     DOCUMENTATION
         Returns in Parameter:0 the state of the lock keys of the USB keyboard : bit 0 Num Lock, bit 1 Caps Lock, bit 2
         Scroll Lock (Trinity T-40). The firmware toggles them on each press and lights the matching LEDs on the keyboard,
-        which the upstream never did. The lock keys do not change how characters are read : a program that wants capitals
-        or a numeric keypad reads this state itself.
+        which the upstream never did. They also drive how keys are read (Trinity T-41) : Caps Lock swaps the case of the
+        letters only, Num Lock gives the numeric keypad its figures (off : the navigation keys printed on the keys).
+        Scroll Lock is only a state and a LED, for the program to use as it likes. Num Lock starts off.

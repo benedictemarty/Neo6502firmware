@@ -125,6 +125,8 @@ void CPUReadNeoFile(char *fileName) {
 //		  shot:C:FILE     PPM screenshot at cycle C      text:C:FILE   console text at cycle C
 //		  keys:C:TEXT     autotype TEXT from cycle C (\n = Enter, \e = Esc, one key per 6 frames)
 //		  mouse:C:X,Y,B   mouse at (X,Y) with buttons B at cycle C
+//		  hid:C:39,04,..  press and release these raw HID scancodes from cycle C (T-41 : lock keys and keypad,
+//		                  which have no ASCII ; same rhythm as keys:)
 //
 // *******************************************************************************************************************************
 
@@ -151,9 +153,13 @@ static int typePos = -1;
 static LONG32 typeNext = 0;
 static bool typeDown = false;
 static int typeCode = 0,typeMods = 0;
+static uint8_t scanList[64];  														// hid:C:LIST scancode state (T-41)
+static int scanCount = 0,scanPos = -1;
+static LONG32 scanNext = 0;
+static bool scanDown = false;
 
 static void CPUAddTestHook(char *command) {  										// "kind:C:ARG", kind = shot/text/keys/mouse
-	int plen = (command[0] == 'm') ? 6 : 5;
+	int plen = (command[0] == 'm') ? 6 : (command[0] == 'h') ? 4 : 5;
 	char *sep = strchr(command+plen,':');
 	if (sep == NULL || testHookCount >= 16) return;
 	*sep = '\0';
@@ -203,6 +209,14 @@ static void CPURunHook(TestHook *h) {
 	if (h->kind == 's') RNDWriteScreenshot(h->arg);
 	if (h->kind == 't') CPUConsoleText(h->arg);
 	if (h->kind == 'k') { typeText = h->arg;typePos = 0;typeNext = totalCycles; }
+	if (h->kind == 'h') {  															// T-41 : raw scancodes
+		scanCount = 0;
+		for (const char *p = h->arg;*p != '\0' && scanCount < 64;) {
+			scanList[scanCount++] = (uint8_t)strtol(p,(char **)&p,16);
+			while (*p == ',' || *p == ' ') p++;
+		}
+		scanPos = 0;scanNext = totalCycles;scanDown = false;
+	}
 	if (h->kind == 'm') {
 		int x = 0,y = 0,b = 0;
 		if (sscanf(h->arg,"%d,%d,%d",&x,&y,&b) == 3) { MSEEnableMouse();MSESetPosition(x,y);MSEUpdateButtonState(b); }
@@ -229,6 +243,13 @@ static void CPURunTestHooks(void) {
 		}
 		typeNext = totalCycles + 3 * CYCLES_PER_FRAME;
 	}
+	if (scanPos >= 0 && scanPos < scanCount && totalCycles >= scanNext) {  			// T-41 : hid: press/release
+		KBDEvent(scanDown ? 0 : 1,scanList[scanPos],0);
+		if (scanDown) scanPos++;
+		scanDown = !scanDown;
+		scanNext = totalCycles + 3 * CYCLES_PER_FRAME;
+	}
+
 	if (exitAtCycles != 0 && totalCycles >= exitAtCycles) {
 		for (int i = 0;i < testHookCount;i++) {  										// Flush the hooks due at exit.
 			if (!testHooks[i].done && testHooks[i].at >= exitAtCycles && testHooks[i].kind != 'k') CPURunHook(&testHooks[i]);
@@ -298,7 +319,8 @@ void CPUReset(void) {
 			}
 			if (strncmp(command,"cycles:",7) == 0) exitAtCycles = atol(command+7);	// Test hooks (T-19)
 			if (strncmp(command,"shot:",5) == 0 || strncmp(command,"text:",5) == 0 ||
-				strncmp(command,"keys:",5) == 0 || strncmp(command,"mouse:",6) == 0) CPUAddTestHook(command);
+				strncmp(command,"keys:",5) == 0 || strncmp(command,"mouse:",6) == 0 ||
+				strncmp(command,"hid:",4) == 0) CPUAddTestHook(command);
 			if (strlen(command) > 4 && 												// Load .NEO file (case-insensitive
 						strcasecmp(command+strlen(command)-4,".neo") == 0) {	// so FTD.NEO / Foo.Neo also match).
 				CPUReadNeoFile(command);

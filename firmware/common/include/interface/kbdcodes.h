@@ -43,7 +43,7 @@
 // 		Two sets, top row and number keypad.
 //
 #define KEY_1 0x1e 		    
-#define KEY_KP1 0x59  			// We don't use these 10, but the USB routine can map them onto $1E...
+#define KEY_KP1 0x59  			// KP1..KP9 then KP0 ($62) : KBDEvent maps them onto $1E.. when Num Lock is on
 //
 //		Standard keys
 //
@@ -84,6 +84,26 @@
 #define KEY_UP 0x52 			// Keyboard Up Arrow 				W / 23
 
 #define KEY_102ND 0x64 			// Keyboard Non-US \ | 	 
+//
+//		Lock keys and the numeric keypad (T-40 LEDs, T-41 behaviour). The keypad codes are
+//		remapped by KBDEvent() : figures when Num Lock is on, navigation when it is off.
+//
+#define KEY_CAPSLOCK 0x39 		// Keyboard Caps Lock
+#define KEY_NUMLOCK 0x53 		// Keypad Num Lock and Clear
+#define KEY_SCROLLLOCK 0x47 	// Keyboard Scroll Lock
+
+#define KEY_KPSLASH 0x54 		// Keypad /
+#define KEY_KPASTERISK 0x55 	// Keypad *
+#define KEY_KPMINUS 0x56 		// Keypad -
+#define KEY_KPPLUS 0x57 		// Keypad +
+#define KEY_KPENTER 0x58 		// Keypad Enter
+#define KEY_KPDOT 0x63 			// Keypad . and Delete
+//
+//		Lock state, as returned by KBDGetLocks() (2,23) and sent to the keyboard LEDs.
+//
+#define KBD_LOCK_NUM 0x01
+#define KBD_LOCK_CAPS 0x02
+#define KBD_LOCK_SCROLL 0x04
 
 #define KBD_MAX_KEYCODE (0x65)	// The biggest scancode we store, +1
 

@@ -34,8 +34,22 @@ static volatile uint8_t queueTail = 0;
 
 static uint8_t currentASCII = 0,currentKeyCode = 0; 							// Current key pressed.
 static uint32_t nextRepeat = 9999;  											// Time of next repeat.
+//
+//		T-40/T-41 : state of the lock keys (bits KBD_LOCK_*). The firmware owns it : it toggles
+//		on each press, drives the keyboard LEDs (KBDLockLEDUpdate) and changes how keys are read
+//		(Caps Lock on the letters, Num Lock on the keypad). Num Lock starts off (bmarty, 2026-09-22).
+//
+static uint8_t lockState = 0;
+//
+//		Keycode the keypad was mapped to when pressed, so releasing it undoes the same mapping
+//		even if Num Lock was toggled while the key was held down.
+//
+#define KBD_PAD_FIRST KEY_KPSLASH   											// $54..$63 : the whole keypad
+#define KBD_PAD_COUNT (KEY_KPDOT-KEY_KPSLASH+1)
+static uint8_t padDown[KBD_PAD_COUNT];
 
 static uint8_t KBDMapToASCII(uint8_t keyCode,uint8_t modifiers);
+static uint8_t KBDKeypadMap(uint8_t keyCode);
 static uint8_t KBDDefaultASCIIKeys(uint8_t keyCode,uint8_t isShift);
 static uint8_t KBDDefaultControlKeys(uint8_t keyCode,uint8_t isShift);
 static void KBDFunctionKey(uint8_t funcNum,uint8_t modifiers);
@@ -47,6 +61,21 @@ static void KBDFunctionKey(uint8_t funcNum,uint8_t modifiers);
 // ***************************************************************************************
 
 void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers) {
+
+	if (isDown && (keyCode == KEY_CAPSLOCK || keyCode == KEY_NUMLOCK ||  		// T-41 : the lock keys toggle on
+						keyCode == KEY_SCROLLLOCK)) {  							// press. They have no ASCII, so they
+		lockState ^= (keyCode == KEY_CAPSLOCK) ? KBD_LOCK_CAPS :  				// still go through as key states and
+					 (keyCode == KEY_NUMLOCK) ? KBD_LOCK_NUM : KBD_LOCK_SCROLL;  // events, queueing nothing.
+		KBDLockLEDUpdate(lockState);  											// Light the LEDs of the keyboard.
+	}
+
+	if (keyCode >= KBD_PAD_FIRST && keyCode <= KEY_KPDOT) {  					// T-41 : keypad follows Num Lock
+		if (isDown) {
+			padDown[keyCode-KBD_PAD_FIRST] = KBDKeypadMap(keyCode);  			// Remember the mapping used
+		}
+		keyCode = padDown[keyCode-KBD_PAD_FIRST];  								// so key up matches key down.
+		if (keyCode == 0) return;  												// KP5 with Num Lock off : nothing.
+	}
 
 	if (isDown && keyCode == KEY_ESC) {   										// Pressed ESC
 		cpuMemory[controlPort+3] |= 0x80;  										// Set that flag.
@@ -186,7 +215,54 @@ static uint8_t KBDMapToASCII(uint8_t keyCode,uint8_t modifiers) {
 		ascii = KBDDefaultControlKeys(keyCode,modifiers); 						
 	}
 
-	return LOCLocaleMapping(ascii,keyCode,modifiers); 							// Special mapping for locales.
+	if (ascii == 0) {  															// T-41 : keypad operators, which
+		switch(keyCode) {  														// ignore shift and the locale.
+			case KEY_KPSLASH: 		return '/';
+			case KEY_KPASTERISK: 	return '*';
+			case KEY_KPMINUS: 		return '-';
+			case KEY_KPPLUS: 		return '+';
+		}
+	}
+
+	ascii = LOCLocaleMapping(ascii,keyCode,modifiers); 							// Special mapping for locales.
+
+	if (lockState & KBD_LOCK_CAPS) {  											// T-41 : Caps Lock swaps the case of
+		if (ascii >= 'a' && ascii <= 'z') ascii -= 'a'-'A';  					// the letters only (decision bmarty
+		else if (ascii >= 'A' && ascii <= 'Z') ascii += 'a'-'A';  				// 2026-09-22), after the locale.
+	}
+	return ascii;
+}
+
+// ***************************************************************************************
+//
+//		T-41 : the numeric keypad. Num Lock on : figures and '.', as the upstream always did.
+//		Num Lock off : the navigation keys printed on the keys themselves. The operators and
+//		Enter do not depend on Num Lock ; KP5 has nothing to give when it is off.
+//
+// ***************************************************************************************
+
+static uint8_t KBDKeypadMap(uint8_t keyCode) {
+	static const uint8_t navigation[] = {  										// KP1..KP9 then KP0
+		KEY_END,KEY_DOWN,KEY_PAGEDOWN,KEY_LEFT,0,KEY_RIGHT,KEY_HOME,KEY_UP,KEY_PAGEUP,KEY_INSERT
+	};
+	if (keyCode == KEY_KPENTER) return KEY_ENTER;  								// Same key state as the main Enter
+	if (keyCode >= KEY_KP1 && keyCode < KEY_KP1+10) {  							// The ten figure keys
+		return (lockState & KBD_LOCK_NUM) ? keyCode-KEY_KP1+KEY_1 : navigation[keyCode-KEY_KP1];
+	}
+	if (keyCode == KEY_KPDOT) {  												// . or Delete
+		return (lockState & KBD_LOCK_NUM) ? KEY_DOT : KEY_DELETE;
+	}
+	return keyCode;  															// / * - + : mapped to ASCII above
+}
+
+// ***************************************************************************************
+//
+//							Lock keys state (2,23) and LEDs
+//
+// ***************************************************************************************
+
+uint8_t KBDGetLocks(void) {
+	return lockState;
 }
 
 // ***************************************************************************************

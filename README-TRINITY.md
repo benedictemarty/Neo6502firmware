@@ -37,11 +37,30 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.6** (2026-09-22, retour carte bmarty : « num lock ou caps lock ne rendent pas leur service ») — **les touches de
+  verrouillage agissent enfin (T-41)**. La 0.10.5 n'allumait que les diodes : l'amont ne consulte jamais les verrous
+  (`KBDMapToASCII` ne regarde que Shift) et remappait le pavé numérique sur les chiffres **sans condition**, en laissant
+  `/ * - + Entrée .` sans correspondance — touches mortes. Désormais :
+  **Caps Lock** inverse la casse des **lettres seulement** (`a-z` ↔ `A-Z`, appliqué après la table de locale : les chiffres,
+  les symboles et les caractères accentués du clavier FR ne changent pas — décision bmarty) ;
+  **Num Lock** commande le pavé : allumé, les chiffres et `.` comme avant ; éteint, la navigation imprimée sur les touches
+  (KP1 Fin, KP2 ↓, KP3 PgSuiv, KP4 ←, KP5 rien, KP6 →, KP7 Origine, KP8 ↑, KP9 PgPréc, KP0 Inser, KP. Suppr) ;
+  `/ * - +` du pavé donnent leur caractère quels que soient Shift et la locale, et son Entrée vaut celle du clavier.
+  **Le firmware démarre Num Lock éteint** (décision bmarty) ; Scroll Lock reste un simple état avec sa diode.
+  L'état des verrous a quitté `usbdriver.cpp` pour `keyboard.cpp` (commun au firmware et à `neo`, donc testable) ; le pilote
+  USB ne transmet plus que les scancodes bruts et porte l'état aux diodes (`KBDLockLEDUpdate`). Le mappage choisi à l'appui
+  est rejoué au relâchement, pour qu'une bascule de Num Lock touche enfoncée ne colle pas une touche.
+  `2,23 Get Lock Keys` est inchangée mais sa documentation dit maintenant ce que les verrous commandent.
+  Côté `neo` : nouveau crochet de test **`hid:C:LISTE`** (scancodes HID bruts, pour les touches sans ASCII) et les touches
+  de verrouillage et du pavé ajoutées à la table SDL→HID (`emulator/scripts/mapper.py`). Test `tests/api/locks.asm`
+  (`KEYS 61 41 17 35 2B 2F 0D 61 / LOCK 01`). `make test-api` 15/15, `make test-toolbox` 10/10.
+  RAM 32 816 o libres (`padDown` : 16 o) ; UF2 435 200 o, `~/neo-carte/trinity-0.10.6-locks-USB.uf2`.
+
 - **0.10.5** (2026-09-22, retours carte bmarty : `LATE` planté après 20 s, Num/Caps Lock n'allument rien) — **LED des touches
   de verrouillage (T-40)** : le firmware amont ne renvoyait jamais le rapport de sortie HID, donc les diodes Num/Caps/Scroll
   Lock restaient éteintes ; l'état est tenu par le firmware (basculé à chaque appui), envoyé au clavier
-  (`tuh_hid_set_report`) et lisible par **`2,23 Get Lock Keys`** (bit 0 Num, 1 Caps, 2 Scroll ; la lecture des caractères
-  n'en dépend pas). **Outil `LATE` corrigé** : sa temporisation écrasait le registre X (boucle à vide) et son journal de
+  (`tuh_hid_set_report`) et lisible par **`2,23 Get Lock Keys`** (bit 0 Num, 1 Caps, 2 Scroll ; à ce stade la lecture des
+  caractères n'en dépendait pas — c'est la 0.10.6 qui l'a corrigé). **Outil `LATE` corrigé** : sa temporisation écrasait le registre X (boucle à vide) et son journal de
   débogage en RAM — utile seulement sous `neo` — finissait par écraser la mémoire ; il attend maintenant le timer `1,1`
   et n'écrit plus rien. `~/neo-carte/trinity-0.10.5-leds-USB.uf2`, `cle-usb/LATE.NEO` régénéré.
 

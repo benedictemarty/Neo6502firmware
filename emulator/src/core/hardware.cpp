@@ -170,7 +170,7 @@ void HWReset(void) {
 //
 // *******************************************************************************************************************************
 
-uint8_t KBDGetLocks(void) { return 0; }  										// T-40 : no keyboard LEDs here
+void KBDLockLEDUpdate(uint8_t locks) { (void)locks; }  							// T-40 : no keyboard LEDs here
 void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 
 // T-26 : settings "flash" = storage/settings.flash
