@@ -126,8 +126,6 @@ static uint32_t CLKSeconds(void) {  												// Elapsed seconds since the tim
 	return (uint32_t)(ticks / 100);
 }
 
-static uint32_t modemNextTry = 0;  												// T-25 : next automatic attempt (100 Hz ticks)
-
 static void CLKFromSeconds(uint32_t secs,CLOCK_TIME *t) {  						// UTC seconds -> local civil time (T-26)
 	uint8_t dst;
 	secs += (int32_t)TZOffsetAt(secs,&dst) * 60;
@@ -169,11 +167,8 @@ void CLKGet(CLOCK_TIME *t) {
 		CLOCK_TIME u;
 		if (CLKReadRTC(&u)) { CLKFromSeconds(CLKToSeconds(&u),t);t->source = CLK_SOURCE_RTC;return; }   // RTC in UTC, shown local
 	}
-	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && TMRRead() >= 1000 &&   // T-25 : unset and a modem is there : ask it,
-			(int32_t)(TMRRead() - modemNextTry) >= 0) {  								// not in the first 10 s (USB enumeration : the
-		modemNextTry = TMRRead() + 3000;  											// key mount nested in the exchange froze the
-		CLKSyncFromModem();  														// board, 0.9.6), then 30 s between tries
-	}
+	// T-25 : no automatic modem sync any more (0.9.8, bmarty : the program asks with 1,23 ; the automatic
+	// attempt at NeoDOS start up froze the board when the USB key was present, cause still open).
 	uint32_t secs = CLKSeconds();
 	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime (UTC, no zone)
 	if (swSource == CLK_SOURCE_UNSET) {

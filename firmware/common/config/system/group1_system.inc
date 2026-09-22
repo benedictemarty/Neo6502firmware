@@ -90,8 +90,7 @@ GROUP 1 System
         Parameter:3 day (1-31), Parameter:4 hour (0-23), Parameter:5 minute, Parameter:6 second and Parameter:7 the
         source : 0 = not set (the value is then 1970-01-01 plus the time since power on), 1 = software clock set by
         Function 1,21 and advanced by the 100 Hz timer, 2 = PCF8563 real time clock found on the UEXT I2C bus (address $51),
-        3 = set from the SNTP time of the USB modem (Function 1,23). While the clock is not set and a USB modem is present,
-        this function asks the modem itself, at most once every 30 seconds and only when the modem link is idle (T-25).
+        3 = set from the SNTP time of the USB modem (Function 1,23 : the program asks for it, nothing is automatic, T-25).
 
     FUNCTION 21 Set Date Time
         *DERROR = CLKSetParams(DPARAMS);

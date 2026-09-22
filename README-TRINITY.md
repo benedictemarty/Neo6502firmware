@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.8** (2026-09-22, bissection carte : la variante sans synchro automatique démarre avec la clé, 0.9.7 non) — **plus de
+  synchro automatique de l'heure** : `1,20` ne consulte jamais le modem ; seul `1,23 Sync Clock From Modem` le fait, à la
+  demande du programme (remarque bmarty : « tant que l'on ne lit pas la date, pourquoi l'initialiser ? »). La cause du gel
+  (échange AT depuis la sonde `1,20` de NeoDOS au démarrage, clé présente) reste **ouverte** : à reproduire hors démarrage
+  avec `cle-usb/clocksync.neo6502` (`1,23` puis `1,20` puis `14,4`). Proposition NeoDOS : `DATE`/`TIME` appellent `1,23`
+  quand la source est 0. `~/neo-carte/trinity-0.9.8-USB.uf2`.
+
 - **0.9.7** (2026-09-22, retour carte bmarty : 0.9.6 bloquée sur `USB Storage` clé insérée, OK sans clé) — la sonde `1,20` de
   NeoDOS au démarrage lançait l'échange AT pendant l'énumération USB ; le montage de la clé (imbriqué dans l'attente de
   l'échange, qui sert l'hôte USB) figeait la carte. La synchro automatique n'est plus tentée dans les **10 premières
