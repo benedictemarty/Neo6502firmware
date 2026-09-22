@@ -37,6 +37,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.7** (2026-09-22, retour carte bmarty : 0.9.6 bloquée sur `USB Storage` clé insérée, OK sans clé) — la sonde `1,20` de
+  NeoDOS au démarrage lançait l'échange AT pendant l'énumération USB ; le montage de la clé (imbriqué dans l'attente de
+  l'échange, qui sert l'hôte USB) figeait la carte. La synchro automatique n'est plus tentée dans les **10 premières
+  secondes** après le reset ; `1,23` explicite inchangé. `~/neo-carte/trinity-0.9.7-USB.uf2`.
+
 - **0.9.6** (2026-09-22, remarque bmarty : « ne pas jeter les messages ») — **tampon de report CDC** (`cdcserial.cpp`,
   256 o, périphérique 0) : ce que le firmware lit du modem pour ses propres échanges (synchro de l'horloge) et qui n'est
   pas sa réponse (`ready`, `WIFI GOT IP`, `+IPD…`) est rendu au programme : les lectures du groupe 14 et du routage UART

@@ -169,9 +169,10 @@ void CLKGet(CLOCK_TIME *t) {
 		CLOCK_TIME u;
 		if (CLKReadRTC(&u)) { CLKFromSeconds(CLKToSeconds(&u),t);t->source = CLK_SOURCE_RTC;return; }   // RTC in UTC, shown local
 	}
-	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && (int32_t)(TMRRead() - modemNextTry) >= 0) {   // T-25 : unset and a
-		modemNextTry = TMRRead() + 3000;  											// modem is there : ask it (30 s between tries ;
-		CLKSyncFromModem();  														// unsolicited modem text is dropped meanwhile)
+	if (swSource == CLK_SOURCE_UNSET && HWCDCConnected(0) && TMRRead() >= 1000 &&   // T-25 : unset and a modem is there : ask it,
+			(int32_t)(TMRRead() - modemNextTry) >= 0) {  								// not in the first 10 s (USB enumeration : the
+		modemNextTry = TMRRead() + 3000;  											// key mount nested in the exchange froze the
+		CLKSyncFromModem();  														// board, 0.9.6), then 30 s between tries
 	}
 	uint32_t secs = CLKSeconds();
 	if (swSource != CLK_SOURCE_UNSET) secs = swEpoch + (secs - swBaseTick);  		// Unset : 1970-01-01 plus the uptime (UTC, no zone)
