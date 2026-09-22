@@ -37,6 +37,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.1** (2026-09-22, retour carte bmarty sur 0.10.0 : `USB settled (500 ms)` puis `USB Key found` et `Volume 0:`
+  **après** NeoDOS, Échap inopérant, clavier muet ~20 s) — la barrière attendait « 300 ms sans événement », condition déjà
+  vraie **avant** le début de l'énumération : elle sortait à son plancher. Elle attend maintenant un **premier événement**
+  (ou le plafond, ramené à 4 s), puis le calme ; message `USB settled (N ms, D dev)`.
+
 - **0.10.0** (2026-09-22, **à valider sur carte** : `~/neo-carte/trinity-0.10.0-boot-USB.uf2`) — **boot déterministe, étape (a)
   de l'ADR-0001** (T-32) : `DSPReset` est découpé en phases — **P0** matériel et état du firmware (aucune E/S externe),
   **P1** découverte USB jusqu'à la **barrière de calme** (`usbsettle.cpp` : chaque `mount`/`umount` HID, MSC et CDC horodate

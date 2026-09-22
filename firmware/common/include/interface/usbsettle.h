@@ -15,9 +15,8 @@
 
 #pragma once
 
-#define USB_QUIET   30                                                          // 300 ms without an enumeration event
-#define USB_FLOOR   50                                                          // At least 500 ms of discovery
-#define USB_CEILING 500                                                         // At most 5 s
+#define USB_QUIET   30                                                          // 300 ms without an enumeration event, after the first one
+#define USB_CEILING 400                                                         // At most 4 s (nothing plugged, or a device that never comes up)
 
 void USBNoteEvent(void);                                                        // Called by every mount/umount callback
 void USBWaitSettled(void);                                                      // P1 : returns when the bus is quiet (or at the ceiling)
