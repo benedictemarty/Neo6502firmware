@@ -37,6 +37,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.9.9** (2026-09-22, demande bmarty : « No mouse cursor overlay in monochrome ») — **curseur souris en mode 1 Hercules**
+  (T-29) : superposition du curseur 16×16 sur la ligne 1 bpp dans le callback DVI (couleur 0 = pixel éteint, autre couleur =
+  allumé, `$FF` transparent), même contrat qu'en mode 0 (`11,2` pour l'afficher). `neo` le faisait déjà.
+  `~/neo-carte/trinity-0.9.9-USB.uf2`.
+
 - **0.9.8** (2026-09-22, bissection carte : la variante sans synchro automatique démarre avec la clé, 0.9.7 non) — **plus de
   synchro automatique de l'heure** : `1,20` ne consulte jamais le modem ; seul `1,23 Sync Clock From Modem` le fait, à la
   demande du programme (remarque bmarty : « tant que l'on ne lit pas la date, pourquoi l'initialiser ? »). La cause du gel

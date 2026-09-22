@@ -123,7 +123,6 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		cursorEnabled = MSEGetCursorDrawInformation(&xCursor,&yCursor); 		// Get cursor info this frame.
 		cursorImage = CURGetCurrent(&xHit,&yHit);
 		xCursor -= xHit;yCursor -= yHit;
-		if (currentMode->bitsPerPixel == 1) cursorEnabled = false;  			// No mouse cursor overlay in monochrome.
 		if (cursorEnabled) {  													// If enabled work out physical drawing height.
 				wCursor = hCursor = 16;  										// Could be partially drawn.
 				if (xCursor + 16 >= currentMode->xGSize) wCursor = currentMode->xGSize-xCursor;
@@ -136,6 +135,16 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
 		uint32_t *mono = (lineCounter & 1) ? monoLine1 : monoLine2;
 		memcpy(mono,screenMemory + y * currentMode->stride,currentMode->stride);
+		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor && xCursor < currentMode->xGSize-16) {   // Mouse cursor in
+			const uint8_t *cursorData = cursorImage + (y-yCursor) * 16;  				// monochrome (T-29) : colour 0 = off,
+			uint8_t *bits = (uint8_t *)mono;  											// any other colour = on, $FF transparent
+			for (uint16_t i = 0;i < wCursor;i++) {
+				uint8_t pixel = *cursorData++;
+				if (pixel == 0xFF) continue;
+				uint16_t px = xCursor + i;
+				if (pixel) bits[px >> 3] |= (0x80 >> (px & 7)); else bits[px >> 3] &= ~(0x80 >> (px & 7));
+			}
+		}
 		return;
 	}
 
