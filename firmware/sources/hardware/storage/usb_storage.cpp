@@ -43,14 +43,10 @@ void STOInitialise(void) {
 //
 // ***************************************************************************************
 
+// T-32 : the wait for the bus to settle is now the boot barrier (USBWaitSettled, phase P1) ; this
+// only reports what was mounted. The old "wait 2 s for the first key" heuristic is gone.
 void STOSynchronise(void) {
-    CONWriteString("USB Storage\r");
-    uint16_t timeOut = 2000;
-    while (!msc_inquiry_complete && timeOut > 0) {
-        KBDSync();
-        sleep_us(1000);
-        timeOut--;
-    }
+    CONWriteString("USB Storage%s\r",msc_inquiry_complete ? "" : " (no key)");
 }
 
 // ***************************************************************************************
@@ -73,6 +69,7 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_dat
     if (drive < 0) drive = driveOfDevice(0);
     if (drive < 0) { CONWriteString("MSC : no logical drive left\r");return false; }
     driveDevice[drive] = dev_addr;
+    USBNoteEvent();                                                             // T-32 : mount finished, bus still busy
     char drive_path[3] = "0:";
     drive_path[0] += drive;
     FRESULT result = f_mount(&msc_fatfs_volumes[dev_addr], drive_path, 1);
@@ -102,12 +99,14 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_dat
 // ***************************************************************************************
 
 void tuh_msc_mount_cb(uint8_t dev_addr) {
+    USBNoteEvent();                                                             // T-32 : enumeration barrier
     uint8_t const lun = 0;
     //CONWriteString("MSC mounted, inquiring\r\n");
     tuh_msc_inquiry(dev_addr, lun, &msc_inquiry_resp, inquiry_complete_cb, 0);
 }
 
 void tuh_msc_umount_cb(uint8_t dev_addr) {
+    USBNoteEvent();                                                             // T-32
     int drive = driveOfDevice(dev_addr);
     if (drive < 0) return;
     char drive_path[3] = "0:";

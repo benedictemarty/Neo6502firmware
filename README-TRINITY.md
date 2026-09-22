@@ -37,6 +37,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.0** (2026-09-22, **à valider sur carte** : `~/neo-carte/trinity-0.10.0-boot-USB.uf2`) — **boot déterministe, étape (a)
+  de l'ADR-0001** (T-32) : `DSPReset` est découpé en phases — **P0** matériel et état du firmware (aucune E/S externe),
+  **P1** découverte USB jusqu'à la **barrière de calme** (`usbsettle.cpp` : chaque `mount`/`umount` HID, MSC et CDC horodate
+  un événement ; P1 se termine après 300 ms sans événement, avec un plancher de 500 ms et un plafond de 5 s, message
+  `USB settled (N ms)`), **P2** politique (fuseau, catalogue `boot/`, menu), **P3** UEXT puis boucle bus. L'attente de 2 s
+  sur la première clé (`STOSynchronise`, heuristique de l'amont) est supprimée : le démarrage ne dépend plus du nombre de
+  périphériques ni de leur ordre d'énumération — ce qui rend structurels les correctifs ponctuels T-24 (volume), T-28
+  (clavier avant Échap) et le gel de 0.9.5-0.9.7. `make test-api` 14/14, `make test-toolbox` 10/10. RAM 32 840 o libres.
+
 - **0.9.11** (2026-09-22, **validée sur carte** : `TZPARIS.NEO` règle le fuseau et synchronise l'heure, écran conservé, clavier et Échap immédiats ; retour carte bmarty : après `TZPARIS` sur 0.9.10, écran conservé mais **clavier muet pendant ~10 s**,
   périphériques toujours détectés) — pendant l'écriture flash les interruptions sont coupées sur les deux cores : l'hôte USB
   perd les siennes et TinyUSB ne se resynchronise qu'après une dizaine de secondes. `HWUSBRecover()` (T-30) pompe

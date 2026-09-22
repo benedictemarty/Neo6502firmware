@@ -78,6 +78,7 @@ static void usbProcessMouseReport(uint8_t const *report, uint16_t len) {
 static GamepadController gamepad_controller;
 
 void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_report, uint16_t desc_len) {
+    USBNoteEvent();                                                             // T-32 : enumeration barrier
     uint16_t vid, pid;
     tuh_vid_pid_get(dev_addr, &vid, &pid);
 
@@ -100,6 +101,7 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 }
 
 void tuh_hid_umount_cb(uint8_t dev_addr, uint8_t instance) {
+    USBNoteEvent();                                                             // T-32
 }
 
 void tuh_hid_report_received_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* report, uint16_t len) {

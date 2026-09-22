@@ -81,7 +81,15 @@ void TIMECRITICAL(DSPSync)(void)
 //
 // ***************************************************************************************
 
-void DSPReset(void) {
+// ***************************************************************************************
+//
+//		Boot sequence (ADR-0001) : P0 hardware (no external I/O), P1 USB discovery up to the
+//		settle barrier, P2 policy (settings, storage catalogue, menu), P3 hand over. The
+//		6502 starts after this function returns (main.cpp).
+//
+// ***************************************************************************************
+
+static void DSPResetP0(void) {  												// P0 : hardware and firmware state only
 	const char bootString[] = PROMPT;
 	MEMInitialiseMemory();                                                      // Set up memory, load kernel ROM
 	MSEInitialise();  															// Mouse first, before starting graphics.
@@ -101,20 +109,32 @@ void DSPReset(void) {
 	IRQSetFrame(0);
 	LOGDrawLogo();                                                              // Draw logo
 	CONWrite(0x80+3);                                                           // Yellow text
-	for (int i = 0;i < 19;i++) CONWrite(19); 
+	for (int i = 0;i < 19;i++) CONWrite(19);
 	const char *c = bootString;
-	while (*c != '\0') CONWrite(*c++);	
-	
-	KBDInitialise();                                                            // Initialise keyboard & USB system.
-	KBDEvent(0,0xFF,0);                                                         // Reset the keyboard manager
+	while (*c != '\0') CONWrite(*c++);
 	SNDInitialise();                                                            // Initialise sound hardware
 	SNDManager();                                                               // Initialise sound manager
+}
+
+static void DSPResetP1(void) {  												// P1 : USB discovery, up to the settle barrier
 	CONWrite(0x80+6);
-	STOSynchronise();                                                           // Synchronise storage
+	KBDInitialise();                                                            // Start the USB host stack
+	KBDEvent(0,0xFF,0);                                                         // Reset the keyboard manager
+	USBWaitSettled();                                                           // T-32 : quiet bus, or the ceiling
+	STOSynchronise();                                                           // Report what was mounted
+}
+
+static void DSPResetP2(void) {  												// P2 : policy (no hardware init here)
 	TZLoadFromStorage();                                                        // Time zone from the settings sector (T-26)
-	BOOTSelect();                                                               // Trinity : boot menu from boot/
+	BOOTSelect();                                                               // Boot menu from boot/
+}
+
+void DSPReset(void) {
+	DSPResetP0();
+	DSPResetP1();
+	DSPResetP2();
 	CONWrite(0x80+2);
-	IOInitialise(); 															// UEXT Initialise.
+	IOInitialise();  															// P3 : UEXT, then the bus loop starts the 6502
 }
 
 // ***************************************************************************************

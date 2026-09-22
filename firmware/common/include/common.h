@@ -78,6 +78,7 @@
 #include "interface/clock.h"  															// Date and time (T-18, F-14 of the fork)
 #include "interface/banks.h"  															// Memory banks in flash (T-17)
 #include "interface/irq.h"  															// Interrupt tick and frame IRQ (T-14)
+#include "interface/usbsettle.h"  														// USB enumeration barrier (T-32)
 #include "interface/settings.h"  														// Persistent settings in flash (T-26)
 #include "interface/timezone.h"  														// Time zones (T-26)
 #include "interface/cdcserial.h"

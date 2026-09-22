@@ -26,6 +26,7 @@ static void CDCInit(void) {
 }
 
 extern "C" void tuh_cdc_mount_cb(uint8_t idx) {  								// New CDC interface : first free slot.
+	USBNoteEvent();  															// T-32 : enumeration barrier
 	CDCInit();
 	for (int i = 0; i < CDC_MAX_DEVICES; i++) if (cdcItf[i] == 0xFF) { cdcItf[i] = idx; break; }
 	cdc_line_coding_t lc = { 115200, CDC_LINE_CODING_STOP_BITS_1, CDC_LINE_CODING_PARITY_NONE, 8 };
@@ -38,6 +39,7 @@ extern "C" void tuh_cdc_mount_cb(uint8_t idx) {  								// New CDC interface : 
 }
 
 extern "C" void tuh_cdc_umount_cb(uint8_t idx) {
+	USBNoteEvent();  															// T-32
 	CDCInit();
 	for (int i = 0; i < CDC_MAX_DEVICES; i++) if (cdcItf[i] == idx) cdcItf[i] = 0xFF;
 	CONWriteString("USB serial modem removed\r");
