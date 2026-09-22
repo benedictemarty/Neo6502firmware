@@ -183,6 +183,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 // ***************************************************************************************
 
 static volatile bool core1StopRequest = false,core1Parked = false;  			// Cooperative stop of core 1 (mode switch)
+static volatile bool core1FlashPause = false,core1InFlashPause = false;  		// T-32b : cooperative pause for flash writes
 static bool core1Launched = false;
 
 static void __not_in_flash_func(_encode_loop)(void) {
@@ -191,6 +192,13 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		if (core1StopRequest) {  													// Mode switch : leave with IRQs off, no lock held.
 			irq_set_enabled(DMA_IRQ_1,false);
 			return;
+		}
+		if (core1FlashPause) {  													// Flash write (banks, settings) : park here, in RAM,
+			irq_set_enabled(DMA_IRQ_1,false);  										// with interrupts off — no SDK lockout handler, which
+			core1InFlashPause = true;  												// lives in flash and stole cycles from the encoder
+			while (core1FlashPause) tight_loop_contents();  						// (red late lines on the board, bmarty 2026-09-22).
+			core1InFlashPause = false;
+			irq_set_enabled(DMA_IRQ_1,true);
 		}
 		queue_remove_blocking_u32(&dvi0.q_colour_valid, &scanbuf);
 		queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
@@ -219,7 +227,6 @@ static void __not_in_flash_func(_encode_loop)(void) {
 // ***************************************************************************************
 
 static void __not_in_flash_func(core1_main)() {
-	multicore_lockout_victim_init();  											// Flash writes (banks, settings) pause this core (T-17/T-26)
 	while (1) {  																// Restartable : a mode switch parks core 1 here
 		dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);                      	// Enable IRQs
 		dvi_start(&dvi0);                                           			// Start DVI library
@@ -346,9 +353,24 @@ static void DVIStopMode(void) {
 //
 // ***************************************************************************************
 
-// T-17 : pause the DVI around a flash write (core 1 parked in RAM, DMA and PIO off), then restart it.
+// T-17 : full teardown (unused : it left the screen black on the board, 0.9.9).
 void RNDSuspend(void) { DVIStopMode(); }
 void RNDResume(void) { if (!isInitialised) DVIStart(); }
+
+// T-32b : park core 1 in RAM for a flash write. The DVI hardware is left alone : the picture freezes
+// for the duration (the DMA is no longer rearmed) and resumes at once, without re-locking the monitor.
+void RNDFlashPause(void) {
+	if (!isInitialised) return;
+	core1InFlashPause = false;core1FlashPause = true;
+	uint32_t t0 = TMRRead();
+	while (!core1InFlashPause && TMRRead() - t0 < 20) tight_loop_contents();  	// 200 ms at most
+}
+
+void RNDFlashResume(void) {
+	core1FlashPause = false;
+	uint32_t t0 = TMRRead();
+	while (core1InFlashPause && TMRRead() - t0 < 20) tight_loop_contents();
+}
 
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];

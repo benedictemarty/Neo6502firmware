@@ -37,6 +37,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.10.2** (2026-09-22, retour carte bmarty : traits rouges nombreux à la frappe et à l'affichage) — le **lockout
+  multicore du SDK** (0.9.10, pour les écritures flash) installait sur core 1 un gestionnaire d'IRQ (FIFO inter-cœurs)
+  **situé en flash** : chaque interruption volait des cycles à l'encodeur TMDS, d'où des lignes non prêtes à temps (traits
+  rouges). Remplacé par un **parking coopératif** : core 1 se gare lui-même dans sa boucle (code en RAM), IRQ DMA coupée,
+  le temps de l'écriture (`RNDFlashPause`/`RNDFlashResume`) — plus aucune IRQ supplémentaire sur core 1, le DVI n'est pas
+  démonté (image figée puis reprise, sans re-verrouillage du moniteur). `~/neo-carte/trinity-0.10.2-core1-USB.uf2`.
+
 - **0.10.1** (2026-09-22, retour carte bmarty sur 0.10.0 : `USB settled (500 ms)` puis `USB Key found` et `Volume 0:`
   **après** NeoDOS, Échap inopérant, clavier muet ~20 s) — la barrière attendait « 300 ms sans événement », condition déjà
   vraie **avant** le début de l'énumération : elle sortait à son plancher. Elle attend maintenant un **premier événement**

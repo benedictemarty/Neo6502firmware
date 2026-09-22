@@ -65,8 +65,10 @@ extern struct GraphicsMode gMode;
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b); 				// Implementation specific.
 int  RNDGetFrameCount(void);
 void RNDStartMode0(struct GraphicsMode *gMode);
-void RNDSuspend(void);  														// T-17 : display paused (flash write) ...
-void RNDResume(void);  															// ... and back
+void RNDSuspend(void);  														// T-17 : full teardown (unused)
+void RNDResume(void);
+void RNDFlashPause(void);  														// T-32b : park core 1 (RAM) around a flash write ...
+void RNDFlashResume(void);  													// ... and let it go
 int  RNDModeSupported(int mode); 												// Implementation specific : can this host display it ?
 
 int  GFXSetMode(int Mode);  													// General. Returns 0 if ok, 1 if unsupported.
