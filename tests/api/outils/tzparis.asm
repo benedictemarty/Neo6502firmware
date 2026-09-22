@@ -70,7 +70,7 @@ g2:
   bne g2
   jsr cr
 halt:
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 cr:
   lda #13

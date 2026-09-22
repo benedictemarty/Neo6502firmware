@@ -238,7 +238,7 @@ halt:
 .if NEO
   jmp $FFFF                 ; neo : sortie de l'émulateur (memory.dump)
 .endif
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 ; --- 37,4 : A = item du dialogue 1 -> " ctl kind"
 getitem:

@@ -264,7 +264,7 @@ halt:
 .if NEO
   jmp $FFFF                 ; neo : sortie de l'émulateur (memory.dump)
 .endif
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 ; --- 36,1 : A = genre, X/Y = texte, rect, max = 2 octets inline ; affiche " id"
 newctl:

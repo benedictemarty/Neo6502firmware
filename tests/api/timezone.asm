@@ -96,7 +96,7 @@ halt:
 .if NEO
   jmp $FFFF                 ; neo : sortie de l'émulateur (memory.dump)
 .endif
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 ; --- 1,24 nom (X,Y) puis 1,25 : "ZONE err nom offset dst"
 setzone:

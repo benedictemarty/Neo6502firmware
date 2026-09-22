@@ -119,7 +119,7 @@ halt:
 .if NEO
   jmp $FFFF                 ; neo : sortie de l'émulateur (memory.dump)
 .endif
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 ; --- 3,4 open canal 0, nom (X,Y), lecture seule
 open0:

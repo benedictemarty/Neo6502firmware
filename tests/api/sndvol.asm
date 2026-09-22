@@ -120,7 +120,7 @@ halt:
 .if NEO
   jmp $FFFF                 ; neo : sortie de l'émulateur (memory.dump)
 .endif
-  jmp halt
+  rts                       ; retour à l'appelant (sys du BASIC, ou NeoDOS pour un .NEO) ; reset sinon
 
 setvol:
   lda #9
