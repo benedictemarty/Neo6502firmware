@@ -176,18 +176,21 @@ GROUP 5 Graphics
     FUNCTION 41 Get Bus Stalls
         {
             if (DPARAMS[0] == 0xFF) HWBusStallsReset();
-            uint32_t t = HWBusStalls(0),r = HWBusStalls(1);
+            uint32_t t = HWBusStalls(DPARAMS[0] & 3);
             DPARAMS[0] = t & 0xFF;DPARAMS[1] = (t >> 8) & 0xFF;DPARAMS[2] = (t >> 16) & 0xFF;DPARAMS[3] = t >> 24;
-            DPARAMS[4] = r & 0xFF;DPARAMS[5] = (r >> 8) & 0xFF;DPARAMS[6] = (r >> 16) & 0xFF;DPARAMS[7] = r >> 24;
         }
     DOCUMENTATION
-        Returns how often the firmware was too slow to serve the 6502 bus (Trinity T-49, diagnostic ; 0 in the
-        emulators, which have no PIO). Parameters:0-3 count the sampling windows where the data of a read was not
-        ready in time (PIO TXSTALL), Parameters:4-7 those where the address FIFO was not drained in time (RXSTALL).
-        The PIO state machine generates the 6502 clock, so a stall stretches the processor rather than feeding it a
-        wrong byte. Sampled about 95 times a second, so these are windows containing at least one stall, not exact
-        counts : 0 means a healthy binary, anything growing means a starved firmware. Pass $FF in Parameter:0 to
-        reset both counters before measuring.
+        Returns in Parameters:0-3 one of the PIO fault counters of the 6502 bus, chosen by Parameter:0 on entry
+        (Trinity T-49/T-52, diagnostic ; 0 in the emulators, which have no PIO) :
+            0 TXSTALL : the data of a read was not ready in time.
+            1 RXSTALL : the address FIFO was not drained in time.
+            2 RXUNDER : an EMPTY FIFO was read — the firmware then acts on a stale word and writes a phantom byte
+              at a phantom address into the 6502 memory. This one corrupts the running program.
+            3 TXOVER  : a read reply was pushed into a full FIFO and lost.
+        The state machine generates the 6502 clock, so TXSTALL and RXSTALL merely stretch the processor and are
+        normal while an API command is served ; RXUNDER and TXOVER are not, and any growth there is a fault.
+        Sampled about 95 times a second, so these are windows containing at least one event, not exact counts.
+        Pass $FF in Parameter:0 to reset all four (it then returns TXSTALL).
 
     FUNCTION 40 Get Late Scanlines
         {

@@ -3,7 +3,9 @@
 ; l'horloge s'arrête (le processeur est étiré, jamais nourri d'un octet faux). PIO_FDEBUG
 ; garde la trace de ces calages ; DSPSync les échantillonne ~95 fois par seconde.
 ;   TX = la donnée d'une lecture n'était pas prête   RX = la file d'adresses non vidée à temps
-; Affiche aussi 5,40 (lignes DVI en retard) pour comparer les deux famines.
+; UN (RXUNDER) et OV (TXOVER) sont les deux compteurs qui signalent une faute : UN veut dire que
+; la boucle a lu une file VIDE et agi sur un mot périmé — un octet fantôme écrit à une adresse
+; fantôme dans la mémoire du 6502. TX et RX, eux, montent normalement pendant les commandes API.
 ; Compteurs remis à zéro au lancement. Échap : sortie (les autres touches sont ignorées,
 ; pour qu'on puisse taper pendant la mesure).
 ; Auteur : bmarty <bmarty@mailo.com>
@@ -27,40 +29,27 @@ start:
   jsr api
 
 loop:
-  stz API_PARAMETERS        ; 5,41 -> P0-3 TX, P4-7 RX
-  lda #41
-  ldx #5
-  jsr api
-  ldx #7
-c1:
-  lda API_PARAMETERS,x
-  sta buf,x
-  dex
-  bpl c1
+  ldx #<sun                 ; UN : RXUNDER — file vide lue, mémoire 6502 corrompue (T-52)
+  ldy #>sun
+  jsr print
+  lda #2
+  jsr read41
+  ldx #<sov                 ; OV : TXOVER — réponse de lecture perdue
+  ldy #>sov
+  jsr print
+  lda #3
+  jsr read41
 
-  ldx #<stx                 ; "TX " puis le compteur 32 bits
+  ldx #<stx                 ; TX / RX : calages normaux pendant une commande API
   ldy #>stx
   jsr print
-  lda buf+3
-  jsr hex
-  lda buf+2
-  jsr hex
-  lda buf+1
-  jsr hex
-  lda buf
-  jsr hex
-
-  ldx #<srx                 ; "  RX "
+  lda #0
+  jsr read41
+  ldx #<srx
   ldy #>srx
   jsr print
-  lda buf+7
-  jsr hex
-  lda buf+6
-  jsr hex
-  lda buf+5
-  jsr hex
-  lda buf+4
-  jsr hex
+  lda #1
+  jsr read41
 
   lda #40                   ; 5,40 -> lignes DVI en retard
   ldx #5
@@ -122,6 +111,27 @@ w2:
   jmp loop
 bye:
   rts
+
+; read41 — A = index de compteur : 5,41 puis affiche les 4 octets
+read41:
+  sta API_PARAMETERS
+  lda #41
+  ldx #5
+  jsr api
+  ldx #3
+r3:
+  lda API_PARAMETERS,x
+  sta buf+24,x
+  dex
+  bpl r3
+  lda buf+27
+  jsr hex
+  lda buf+26
+  jsr hex
+  lda buf+25
+  jsr hex
+  lda buf+24
+  jmp hex
 
 ; read42 — A = index de mesure (0 sync, 1 commande) : 5,42 puis affiche les 4 octets
 read42:
@@ -196,8 +206,10 @@ digit:
   adc #'0'
   jmp wchar
 
-stx:     .text "TX ", 0
+sun:     .text "UN ", 0
+sov:     .text "  OV ", 0
+stx:     .text "  TX ", 0
 srx:     .text "  RX ", 0
 slate:   .text "  DVI ", 0
-ssy:     .text "  SY ", 0
+ssy:     .text " SY ", 0
 scm:     .text " CM ", 0

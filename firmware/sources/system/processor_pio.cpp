@@ -40,15 +40,26 @@ extern volatile bool irqAsserted;  											// tick.cpp (F-60)
 // ***************************************************************************************
 
 #define BUS_FDEBUG_TXSTALL (1u << 24)  										// SM0 : PIO_FDEBUG TXSTALL[27:24]
-#define BUS_FDEBUG_RXSTALL (1u << 0)   										// SM0 : PIO_FDEBUG RXSTALL[3:0]
+#define BUS_FDEBUG_TXOVER  (1u << 16)  										// TXOVER[19:16] : data pushed into a full FIFO, lost
+#define BUS_FDEBUG_RXUNDER (1u << 8)   										// RXUNDER[11:8] : an EMPTY FIFO was read
+#define BUS_FDEBUG_RXSTALL (1u << 0)   										// RXSTALL[3:0]
+#define BUS_FDEBUG_ALL (BUS_FDEBUG_TXSTALL|BUS_FDEBUG_TXOVER|BUS_FDEBUG_RXUNDER|BUS_FDEBUG_RXSTALL)
 
-static uint32_t busStallTx = 0,busStallRx = 0;
+//		T-52 : the two that matter. TXSTALL and RXSTALL are normal — serving an API command
+//		stalls the machine. RXUNDER is not : the bus loop calls pio_sm_get(), which reads
+//		pio->rxf[sm] without checking the FIFO holds anything, so an early firmware reads a
+//		stale word and then writes a phantom byte at a phantom address into cpuMemory. The
+//		6502 program is corrupted while the firmware carries on — which is why Ctrl+Alt+AltGr
+//		still reboots the board. TXOVER means a read reply was pushed into a full FIFO and lost.
+static uint32_t busStallTx = 0,busStallRx = 0,busUnder = 0,busOver = 0;
 
 void __not_in_flash_func(HWBusProbe)(void) {
-	uint32_t flags = pio1->fdebug & (BUS_FDEBUG_TXSTALL | BUS_FDEBUG_RXSTALL);
+	uint32_t flags = pio1->fdebug & BUS_FDEBUG_ALL;
 	if (flags == 0) return;
 	if (flags & BUS_FDEBUG_TXSTALL) busStallTx++;
 	if (flags & BUS_FDEBUG_RXSTALL) busStallRx++;
+	if (flags & BUS_FDEBUG_RXUNDER) busUnder++;
+	if (flags & BUS_FDEBUG_TXOVER) busOver++;
 	pio1->fdebug = flags;  													// Sticky : write 1 to clear
 }
 
@@ -65,14 +76,20 @@ uint32_t HWBusTiming(uint8_t which) {
 	return (which == 0) ? syncMaxUs : cmdMaxUs;
 }
 
-uint32_t HWBusStalls(uint8_t which) {  										// 0 = TX (read not ready), 1 = RX (address FIFO)
-	return (which == 0) ? busStallTx : busStallRx;
+uint32_t HWBusStalls(uint8_t which) {  										// 0 TXSTALL, 1 RXSTALL, 2 RXUNDER, 3 TXOVER
+	switch(which) {
+		case 0: return busStallTx;
+		case 1: return busStallRx;
+		case 2: return busUnder;
+		case 3: return busOver;
+	}
+	return 0;
 }
 
 void HWBusStallsReset(void) {
-	busStallTx = busStallRx = 0;
+	busStallTx = busStallRx = busUnder = busOver = 0;
 	syncMaxUs = cmdMaxUs = 0;
-	pio1->fdebug = BUS_FDEBUG_TXSTALL | BUS_FDEBUG_RXSTALL;
+	pio1->fdebug = BUS_FDEBUG_ALL;
 }
 
 void initPio() {

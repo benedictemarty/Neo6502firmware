@@ -1,6 +1,7 @@
-; busstall.asm — 5,41 Get Bus Stalls (Trinity T-49). Sous `neo` il n'y a pas de machine PIO
-; à affamer : les deux compteurs valent 0, et la remise à zéro ($FF en P0) les laisse à 0.
-; Sortie attendue : BUS 00000000 00000000 / RESET 00000000 00000000 / END
+; busstall.asm — 5,41 Get Bus Stalls (Trinity T-49/T-52). Sous `neo` il n'y a pas de machine PIO :
+; les quatre compteurs valent 0 (TXSTALL, RXSTALL, RXUNDER, TXOVER), et la remise à zéro ($FF en
+; P0) les laisse à 0.
+; Sortie attendue : BUS 00000000 00000000 00000000 00000000 / RESET 00000000 / END
 ; SPDX-License-Identifier: EUPL-1.2
 ; Auteur : bmarty <bmarty@mailo.com>
 
@@ -25,18 +26,27 @@ start:
   lda #12
   jsr wchar
 
-  ldx #<sbus                ; BUS : lecture simple
+  ldx #<sbus                ; BUS : les quatre compteurs
   ldy #>sbus
   jsr print
-  stz API_PARAMETERS
+  lda #0
   jsr read41
+  lda #1
+  jsr read41
+  lda #2
+  jsr read41
+  lda #3
+  jsr read41
+  lda #13
+  jsr wchar
 
-  ldx #<sreset              ; RESET : $FF en P0 remet à zéro, puis relit
+  ldx #<sreset              ; RESET : $FF en P0 remet à zéro (et renvoie TXSTALL)
   ldy #>sreset
   jsr print
   lda #$FF
-  sta API_PARAMETERS
   jsr read41
+  lda #13
+  jsr wchar
 
   ldx #<sfin
   ldy #>sfin
@@ -47,12 +57,13 @@ halt:
 .endif
   rts
 
-; read41 — appelle 5,41 puis journalise les deux compteurs 32 bits
+; read41 — A = index de compteur : appelle 5,41 et journalise les 4 octets, suivis d'une espace
 read41:
+  sta API_PARAMETERS
   lda #41
   ldx #5
   jsr api
-  ldx #7
+  ldx #3
 r1:
   lda API_PARAMETERS,x
   sta buf,x
@@ -67,16 +78,6 @@ r1:
   lda buf
   jsr hex
   lda #' '
-  jsr wchar
-  lda buf+7
-  jsr hex
-  lda buf+6
-  jsr hex
-  lda buf+5
-  jsr hex
-  lda buf+4
-  jsr hex
-  lda #13
   jmp wchar
 
 api:

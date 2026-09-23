@@ -37,6 +37,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.2** (2026-09-23) — **`RXUNDER` et `TXOVER` comptés (T-52)**, et avec eux une hypothèse forte pour T-48. La
+  mesure carte a montré que, l'écran perdu, **Ctrl+Alt+AltGr redémarre encore la carte** : le firmware tourne, ce n'est
+  donc pas lui qui se bloque. En relisant `processor_pio.cpp` : la boucle du bus appelle `pio_sm_get(pio1,0)` pour
+  l'adresse et pour la donnée d'une écriture, or cette fonction du SDK est `return pio->rxf[sm];` — elle **ne vérifie
+  pas que la file contient quelque chose**. Un firmware qui arrive avant la machine PIO lit un mot périmé, puis écrit
+  `cpuMemory[adresse fantôme] = donnée fantôme` : **le programme 6502 est corrompu pendant que le firmware continue**,
+  exactement le tableau observé. Et comme tout dépend de la vitesse relative des deux, un binaire dont le code chaud
+  tombe mieux en cache lit plus souvent dans le vide — **le mécanisme par lequel la panne devient sensible au
+  placement**. `5,41` prend désormais un index : 0 TXSTALL, 1 RXSTALL (tous deux normaux pendant une commande API),
+  **2 RXUNDER** et **3 TXOVER** (fautifs). `BUS.NEO` affiche `UN` et `OV` en tête de ligne. Mesurer avant de corriger.
+  `make test-api` 16/16.
+
 - **0.11.1** (2026-09-23, premières mesures carte avec `BUS`) — **durée passée loin du bus (T-50)** et **outils
   utilisables (T-51)**. La mesure au repos a montré que TX **et** RX montent, ce qui était prévisible : servir une
   commande API cale forcément le PIO, puisque le 6502 boucle sur le port de contrôle pendant que le firmware
