@@ -16,7 +16,12 @@ la **0.4.0**, **NeoDOS comme environnement résident à la place de NeoBASIC** (
 l'émulateur `neo` (`make -C emulator elinux`). Le dépôt Neo6502Basic n'est plus nécessaire au firmware ni à `neo` ;
 `BASICDIR` ne sert qu'aux cibles `examples/` et `release/` de l'amont.
 
-Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags : `v0.0.1-N-gXXXXXXX`). Compilation : comme l'amont
+Bannière : `Trinity Firmware: v0.0.1` (tag `trinity-v0.0.1` ; entre deux tags : `v0.0.1-N-gXXXXXXX`).
+**Ordre à respecter pour une livraison** : commit, **puis tag**, **puis** `make -C firmware build`, **puis** copie de
+l'UF2 dans `~/neo-carte/`. La bannière est tirée de `git describe` **au moment de la compilation** : compiler avant de
+taguer produit une image qui affiche la version précédente (c'est arrivé aux 0.10.12 et 0.11.3). Et comme T-48 montre
+que le comportement carte dépend du placement du code, recompiler après coup donne un **binaire différent** : ce n'est
+pas un détail cosmétique. Compilation : comme l'amont
 (`make -C firmware build STORAGE=USB`, SDK 1.5.1, TinyUSB 0.16.0, PicoDVI amont non modifié).
 
 ## Budget mémoire (T-13)
