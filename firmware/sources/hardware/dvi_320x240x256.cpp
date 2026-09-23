@@ -102,6 +102,7 @@ static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
+static volatile uint32_t lateTotal = 0;  										// T-57 : episodes of late scanlines, cumulative
 
 bool  isInitialised = false;                                      				// DVI running.
 
@@ -145,6 +146,7 @@ bool cursorEnabled = false;
 
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
+	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
 	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
 	if (currentMode->bitsPerPixel == 1) scanline = (lineCounter & 1) ? (uint32_t)monoLine1 : (uint32_t)monoLine2;
@@ -304,14 +306,9 @@ void HWClockChanged(void) {
 }
 
 void DVIStart(void) {                                                             // Public and not inlined : Phosphoneo co-sim hooks this symbol (HLE).
-	//		T-56 : give the DMA priority over the cores for memory access. PicoDVI never asks
-	//		for it, yet its data channels must keep three PIO FIFOs fed with no margin at all —
-	//		its own comment says "we really don't want the FIFOs to bottom out". While a sector
-	//		is read from the USB key, core 0 copies at full speed and starves them : a lane runs
-	//		dry and paints a streak, red being the third one. It costs nothing and is what the
-	//		datasheet recommends for real time DMA (board 2026-09-23 : VRAM proven clean, so the
-	//		fault lies after memory, in the path to the screen).
-	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS;
+	//		T-56, withdrawn : giving the DMA priority over the cores made the streaks MUCH worse
+	//		on the board (bmarty, 2026-09-23). Useful all the same — it says the starved party is
+	//		core 1, the encoder, not the display DMA : taking bandwidth from the cores hurts.
 	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
@@ -426,8 +423,12 @@ void RNDCursorUpdate(void) {
 	cursorSlotIndex = slot;
 }
 
-// T-32c : late scanlines counted by PicoDVI (diagnostic, read by 5,38).
-uint32_t RNDLateScanlines(void) { return dvi0.late_scanline_ctr; }
+//		T-57 : late_scanline_ctr of PicoDVI is a STATE, not a total : it is decremented as soon
+//		as the pipeline catches up (dvi.c, ++ at one place, -- at another). Reading it from
+//		DSPSync, 95 times a second, almost always caught it back at zero — which is why "DVI = 0"
+//		wrongly cleared the display of any suspicion all day. The line callback runs on core 1
+//		every 31 µs, so sampling there does catch the episodes ; lateTotal counts them.
+uint32_t RNDLateScanlines(void) { return lateTotal; }
 
 void RNDFlashPause(void) {
 	if (!isInitialised) return;

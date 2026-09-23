@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.6** (2026-09-23) — **la priorité DMA est annulée, et `5,40` mesure enfin quelque chose (T-57)**. Sur carte, la
+  0.11.5 a rendu les traits **bien pires** : donner au DMA la priorité sur les cœurs prend de la bande passante à
+  **core 1, l'encodeur**. L'essai n'est pas perdu — il désigne l'affamé. Surtout, il a fallu constater que
+  `late_scanline_ctr` de PicoDVI est un **état**, pas un cumul : `dvi.c` l'incrémente quand une ligne manque et le
+  **décrémente dès que le pipeline rattrape**. Le lire depuis `DSPSync`, 95 fois par seconde, le retrouvait presque
+  toujours à zéro — d'où un « `DVI` = 0 » qui a blanchi l'affichage toute la journée **à tort**, et fait écarter la
+  piste des lignes en retard. Désormais le **callback de ligne** (core 1, toutes les 31 µs) échantillonne et cumule
+  dans `lateTotal`, que `5,40` renvoie. La leçon vaut pour la suite : vérifier ce que compte un compteur avant de
+  conclure de son zéro. RAM 32 372 o libres.
+
 - **0.11.5** (2026-09-23) — **traits rouges : le DMA passe devant les cœurs (T-56)**. L'outil `VRAMCHK` a tranché : la
   **mémoire vidéo reste saine** pendant que les traits défilent. Le défaut est donc **après la mémoire**, dans le chemin
   vers l'écran — et sans rapport avec la panne des programmes, qui reste ouverte (T-48). Les trois canaux TMDS sont
