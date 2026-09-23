@@ -42,6 +42,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.4** (2026-09-23) — **débordement des tableaux MSC (T-54)** : une case au-delà, à chaque accès disque. En
+  suivant les traits rouges jusqu'à leur source, on arrive à `usb_storage.cpp`, qui indexait `msc_fatfs_volumes[]` et
+  `msc_volume_busy[]` — tous deux de taille `CFG_TUH_DEVICE_MAX`, soit **5** avec le hub — **par l'adresse USB
+  elle-même**. Or TinyUSB distribue les adresses **1 à 5** : l'adresse 0 est celle de l'énumération. Une clé qui
+  obtient la dernière adresse écrit donc **hors des tableaux** : un octet parasite pour le drapeau d'occupation, et
+  **une structure `FATFS` entière** — des centaines d'octets — par-dessus ce que l'éditeur de liens a placé juste
+  après. À chaque lecture de secteur. Avec un hub, un clavier, une souris, le modem et la clé, cette adresse est
+  atteinte en pratique.
+  Ce que le débordement écrase **dépend du binaire**, ce qui explique enfin pourquoi la carte semblait se comporter au
+  hasard (**T-48**) ; et quand il tombe dans `graphicsMemory`, on voit des octets parasites — la couleur 1 de la
+  palette par défaut étant `255,0,77`, ils s'affichent en **rouge** (**T-38**). Cohérent avec toutes les mesures de la
+  journée : `UN`, `OV` et `DVI` obstinément à 0, car il n'y a aucune anomalie de bus ni d'affichage — seulement de la
+  mémoire écrasée. Correction : emplacement = adresse − 1, et toutes les indexations bornées (`mscSlot`).
+  RAM inchangée (32 408 o libres). `make test-api` 16/16, `make test-toolbox` 10/10.
+
 - **0.11.3** (2026-09-23, reproducteur bmarty : **Tab dans NeoDOS déclenche les traits rouges à coup sûr**) —
   **quatre tampons de ligne au lieu de deux (T-53)**. Tab, c'est la complétion : elle parcourt le répertoire, soit la
   rafale FatFs la plus dense que le clavier sache produire. Avec ce reproducteur et les mesures (`5,40` obstinément à
