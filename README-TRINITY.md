@@ -37,6 +37,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.3** (2026-09-23, reproducteur bmarty : **Tab dans NeoDOS déclenche les traits rouges à coup sûr**) —
+  **quatre tampons de ligne au lieu de deux (T-53)**. Tab, c'est la complétion : elle parcourt le répertoire, soit la
+  rafale FatFs la plus dense que le clavier sache produire. Avec ce reproducteur et les mesures (`5,40` obstinément à
+  0, traits **en mode 0 seulement**), le mécanisme se laisse enfin nommer : en mode 0, l'encodeur lit **trois fois** le
+  même tampon de ligne — un passage par canal TMDS, **le rouge en dernier** — pendant que le callback de ligne, qui
+  tourne en interruption **sur le même cœur**, n'avait que **deux** tampons à alterner. Quand core 0 sature la mémoire
+  pour FatFs, l'encodeur décroche, le callback revient sur le tampon qu'il est en train de lire, et seule la troisième
+  passe voit les données neuves : bleu et vert justes, rouge faux. `late_scanline_ctr` reste à 0, car le tampon TMDS
+  est bien publié à l'heure — c'est sa **source** qui a changé sous lui. Le mode 1 ne fait qu'un encodage par ligne,
+  d'où l'absence de traits. Désormais **4 tampons**, dimensionnés pour le plus large mode **couleur** (320 pixels,
+  mode 0) au lieu du plus large mode tout court (720, monochrome, qui passe par `monoLine`) : quatre tampons coûtent
+  ainsi **moins** que les deux anciens. RAM 32 408 o libres (−208 o de tampons, marge sous `RAM_LIMIT` portée de 80 à
+  264 o). `make test-api` 16/16, `make test-toolbox` 10/10.
+
 - **0.11.2** (2026-09-23) — **`RXUNDER` et `TXOVER` comptés (T-52)**, et avec eux une hypothèse forte pour T-48. La
   mesure carte a montré que, l'écran perdu, **Ctrl+Alt+AltGr redémarre encore la carte** : le firmware tourne, ce n'est
   donc pas lui qui se bloque. En relisant `processor_pio.cpp` : la boucle du bus appelle `pio_sm_get(pio1,0)` pour

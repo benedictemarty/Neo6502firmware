@@ -83,7 +83,20 @@ static struct GraphicsMode *currentMode = NULL;  								// Mode being displayed
 static const struct DisplayTiming *currentTiming = NULL;
 static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green, bit 2 red
 
-uint16_t buffer1[MAX_SCAN_WIDTH+32],buffer2[MAX_SCAN_WIDTH+32];               	// 2 x 16 bpp scanline buffers used alternatively
+//		T-53 : scanline buffers of the colour modes. There used to be two, alternated by parity,
+//		and the encoder reads each one THREE times — once per TMDS channel, red last. The line
+//		callback runs in an interrupt on the same core as the encoder, so when core 0 saturates
+//		memory (FatFs during a directory listing, Tab completion in NeoDOS) the encoder falls
+//		behind, the callback comes back round to the buffer it is still reading, and only the
+//		third pass sees the new data : blue and green right, red wrong. That is the red streak,
+//		and late_scanline_ctr stays at 0 because the TMDS buffer itself is published on time —
+//		it is its source that changed underneath. Four buffers now, and they are sized for the
+//		widest COLOUR mode (320, mode 0) instead of the widest mode overall (720, which is
+//		monochrome and uses monoLine) : four buffers now cost less RAM than the old two.
+#define SCAN_MAX_PIXELS (320)  													// Mode 0 ; mode 1 is 1 bpp and uses monoLine
+#define SCAN_BUF_COUNT  (4)
+static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32];
+#define SCANBUF(n) (scanBuffer[(n) & (SCAN_BUF_COUNT-1)])
 static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
 
@@ -132,7 +145,7 @@ bool cursorEnabled = false;
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
-	scanline = (lineCounter & 1) ? (uint32_t)buffer1 : (uint32_t)buffer2; 		// Which buffer to send ?
+	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
 	if (currentMode->bitsPerPixel == 1) scanline = (lineCounter & 1) ? (uint32_t)monoLine1 : (uint32_t)monoLine2;
 	if (lineCounter < currentTiming->yOffset ||  									// Outside the framebuffer : black line.
 			lineCounter >= currentTiming->yOffset + currentMode->yGSize) scanline = 0;
@@ -169,7 +182,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	}
 
 	uint16_t *cursline,*scan;
-	cursline = scan = (lineCounter & 1) ? buffer1 : buffer2;
+	cursline = scan = SCANBUF(lineCounter);  									// The encoder is still on an older one
 	uint8_t *screenPos = screenMemory + y * currentMode->stride;          			// Data to use in screen memory.
 	if (currentMode->bitsPerPixel == 8) {
 		for (int i = 0;i < currentMode->xGSize;i++) {                             	// For each pixel
@@ -314,8 +327,8 @@ void DVIStart(void) {                                                           
 
 	lineCounter = 2;                                                  			// We send two lines to kick off.
 	uint32_t scanline;                                               			// Send junk, only lasts one frame.
-	scanline = (uint32_t)buffer1;queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);
-	scanline = (uint32_t)buffer2;queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);
+	scanline = (uint32_t)SCANBUF(0);queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);
+	scanline = (uint32_t)SCANBUF(1);queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);
 	if (!core1Launched) { multicore_launch_core1(core1_main);core1Launched = true; }   // Start DVI worker core (RP2040 core 1)
 	else core1StopRequest = false;  											// Mode switch : core 1 re-registers IRQs and restarts the DVI
 	isInitialised = true;
