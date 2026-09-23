@@ -46,8 +46,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   exactement le tableau observé. Et comme tout dépend de la vitesse relative des deux, un binaire dont le code chaud
   tombe mieux en cache lit plus souvent dans le vide — **le mécanisme par lequel la panne devient sensible au
   placement**. `5,41` prend désormais un index : 0 TXSTALL, 1 RXSTALL (tous deux normaux pendant une commande API),
-  **2 RXUNDER** et **3 TXOVER** (fautifs). `BUS.NEO` affiche `UN` et `OV` en tête de ligne. Mesurer avant de corriger.
-  `make test-api` 16/16.
+  **2 RXUNDER** et **3 TXOVER** (fautifs). `BUS.NEO` affiche `UN` et `OV` en tête de ligne.
+  ⚠️ **Mesuré le jour même : `UN` reste à 0**, au repos comme à la frappe. L'hypothèse est donc **infirmée** — la boucle
+  ne lit jamais de file vide et le commentaire du code dit vrai. Les compteurs restent, ils écartent définitivement
+  cette famille de causes. `make test-api` 16/16.
 
 - **0.11.1** (2026-09-23, premières mesures carte avec `BUS`) — **durée passée loin du bus (T-50)** et **outils
   utilisables (T-51)**. La mesure au repos a montré que TX **et** RX montent, ce qui était prévisible : servir une
