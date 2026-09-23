@@ -433,8 +433,11 @@ uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	if (!f)
 		return FIOERROR_INVALID_PARAMETER;
 
-	uint16_t toread = *size;
-	if (address != 0xFFFF) toread = std::min(toread, uint16_t(0x10000 - address));
+	//		T-59 : two faults here. The graphics destination ($FFFF) was NOT bounded at all,
+	//		so a read of more than 32 Ko ran past gfxObjectMemory ; and "uint16_t(0x10000 -
+	//		address)" truncates to 0 when address is 0, which silently transferred nothing.
+	uint32_t room = (address == 0xFFFF) ? GFX_MEMORY_SIZE : (0x10000u - address);
+	uint16_t toread = (uint16_t)std::min((uint32_t)*size, room);
 
 	// CONWriteString("FISReadFileHandle(%d, @0x%04x, 0x%04x) -> ", fileno, address, *size);
 	UINT read;
@@ -472,7 +475,8 @@ uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	if (!f)
 		return FIOERROR_INVALID_PARAMETER;
 
-	uint16_t towrite = std::min(*size, uint16_t(0x10000 - address));
+	uint32_t wroom = 0x10000u - address;  										// T-59 : truncated to 0 at address 0
+	uint16_t towrite = (uint16_t)std::min((uint32_t)*size, wroom);
 
 	// CONWriteString("FISWriteFileHandle(%d, @0x%04x, 0x%04x) -> ", fileno, address, *size);
 	UINT written;

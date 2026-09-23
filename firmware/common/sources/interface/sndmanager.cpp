@@ -68,8 +68,8 @@ void SNDStartup(void) {
 // ***************************************************************************************
 
 int SNDGetNoteCount(int channelID) {
-	if (channelID < 0 || channelID > SNDGetChannelCount()) return -1;
-	SOUND_CHANNEL *c = &channel[channelID];
+	if (channelID < 0 || channelID >= SNDGetChannelCount()) return -1;  		// T-59 : was '>', so channel 4
+	SOUND_CHANNEL *c = &channel[channelID];  									// of four was read out of bounds
 	return c->queueCount + (c->isPlayingNote ? 1 : 0);  						// # in queue + 1 if playing
 }
 

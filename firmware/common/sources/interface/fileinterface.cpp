@@ -110,18 +110,27 @@ uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {
 		loadAddress = cpuMemory[0x820]+(cpuMemory[0x821] << 8);
 		printf("Load to BASIC at $%x\n",loadAddress);
 	}
-	char *commChar = commentBlock;   												// Read in comment block.			
-	uint8_t count = 0;
-	while (*commChar = (*readfn)(commandPtr),*commChar != 0) {
-		if (++count > sizeof(commentBlock)) commChar++;
+	//		T-59 : the guard was inverted — the pointer only started moving PAST the 32nd
+	//		character and then never stopped, so a comment longer than 64 characters wrote
+	//		without limit beyond commentBlock. Keep at most sizeof-1 characters, drop the rest.
+	uint8_t count = 0;  															// Read in comment block.
+	uint8_t c;
+	while ((c = (*readfn)(commandPtr)) != 0) {
+		if (count < sizeof(commentBlock)-1) commentBlock[count++] = c;
 	}
+	commentBlock[count] = '\0';
 	printf("Comment %s\n",commentBlock);
 	printf("Loading bytes.\n");
+	//		T-59 : both destinations were unbounded. loadAddress and loadSize are 16 bit each,
+	//		so loadAddress+i reached 128 Ko — up to 64 Ko PAST the 6502 memory, over whatever
+	//		the linker had put next. Same for the graphics area, which is half the size.
 	for (int i = 0;i < loadSize;i++) {
 		uint8_t c = (*readfn)(commandPtr);
 		if (loadAddress == 0xFFFF) {
+			if (i >= GFX_MEMORY_SIZE) return FIOERROR_INVALID_PARAMETER;
 			gfxObjectMemory[i] = c;		
 		} else {
+			if (loadAddress+i >= MEMORY_SIZE) return FIOERROR_INVALID_PARAMETER;
 			cpuMemory[loadAddress+i] = c;
 		}
 	}

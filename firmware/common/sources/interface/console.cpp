@@ -586,8 +586,8 @@ void CONGetScreenLine(uint16_t addr) {
 	int bufferSize = 0;
 	for (int line = start;line <= graphMode->yCursor;line++) { 					// Input into buffer.
 		for (int x = 0;x < graphMode->xCSize;x++) {
-			if (bufferSize < 255) {
-				int ch = graphMode->consoleMemory[x+line*MAXCONSOLEWIDTH] & 0xFF;
+			if (bufferSize < 255 && addr + bufferSize + 1 < MEMORY_SIZE) {  		// T-59 : the 6502 gives addr,
+				int ch = graphMode->consoleMemory[x+line*MAXCONSOLEWIDTH] & 0xFF;   // and addr+256 ran past the end
 				ch = (ch < ' ') ? ' ' : ch;
 				cpuMemory[addr + bufferSize + 1] = ch;
 				bufferSize++;

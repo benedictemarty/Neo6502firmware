@@ -215,11 +215,18 @@ void MATHConvertStringToNumber(uint8_t *command) {
 // ***************************************************************************************
 
 void MATHConvertNumberToString(uint8_t *command) {
-	uint8_t *mem = cpuMemory + command[8] + (command[9] << 8); 					// To here.
+	uint16_t addr = command[8] + (command[9] << 8);  							// Where the 6502 wants it
+	uint8_t *mem = cpuMemory + addr;
+	//		T-59 : sprintf wrote as many characters as the number needed — about forty for a
+	//		"%f" — with no regard for the end of the 6502 memory. An address near $FFFF spilled
+	//		over whatever follows cpuMemory. Bounded to what is left, and the length byte too.
+	size_t room = MEMORY_SIZE - addr - 1;  										// Space after the length byte
+	if (room == 0) return;
+	if (room > 256) room = 256;  												// A length byte cannot say more
 	if (MATHIsFloatUnary()) {  													// Convert accordingly
-		sprintf((char *)(mem+1),"%f",MATHReadFloat(MATH_REG1));
+		snprintf((char *)(mem+1),room,"%f",MATHReadFloat(MATH_REG1));
 	} else {
-		sprintf((char *)(mem+1),"%d",(int)MATHReadInt(MATH_REG1));
+		snprintf((char *)(mem+1),room,"%d",(int)MATHReadInt(MATH_REG1));
 	}
 	mem[0] = strlen((char *)(mem+1)); 													// Length of string.
 }

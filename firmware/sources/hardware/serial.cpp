@@ -110,9 +110,16 @@ bool SERIsByteAvailable(void) {
 //
 // ***************************************************************************************
 
+//		T-59 : this waited for ever. A program that reads the serial port with nothing coming
+//		froze the whole machine — the bus loop is blocked, so even the reset key combination
+//		stops answering. The file's own history claims "29-01-24 Added timeout to readbyte",
+//		but no such timeout was in the code. Bounded to 100 ms, as ADR-0001 (T-34) requires of
+//		every wait ; returns 0 on timeout, and 10,1 tells whether a byte is actually there.
 uint8_t SERReadByte(void) {
-	//CONWriteString("Read: %d %d %d\r",readAddress,writeAddress,readAddress == writeAddress);
-	while (readAddress == writeAddress) {}		
+	uint32_t t0 = TMRRead();  													// 100 Hz timer
+	while (readAddress == writeAddress) {
+		if (TMRRead() - t0 >= 10) return 0;
+	}
 	//CONWriteString("Read2: %d %d\r",readAddress,writeAddress);
 	uint8_t b = rxBuffer[readAddress];
 	readAddress = (readAddress+1) & (UART_RX_BUFFER_SIZE-1);

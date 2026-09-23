@@ -9,6 +9,7 @@
 // *******************************************************************************************************************************
 // *******************************************************************************************************************************
 
+#include <algorithm>
 #include "gfx.h"
 #include "sys_processor.h"
 #include <time.h>
@@ -604,11 +605,15 @@ uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 
 	errno = 0;
 	printf("FISReadFileHandle(%d, @0x%x, %d) -> ", fileno, address, *size);
+	//		T-59 : bounded like the board. Neither destination was checked : address and size
+	//		are both 16 bit, so a read could run up to 64 Ko past cpuMemory, or 32 Ko past
+	//		gfxObjectMemory. The golden model must not corrupt itself either.
 	size_t result;
 	if (address != 0xFFFF) {
-		result = fread(cpuMemory+address, 1,*size, f);
+		uint32_t room = 0x10000u - address;
+		result = fread(cpuMemory+address, 1,std::min((uint32_t)*size,room), f);
 	} else {
-		result = fread(gfxObjectMemory,1,*size,f);
+		result = fread(gfxObjectMemory,1,std::min((uint32_t)*size,(uint32_t)GFX_MEMORY_SIZE),f);
 	}
 	printf("%d: %s\n", (int)result, (result != *size) ? strerror(errno) : "OK");
 	*size = result;
@@ -643,7 +648,8 @@ uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 		return FIOERROR_INVALID_PARAMETER;
 
 	printf("FISWriteFileHandle(%d, @0x%x, %d) -> ", fileno, address, *size);
-	size_t result = fwrite(cpuMemory+address, *size, 1, f);
+	uint32_t wroom = 0x10000u - address;  										// T-59 : do not read past cpuMemory
+	size_t result = fwrite(cpuMemory+address, std::min((uint32_t)*size,wroom), 1, f);
 	printf("%d: %s\n", (int)result, (result != 1) ? strerror(errno) : "OK");
 	//*size = result;
 

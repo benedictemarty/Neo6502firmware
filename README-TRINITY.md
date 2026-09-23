@@ -42,6 +42,25 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.0** (2026-09-23, relecture du code demandée par bmarty) — **huit écritures ou lectures hors limites**,
+  toutes déclenchables depuis un programme 6502 et toutes du profil de T-48 : ce qu'elles écrasent dépend de la
+  disposition des variables, donc du binaire.
+  **Chargement de fichier** (`FIOReadFile`) : `cpuMemory[loadAddress+i]` sans borne — `loadAddress` et `loadSize`
+  faisant 16 bits chacun, l'écriture allait jusqu'à **64 Ko au-delà** de la mémoire 6502 ; idem vers la RAM graphique.
+  **Bloc de commentaire** du même fichier : garde **inversée**, le pointeur ne commençait à avancer qu'après le 32ᵉ
+  caractère et ne s'arrêtait plus — un commentaire `.NEO` de plus de 64 caractères écrivait sans limite.
+  **`maths.cpp`** : `sprintf` d'un `%f`, une quarantaine de caractères, à une adresse 6502 quelconque.
+  **Lecture de ligne console** : jusqu'à `addr+256` sans vérification.
+  **`fileimplementation.cpp`** : lecture vers `gfxObjectMemory` non bornée (32 Ko de débordement), et
+  `uint16_t(0x10000-address)` qui **vaut 0 à l'adresse 0** — un transfert à l'adresse 0 ne copiait rien, en silence.
+  **`sndmanager.cpp`** : `>` au lieu de `>=`, `channel[4]` lu hors tableau par `8,3`.
+  **`serial.cpp`** : `SERReadByte` attendait **indéfiniment** ; un programme lisant le port série sans octet
+  disponible **figeait toute la machine**, boucle du bus comprise — alors que l'historique du fichier affirme qu'un
+  délai avait été ajouté en 2024. Borné à 100 ms (T-34).
+  **Émulateurs** : `neo` et Phosphoneo avaient les mêmes lectures de fichier sans aucune borne. Un modèle de
+  référence qui se corrompt masque sur PC ce qui casse sur carte — corrigés tous les deux.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 372 o libres.
+
 - **0.11.6** (2026-09-23) — **la priorité DMA est annulée, et `5,40` mesure enfin quelque chose (T-57)**. Sur carte, la
   0.11.5 a rendu les traits **bien pires** : donner au DMA la priorité sur les cœurs prend de la bande passante à
   **core 1, l'encodeur**. L'essai n'est pas perdu — il désigne l'affamé. Surtout, il a fallu constater que
