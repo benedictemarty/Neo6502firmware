@@ -52,12 +52,26 @@ void __not_in_flash_func(HWBusProbe)(void) {
 	pio1->fdebug = flags;  													// Sticky : write 1 to clear
 }
 
+//		T-50 : stall counts alone are too coarse — servicing an API command already stalls the
+//		PIO, because the 6502 spins on the control port while the firmware works. What tells a
+//		healthy firmware from a starved one is **how long** it stays away from the bus. These
+//		measure, in microseconds, the longest and the total time spent outside the bus loop in
+//		DSPSync (keyboard, USB task, blink) and in DSPHandler (one API command).
+//		Only the worst case is kept : it is what separates a healthy firmware from a starved
+//		one, and RAM is down to a few hundred spare bytes (T-13).
+static uint32_t syncMaxUs = 0,cmdMaxUs = 0;
+
+uint32_t HWBusTiming(uint8_t which) {
+	return (which == 0) ? syncMaxUs : cmdMaxUs;
+}
+
 uint32_t HWBusStalls(uint8_t which) {  										// 0 = TX (read not ready), 1 = RX (address FIFO)
 	return (which == 0) ? busStallTx : busStallRx;
 }
 
 void HWBusStallsReset(void) {
 	busStallTx = busStallRx = 0;
+	syncMaxUs = cmdMaxUs = 0;
 	pio1->fdebug = BUS_FDEBUG_TXSTALL | BUS_FDEBUG_RXSTALL;
 }
 
@@ -129,7 +143,10 @@ void __time_critical_func(CPUExecute)(void) {
             
             if ((uint8_t)value.value == 0x00) {
                 if (value.data.address == cp) {
-                    DSPHandler(cpuMemory + controlPort, cpuMemory);
+                    uint32_t t0 = timer_hw->timerawl;                           // T-50 : how long one API command
+                    DSPHandler(cpuMemory + controlPort, cpuMemory);             // keeps us away from the bus
+                    t0 = timer_hw->timerawl - t0;
+                    if (t0 > cmdMaxUs) cmdMaxUs = t0;
                 }
             }
             
@@ -140,7 +157,10 @@ void __time_critical_func(CPUExecute)(void) {
         }
         
         if (!count++) {
-            DSPSync();
+            uint32_t t0 = timer_hw->timerawl;                                   // T-50 : and how long the periodic
+            DSPSync();                                                          // work does (keyboard, USB, blink)
+            t0 = timer_hw->timerawl - t0;
+            if (t0 > syncMaxUs) syncMaxUs = t0;
         }
     }
 }

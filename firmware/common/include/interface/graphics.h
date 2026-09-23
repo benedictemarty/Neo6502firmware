@@ -72,6 +72,7 @@ uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (
 void HWBusProbe(void);  														// T-49 : sample the PIO stall flags (RAM, called by DSPSync)
 uint32_t HWBusStalls(uint8_t which);  											// T-49 : 0 = data not ready, 1 = address FIFO late
 void HWBusStallsReset(void);
+uint32_t HWBusTiming(uint8_t which);  											// T-50 : µs away from the bus (sync / command)
 void RNDFlashPause(void);  														// T-32b : park core 1 (RAM) around a flash write ...
 void RNDFlashResume(void);  													// ... and let it go
 int  RNDModeSupported(int mode); 												// Implementation specific : can this host display it ?

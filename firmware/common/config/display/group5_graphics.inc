@@ -160,6 +160,19 @@ GROUP 5 Graphics
         Set Flip Bits
         Sets the flip bits for drawing images. Bit 0 set causes a horizontal flip, bit 1 set causes a vertical flip.
 
+    FUNCTION 42 Get Bus Timing
+        {
+            uint32_t v = HWBusTiming(DPARAMS[0]);
+            DPARAMS[0] = v & 0xFF;DPARAMS[1] = (v >> 8) & 0xFF;DPARAMS[2] = (v >> 16) & 0xFF;DPARAMS[3] = v >> 24;
+        }
+    DOCUMENTATION
+        Returns in Parameters:0-3 a bus timing measure of Trinity T-50, chosen by Parameter:0 on entry : 0 the
+        longest DSPSync ever seen in microseconds (keyboard, USB task, blink), 1 the longest API command
+        (DSPHandler). Both are the time the firmware spends away from the 6502 bus : while it is there the PIO
+        stalls and the processor clock stops, which is normal for an API call and pathological when it lasts.
+        Counts of stalls alone (Function 5,41) cannot tell the two apart, hence these. Reset with 5,41 and $FF.
+        0 in the emulators.
+
     FUNCTION 41 Get Bus Stalls
         {
             if (DPARAMS[0] == 0xFF) HWBusStallsReset();

@@ -37,6 +37,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.1** (2026-09-23, premières mesures carte avec `BUS`) — **durée passée loin du bus (T-50)** et **outils
+  utilisables (T-51)**. La mesure au repos a montré que TX **et** RX montent, ce qui était prévisible : servir une
+  commande API cale forcément le PIO, puisque le 6502 boucle sur le port de contrôle pendant que le firmware
+  travaille. Compter les calages ne suffit donc pas — c'est leur **durée** qui sépare le sain du pathologique.
+  **`5,42 Get Bus Timing`** rend la plus longue `DSPSync` (P0 = 0 : clavier, tâche USB, clignotement) et la plus
+  longue commande API (P0 = 1), en microsecondes, chronométrées dans la boucle du bus par le timer matériel ; `BUS.NEO`
+  les affiche (`SY` et `CM`). **Enseignement immédiat : `DVI` reste à 0** — l'encodeur n'est jamais en retard, core 1
+  va bien. Cela écarte T-38 pour cette panne et confirme que les glitches de la barre de menus ne sont pas des lignes
+  en retard. **T-51** : `LATE` et `BUS` sortaient sur n'importe quelle touche, alors qu'il faut pouvoir taper pendant
+  la mesure — seul Échap sort désormais. `make test-api` 16/16 ; RAM 32 224 o libres (marge de 80 o sous `RAM_LIMIT`,
+  le prix de l'instrumentation).
+
 - **0.11.0** (2026-09-23, demande bmarty : instrumenter la carte sans sonde, tout doit passer par l'écran) —
   **compteurs de décrochage du bus 6502 (T-49)**, prérequis de T-48. La machine PIO génère l'horloge PHI2 du 6502
   (side-set GPIO 21) : quand le firmware est en retard, elle cale et l'horloge s'arrête — le processeur est **étiré**,

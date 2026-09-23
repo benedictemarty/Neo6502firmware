@@ -4,7 +4,8 @@
 ; garde la trace de ces calages ; DSPSync les échantillonne ~95 fois par seconde.
 ;   TX = la donnée d'une lecture n'était pas prête   RX = la file d'adresses non vidée à temps
 ; Affiche aussi 5,40 (lignes DVI en retard) pour comparer les deux famines.
-; Compteurs remis à zéro au lancement. Une touche : sortie.
+; Compteurs remis à zéro au lancement. Échap : sortie (les autres touches sont ignorées,
+; pour qu'on puisse taper pendant la mesure).
 ; Auteur : bmarty <bmarty@mailo.com>
 
 * = $800
@@ -81,6 +82,17 @@ c2:
   jsr hex
   lda buf
   jsr hex
+
+  ldx #<ssy                 ; SY : plus longue DSPSync en microsecondes (5,42 avec P0 = 0)
+  ldy #>ssy
+  jsr print
+  lda #0
+  jsr read42
+  ldx #<scm                 ; CM : plus longue commande API (P0 = 1)
+  ldy #>scm
+  jsr print
+  lda #1
+  jsr read42
   jsr cr
 
   lda #30                   ; ~0,3 s entre deux relevés
@@ -105,10 +117,32 @@ w2:
   ldx #2
   jsr api
   lda API_PARAMETERS
-  bne bye                   ; une touche : sortie (branchement court, loop est trop loin)
+  cmp #27                   ; seul Échap sort : on doit pouvoir marteler le clavier
+  beq bye                   ; pendant la mesure, c'est tout l'intérêt
   jmp loop
 bye:
   rts
+
+; read42 — A = index de mesure (0 sync, 1 commande) : 5,42 puis affiche les 4 octets
+read42:
+  sta API_PARAMETERS
+  lda #42
+  ldx #5
+  jsr api
+  ldx #3
+r2:
+  lda API_PARAMETERS,x
+  sta buf+16,x
+  dex
+  bpl r2
+  lda buf+19
+  jsr hex
+  lda buf+18
+  jsr hex
+  lda buf+17
+  jsr hex
+  lda buf+16
+  jmp hex
 
 api:
   sta API_FUNCTION
@@ -165,3 +199,5 @@ digit:
 stx:     .text "TX ", 0
 srx:     .text "  RX ", 0
 slate:   .text "  DVI ", 0
+ssy:     .text "  SY ", 0
+scm:     .text " CM ", 0

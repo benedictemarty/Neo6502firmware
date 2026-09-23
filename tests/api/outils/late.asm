@@ -1,6 +1,6 @@
 ; late.asm — 5,40 Get Late Scanlines (Trinity T-32c) : compteur des lignes DVI non encodées à temps
 ; (traits colorés sur carte). Tape des touches pendant qu'il tourne : le compteur monte si le second
-; coeur est affamé. Une touche quelconque : sortie. Outil carte (pas de journal RAM).
+; coeur est affamé — Échap seul en sort, les autres touches sont ignorées. Outil carte.
 ; Auteur : bmarty <bmarty@mailo.com>
 
 * = $800
@@ -57,8 +57,11 @@ w2:
   ldx #2
   jsr api
   lda API_PARAMETERS
-  beq loop
-  rts                       ; une touche : retour à l'appelant
+  cmp #27                   ; seul Échap sort : taper doit rester possible pendant la mesure
+  beq bye
+  jmp loop
+bye:
+  rts                       ; Échap : retour à l'appelant
 
 api:
   sta API_FUNCTION
