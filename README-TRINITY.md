@@ -37,6 +37,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.0** (2026-09-23, demande bmarty : instrumenter la carte sans sonde, tout doit passer par l'écran) —
+  **compteurs de décrochage du bus 6502 (T-49)**, prérequis de T-48. La machine PIO génère l'horloge PHI2 du 6502
+  (side-set GPIO 21) : quand le firmware est en retard, elle cale et l'horloge s'arrête — le processeur est **étiré**,
+  jamais nourri d'un octet faux. C'est la bonne nouvelle du programme PIO, et ça oriente T-48 : la panne ne vient pas
+  d'un octet corrompu sur le bus. Ces calages, le matériel les enregistre gratuitement dans `PIO_FDEBUG`, dont les bits
+  sont collants jusqu'à réécriture : `TXSTALL` quand la donnée d'une lecture n'était pas prête, `RXSTALL` quand la file
+  d'adresses n'a pas été vidée à temps. `HWBusProbe()` — **en RAM**, la leçon de T-46 — les échantillonne depuis
+  `DSPSync` (~95 Hz) et compte les fenêtres contenant au moins un calage ; la boucle du bus, elle, ne paie rien.
+  **`5,41 Get Bus Stalls`** rend les deux compteurs au 6502 (P0-3 TX, P4-7 RX, `$FF` en P0 pour remettre à zéro) et
+  l'outil **`BUS.NEO`** les affiche à l'écran avec `5,40` (lignes DVI en retard), pour voir laquelle des deux famines
+  se produit. Coût : 8 octets de RAM. Test `tests/api/busstall.asm` (0 sous `neo`, qui n'a pas de PIO).
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 376 o libres.
+
 - **0.10.12** (2026-09-23) — ⚠️ **la bissection de cette nuit n'a PAS trouvé la cause : elle a mesuré un effet de
   placement du code, et c'est désormais prouvé.** `trinity-0.10.12-USB.uf2` et `trinity-0.10.12b-banniere-USB.uf2` sont
   compilées du **même code source** et ne diffèrent que par la chaîne de version affichée au démarrage : la première

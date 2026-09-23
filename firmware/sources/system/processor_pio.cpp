@@ -23,6 +23,44 @@
 
 extern volatile bool irqAsserted;  											// tick.cpp (F-60)
 
+// ***************************************************************************************
+//
+//		T-49 : bus stall counters. The PIO state machine generates the 6502 clock (side-set
+//		on GPIO 21), so when the firmware is late the machine stalls and the clock simply
+//		stops : the 6502 is stretched, never fed a wrong byte. Those stalls are what a
+//		starved firmware looks like, and the hardware records them for free in PIO_FDEBUG,
+//		whose bits are sticky until written back. TXSTALL = the data of a read was not ready
+//		in time, RXSTALL = the address FIFO was not drained in time.
+//
+//		Sampled from DSPSync (~95 Hz), so a count is "how many sampling windows contained at
+//		least one stall", not the exact number of stalls — enough to tell a healthy binary
+//		(0) from a starved one, and it costs the bus loop nothing (T-46 : this must not add
+//		flash code to the critical path, hence __not_in_flash_func).
+//
+// ***************************************************************************************
+
+#define BUS_FDEBUG_TXSTALL (1u << 24)  										// SM0 : PIO_FDEBUG TXSTALL[27:24]
+#define BUS_FDEBUG_RXSTALL (1u << 0)   										// SM0 : PIO_FDEBUG RXSTALL[3:0]
+
+static uint32_t busStallTx = 0,busStallRx = 0;
+
+void __not_in_flash_func(HWBusProbe)(void) {
+	uint32_t flags = pio1->fdebug & (BUS_FDEBUG_TXSTALL | BUS_FDEBUG_RXSTALL);
+	if (flags == 0) return;
+	if (flags & BUS_FDEBUG_TXSTALL) busStallTx++;
+	if (flags & BUS_FDEBUG_RXSTALL) busStallRx++;
+	pio1->fdebug = flags;  													// Sticky : write 1 to clear
+}
+
+uint32_t HWBusStalls(uint8_t which) {  										// 0 = TX (read not ready), 1 = RX (address FIFO)
+	return (which == 0) ? busStallTx : busStallRx;
+}
+
+void HWBusStallsReset(void) {
+	busStallTx = busStallRx = 0;
+	pio1->fdebug = BUS_FDEBUG_TXSTALL | BUS_FDEBUG_RXSTALL;
+}
+
 void initPio() {
     uint offset = 0;
 

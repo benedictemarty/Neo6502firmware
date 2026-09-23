@@ -171,6 +171,9 @@ void HWReset(void) {
 // *******************************************************************************************************************************
 
 void KBDLockLEDUpdate(uint8_t locks) { (void)locks; }  							// T-40 : no keyboard LEDs here
+void HWBusProbe(void) {}  														// T-49 : no PIO, no bus to starve here
+uint32_t HWBusStalls(uint8_t which) { (void)which;return 0; }
+void HWBusStallsReset(void) {}
 void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 
 // T-26 : settings "flash" = storage/settings.flash

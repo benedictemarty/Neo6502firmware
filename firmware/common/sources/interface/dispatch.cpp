@@ -77,6 +77,7 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 void TIMECRITICAL(DSPSync)(void) 
 {
 	KBDSync();
+	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 

@@ -160,6 +160,22 @@ GROUP 5 Graphics
         Set Flip Bits
         Sets the flip bits for drawing images. Bit 0 set causes a horizontal flip, bit 1 set causes a vertical flip.
 
+    FUNCTION 41 Get Bus Stalls
+        {
+            if (DPARAMS[0] == 0xFF) HWBusStallsReset();
+            uint32_t t = HWBusStalls(0),r = HWBusStalls(1);
+            DPARAMS[0] = t & 0xFF;DPARAMS[1] = (t >> 8) & 0xFF;DPARAMS[2] = (t >> 16) & 0xFF;DPARAMS[3] = t >> 24;
+            DPARAMS[4] = r & 0xFF;DPARAMS[5] = (r >> 8) & 0xFF;DPARAMS[6] = (r >> 16) & 0xFF;DPARAMS[7] = r >> 24;
+        }
+    DOCUMENTATION
+        Returns how often the firmware was too slow to serve the 6502 bus (Trinity T-49, diagnostic ; 0 in the
+        emulators, which have no PIO). Parameters:0-3 count the sampling windows where the data of a read was not
+        ready in time (PIO TXSTALL), Parameters:4-7 those where the address FIFO was not drained in time (RXSTALL).
+        The PIO state machine generates the 6502 clock, so a stall stretches the processor rather than feeding it a
+        wrong byte. Sampled about 95 times a second, so these are windows containing at least one stall, not exact
+        counts : 0 means a healthy binary, anything growing means a starved firmware. Pass $FF in Parameter:0 to
+        reset both counters before measuring.
+
     FUNCTION 40 Get Late Scanlines
         {
             uint32_t n = RNDLateScanlines();
