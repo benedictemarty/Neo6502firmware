@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.11.5** (2026-09-23) — **traits rouges : le DMA passe devant les cœurs (T-56)**. L'outil `VRAMCHK` a tranché : la
+  **mémoire vidéo reste saine** pendant que les traits défilent. Le défaut est donc **après la mémoire**, dans le chemin
+  vers l'écran — et sans rapport avec la panne des programmes, qui reste ouverte (T-48). Les trois canaux TMDS sont
+  servis par **trois canaux DMA séparés**, dont PicoDVI ne demande jamais la priorité, alors que son propre commentaire
+  avertit : « we really don't want the FIFOs to bottom out ». Pendant la lecture d'un secteur sur la clé, core 0 copie
+  à pleine vitesse et prive ces canaux d'accès mémoire : une lane se vide et peint un trait — le rouge étant le
+  troisième. Une ligne dans `DVIStart` suffit :
+  `bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS`, ce que la fiche
+  technique recommande pour du DMA temps réel, sans coût mémoire. Cela explique aussi que le mode 1 soit épargné : il
+  n'a qu'un encodage par ligne et ses lanes éteintes lisent un canal noir constant, insensible à une famine.
+  RAM inchangée (32 408 o libres).
+
 - **0.11.4** (2026-09-23) — **débordement des tableaux MSC (T-54)** : une case au-delà, à chaque accès disque. En
   suivant les traits rouges jusqu'à leur source, on arrive à `usb_storage.cpp`, qui indexait `msc_fatfs_volumes[]` et
   `msc_volume_busy[]` — tous deux de taille `CFG_TUH_DEVICE_MAX`, soit **5** avec le hub — **par l'adresse USB

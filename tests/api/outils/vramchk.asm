@@ -17,10 +17,12 @@ API_ERROR      = $FF02
 API_PARAMETERS = $FF04
 
 ptr    = $F0
-buf    = $900                 ; 256 octets relus de la VRAM
-addr   = $A00                 ; offset courant dans la VRAM (24 bits)
-passes = $A04
-dname  = $A10                 ; nom du répertoire courant, préfixé longueur
+;	Les tampons vivent bien au-dessus du code : le programme part de $800 et fait ~600 octets,
+;	donc $900 et $A00 tombaient DEDANS — le premier bloc relu de la VRAM écrasait le programme.
+buf    = $1000                ; 256 octets relus de la VRAM
+addr   = $1100                ; offset courant dans la VRAM (24 bits)
+passes = $1104
+dname  = $1110                ; nom du répertoire courant, préfixé longueur
 
 start:
   stz dname                   ; chaîne vide = répertoire courant (3,17)
@@ -35,6 +37,14 @@ start:
   jsr print
   jsr cr
   stz passes
+  jsr scan                    ; l'écran est-il VRAIMENT propre après le CLS ? Sinon on
+  bcc round                   ; conclurait à tort à une corruption par le disque.
+  jsr home2
+  ldx #<sbase
+  ldy #>sbase
+  jsr print
+  jsr showpos
+  jmp hold
 
 round:
   jsr disk                    ; rafale d'accès disque
@@ -44,6 +54,28 @@ round:
   ldx #<sbad                  ; trouvé : offset et valeur
   ldy #>sbad
   jsr print
+  jsr showpos
+  ldx #<spass
+  ldy #>spass
+  jsr print
+  lda passes
+  jsr hex
+hold:
+  jsr cr                      ; on ne rend pas la main : le message doit rester lisible
+  ldx #<swait
+  ldy #>swait
+  jsr print
+h1:
+  lda #1
+  ldx #2
+  jsr api
+  lda API_PARAMETERS
+  cmp #27
+  bne h1
+  rts
+
+; showpos — affiche " offset = valeur " de l'octet trouvé
+showpos:
   lda addr+2
   jsr hex
   lda addr+1
@@ -55,9 +87,7 @@ round:
   lda #'='
   jsr wchar
   lda buf                     ; la valeur fautive a été recopiée en buf
-  jsr hex
-  jsr cr
-  rts
+  jmp hex
 next:
   inc passes
   jsr home2                   ; toujours la même ligne : le texte ne doit jamais défiler
@@ -230,3 +260,6 @@ digit:
 shead:  .text "VRAM CHECK (Echap = sortie)", 0
 sok:    .text "VRAM saine, passe ", 0
 sbad:   .text "CORROMPUE offset ", 0
+sbase:  .text "DEJA SALE avant disque, offset ", 0
+spass:  .text "  passe ", 0
+swait:  .text "Echap pour sortir", 0

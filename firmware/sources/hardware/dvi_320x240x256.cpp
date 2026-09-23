@@ -32,6 +32,7 @@
 #include "hardware/dma.h"
 #include "hardware/pio.h"
 #include "hardware/irq.h"
+#include "hardware/structs/bus_ctrl.h"  											// T-56 : DMA priority over the cores
 #include "dvi.h"
 #include "dvi_serialiser.h"
 #include "dvi_serialiser.pio.h"
@@ -303,6 +304,14 @@ void HWClockChanged(void) {
 }
 
 void DVIStart(void) {                                                             // Public and not inlined : Phosphoneo co-sim hooks this symbol (HLE).
+	//		T-56 : give the DMA priority over the cores for memory access. PicoDVI never asks
+	//		for it, yet its data channels must keep three PIO FIFOs fed with no margin at all —
+	//		its own comment says "we really don't want the FIFOs to bottom out". While a sector
+	//		is read from the USB key, core 0 copies at full speed and starves them : a lane runs
+	//		dry and paints a streak, red being the third one. It costs nothing and is what the
+	//		datasheet recommends for real time DMA (board 2026-09-23 : VRAM proven clean, so the
+	//		fault lies after memory, in the path to the screen).
+	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_DMA_R_BITS | BUSCTRL_BUS_PRIORITY_DMA_W_BITS;
 	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
