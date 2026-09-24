@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.1** (2026-09-25, question bmarty : « y a-t-il d'autres commandes intéressantes pour le debug ? ») — **trois
+  rapports de plus, un par ticket ouvert (T-74)**. **`!v`** donne le mode, les dimensions, les lignes en retard et
+  surtout le **compteur de trames** : core 1 l'incrémente au début de chaque trame, donc s'il monte pendant l'écran
+  noir de T-71 le signal vit et l'image est seulement fausse — s'il gèle, l'encodeur s'est arrêté. C'est le
+  discriminant que ni l'écran ni la télémétrie seule ne donnaient. **`!k`** dit si le clavier est monté, si Échap a
+  été vu et si la file contient quelque chose : la question de T-68, posée hors de l'écran. **`!p`** affiche les
+  adresses de `DSPSync`, `DBGFlush` et `DBGInitialise` — `2xxxxxxx` en RAM, `10xxxxxx` en flash — ce qui vérifie que
+  le port de debug **n'a pas lui-même enfreint la règle T-46** qu'il sert à surveiller, et donne un repère pour la
+  sensibilité au placement de T-48. **`!a`** enchaîne les cinq.
+  Coût : ~340 o de code en RAM, d'où **`RAM_LIMIT` porté de 233 500 à 234 500** ; 28,9 Ko de tas restants.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 872 o libres.
+
 - **0.16.0** (2026-09-25, demandes bmarty : une voie de debug, puis « un terminal permettant d'exécuter des
   commandes », puis « vérifier l'état des famines ou l'état de la RAM ») — **terminal de debug sur UART0 (T-73,
   T-74)**. Plusieurs défauts résistent parce qu'ils ne s'observent que sur carte et que le seul canal de mesure est

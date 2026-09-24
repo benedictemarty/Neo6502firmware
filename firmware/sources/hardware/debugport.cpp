@@ -182,14 +182,61 @@ static void __not_in_flash_func(DBGReportMemory)(void) {
 	DBGWrite("\r\n");
 }
 
+
+//		Video (T-71). The frame counter is the one number that settles the black screen :
+//		core 1 increments it at the start of every frame, so if it climbs while the screen
+//		is black the signal is alive and the picture is merely wrong ; if it freezes, the
+//		encoder has stopped and the screen is only reporting that.
+
+static void __not_in_flash_func(DBGReportVideo)(void) {
+	DBGWrite("\r\nvideo : ");
+	DBGPair("mode",(uint32_t)GFXGetMode());
+	DBGPair("trames",(uint32_t)RNDGetFrameCount());
+	DBGPair("late",RNDLateScanlines());
+	DBGPair("x",gMode.xGSize);
+	DBGPair("y",gMode.yGSize);
+	DBGPair("stride",gMode.stride);
+	DBGWrite("\r\n");
+}
+
+//		Keyboard (T-68). Whether the keyboard came up at all, and whether Escape ever
+//		reached the firmware — the question the boot menu could not answer from the screen.
+
+static void __not_in_flash_func(DBGReportKeyboard)(void) {
+	DBGWrite("\r\nclavier : ");
+	DBGPair("present",KBDIsPresent() ? 1 : 0);
+	DBGPair("esc_vu",KBDEscapeSeen() ? 1 : 0);
+	DBGPair("file",KBDIsKeyAvailable() ? 1 : 0);
+	DBGWrite("\r\n");
+}
+
+//		Placement (T-46, T-48). A function in RAM answers 0x2000xxxx, one in flash
+//		0x10xxxxxx. DSPSync and DBGFlush must be in RAM : this is the check that the debug
+//		port has not itself broken the rule it exists to police. The flash figure is there
+//		for comparison, and because T-48 says placement is what makes the board fail.
+
+static void __not_in_flash_func(DBGReportPlacement)(void) {
+	DBGWrite("\r\nplacement : ");
+	DBGPair("DSPSync",(uint32_t)(uintptr_t)&DSPSync);
+	DBGPair("DBGFlush",(uint32_t)(uintptr_t)&DBGFlush);
+	DBGPair("DBGInit",(uint32_t)(uintptr_t)&DBGInitialise);
+	DBGWrite("(2xxxxxxx = RAM, 10xxxxxx = flash)\r\n");
+}
+
 static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 	switch (c) {
 		case 's': DBGReportStarvation();break;
 		case 'm': DBGReportMemory();break;
+		case 'v': DBGReportVideo();break;
+		case 'k': DBGReportKeyboard();break;
+		case 'p': DBGReportPlacement();break;
+		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
+				  DBGReportMemory();DBGReportPlacement();break;
 		case 'z': HWBusStallsReset();DBGWrite("\r\ncompteurs de bus remis a zero\r\n");break;
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502
 		default:
-			DBGWrite("\r\n!s famines  !m memoire  !z remise a zero  !! un '!'\r\n");
+			DBGWrite("\r\n!s famines  !v video  !k clavier  !m memoire  !p placement\r\n"
+					 "!a tout  !z remise a zero  !! un '!'\r\n");
 			break;
 	}
 }

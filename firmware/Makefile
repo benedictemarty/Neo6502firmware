@@ -99,7 +99,12 @@ build: prelim always
 #				(32 o de FIFO à 95 Hz), donc un anneau plus petit perdrait justement la trace des
 #				moments chargés — ceux qu'on veut observer. Marge vérifiée : 29,2 Ko de tas
 #				restants, dont ~11,5 Ko de tampons TMDS ; la pile de core 0 est dans le scratch.
-RAM_LIMIT ?= 233500
+#
+#				2026-09-25 (T-74) : 233500 -> 234500. Les rapports !v !k !p ajoutent ~340 o de code
+#				en RAM — obligatoire là encore, puisqu'ils partent de DBGPoll, donc de DSPSync.
+#				Ils ne laissaient que 228 o de marge, trop peu pour la suite. Marge vérifiée :
+#				28,9 Ko de tas restants.
+RAM_LIMIT ?= 234500
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "
