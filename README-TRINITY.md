@@ -42,6 +42,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.3** (2026-09-24, fin de la relecture) — dernier défaut trouvé dans les tables API :
+  `3,23 Get Current Working Directory` écrivait à une adresse **et** sur une longueur toutes deux données par le
+  programme, sans vérifier leur somme ; près du haut de la mémoire, l'écriture la dépassait. Relus **sans défaut** :
+  les sept tables de la toolbox, les groupes 4, 6, 7, 8, 9, 11 et 13, ainsi que `QDSetPattern`, les chaînes de
+  QuickDraw et les blocs du modem CDC, qui bornent tous correctement.
+  **Bilan de la relecture (0.12.0 à 0.12.3) : 19 défauts corrigés** sur environ 15 000 lignes — dont une faute
+  matérielle atteignable en une commande (`2,10` sur la ligne 0), un gel complet de la machine (lecture série sans
+  octet disponible) et une écriture sans aucune limite (blitter `12,3`). Tous du même profil : ce qu'ils écrasent
+  dépend de la disposition des variables, donc du binaire — la signature de T-48.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 240 o libres.
+
 - **0.12.2** (2026-09-24, relecture lot 3) — **le blitter complexe pouvait écrire sans aucune limite (T-61)**.
   `12,3` ne vérifiait que la **première** adresse de chaque zone : `width` étant sur 16 bits, une seule ligne pouvait
   copier 64 Ko, et `height` (jusqu'à 255) fois `stride` (jusqu'à 65535) faisait avancer le pointeur de près de

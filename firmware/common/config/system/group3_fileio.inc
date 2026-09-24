@@ -304,9 +304,12 @@ GROUP 3 File I/O
         This call should be used on open files and may return an error if the file is closed.
 
     FUNCTION 23 Get Current Working Directory.
-        s = (char *)(cpuMemory+DSPGetInt16(DPARAMS,0));
-        *DERROR = FIOGetCurrentDirectory(s+1,DPARAMS[2]);
-        *s = strlen(s+1);
+        {   uint16_t a = DSPGetInt16(DPARAMS,0);uint16_t room = MEMORY_SIZE - a;      // T-61 : address AND length come
+            uint8_t maxLen = (room > 256) ? DPARAMS[2] : (uint8_t)((room > 1) ? room-1 : 0);  // from the program : near the
+            s = (char *)(cpuMemory+a);                                                // top of memory, the write ran past it
+            *DERROR = FIOGetCurrentDirectory(s+1,maxLen);
+            *s = strlen(s+1);
+        }
 
     DOCUMENTATION
         Copies the current working directory into the String at address Parameters:0,1. which is of maximum length Parameters:2
