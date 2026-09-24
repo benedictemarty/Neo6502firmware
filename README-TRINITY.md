@@ -42,6 +42,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.15.0** (2026-09-24, constat carte bmarty : « je n'ai pas vmode sous dos ») — **NeoDOS 0.24.0 embarqué, avec la
+  commande `MODE` (T-69)**. Aucune des 35 commandes de NeoDOS ne touchait au mode vidéo : le **mode 1 de Trinity
+  n'était joignable que depuis NeoBASIC**, par `VMODE`. Or on démarre sous NeoDOS — le mode Hercules était donc, en
+  pratique, hors d'atteinte. `MODE` affiche le mode courant et ses dimensions (`5,10 Get Mode`), `MODE n` en change
+  (`5,9 Set Mode`) ; un numéro que le firmware refuse donne `Invalid video mode` et `ERRORLEVEL 1`.
+  Côté firmware, seule l'image résidente change : `neodos_binary.h` régénérée depuis `~/Neo6502Msdos/build/neodos.bin`
+  (`make -C firmware kernel`). **À retenir** : `EXIT` recharge l'image **embarquée dans le firmware**, pas le binaire
+  local — c'est ce qui faisait échouer le test `09_exit` de NeoDOS depuis sa 0.23.0, sa référence étant restée à
+  `0.22.0`. Régénérer l'image fait donc partie de toute livraison de NeoDOS.
+  `make test-api` 16/16, `make test-toolbox` 10/10, NeoDOS 49/49, Phosphoneo 34/34 ; RAM 32 100 o libres.
+
 - **0.14.1** (2026-09-24, retour carte bmarty : « le Esc au démarrage n'agit plus ») — **régression de la 0.13.0
   corrigée (T-68)**. En donnant aux logos un plancher de 3 s (`USB_FLOOR`, T-66) pendant lequel la console est muette,
   la 0.13.0 a repoussé de 3 à 4 s le message `Boot : auto … (Esc = menu, 3 s)` — **et avec lui la fenêtre où Échap
