@@ -28,6 +28,8 @@ void KBDSync(void);
 void KBDCheckTimer(void);
 void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers);
 uint8_t *KBDGetStateArray(void);
+bool KBDEscapeSeen(void);  													// T-68 : Escape pressed since the reset
+void KBDClearEscapeSeen(void);
 uint8_t KBDGetModifiers(void);
 bool KBDIsKeyAvailable(void);
 uint8_t KBDGetKey(void);

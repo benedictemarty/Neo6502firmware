@@ -42,6 +42,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.14.1** (2026-09-24, retour carte bmarty : « le Esc au démarrage n'agit plus ») — **régression de la 0.13.0
+  corrigée (T-68)**. En donnant aux logos un plancher de 3 s (`USB_FLOOR`, T-66) pendant lequel la console est muette,
+  la 0.13.0 a repoussé de 3 à 4 s le message `Boot : auto … (Esc = menu, 3 s)` — **et avec lui la fenêtre où Échap
+  était scruté**. Or on appuie pendant les logos, ce que l'ancienne séquence permettait puisque le message venait
+  aussitôt : la frappe arrivait désormais **trop tôt** et était ignorée. Le gestionnaire clavier **retient**
+  maintenant l'appui (`escapeSeen`, au même endroit que le drapeau `$80` du port de contrôle, remis à zéro par le
+  reset clavier de P1), et `BOOTSelect` le consulte **avant** ses deux attentes. Échap compte donc dès que le clavier
+  est énuméré, logos compris ; l'appui consommé par le menu est retiré du port de contrôle pour que le 6502 ne le
+  voie pas une seconde fois.
+  À savoir : ce chemin **n'est pas testable automatiquement** — `BOOTSelect` tourne dans `DSPReset`, avant le premier
+  cycle 6502, donc ni `tests/api` ni le `--type-keys` de Phosphoneo (programmé en cycles) ne peuvent l'atteindre ;
+  vérifié en essayant sept instants de frappe, aucun n'ouvre le menu, y compris avant la régression. **Validation sur
+  carte uniquement.**
+  `make test-api` 16/16, `make test-toolbox` 10/10, Phosphoneo 34/34 ; RAM 32 100 o libres.
+
 - **0.14.0** (2026-09-24, demande bmarty : « tu peux faire un dump spécifique au Hercules, pas MDA ? ») — **la police
   du mode 1 est celle du vrai générateur de caractères MDA (T-67)**. Réponse à la question posée : **il n'existe pas
   de police Hercules distincte**. En mode texte, la carte Hercules reprend tel quel le générateur de caractères

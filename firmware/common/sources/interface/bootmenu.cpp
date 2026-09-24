@@ -53,14 +53,21 @@ void BOOTSelect(void) {
     if (autoChoice >= 0) {                                                      // Auto : start it unless Escape within 1 s
         CONWriteString("Boot : auto %s (Esc = menu, 3 s)\r",bootNames[autoChoice]);
         bootChoice = autoChoice;
+        //  T-68 : Escape counts from the moment the keyboard is up, logos included. Since T-66
+        //  the console is quiet for the first 3 s, so this prompt appears well after one has
+        //  pressed the key — waiting only from here made Escape look dead (board, bmarty).
+        bool menu = KBDEscapeSeen();
         uint32_t end = TMRRead() + BOOT_KEYBOARD_WAIT;                          // T-28 : wait for the USB keyboard first
-        while (!KBDIsPresent() && (int32_t)(end - TMRRead()) > 0) KBDSync();  // (enumerated after the key and the modem)
-        end = TMRRead() + BOOT_AUTO_TIMEOUT;                                    // then 3 s for Escape
-        bool menu = false;
-        while ((int32_t)(end - TMRRead()) > 0) {
+        while (!menu && !KBDIsPresent() && (int32_t)(end - TMRRead()) > 0) {   // (enumerated after the key and the modem)
             KBDSync();
-            if (KBDGetKey() == 27) { menu = true;break; }
+            menu = KBDEscapeSeen();
         }
+        end = TMRRead() + BOOT_AUTO_TIMEOUT;                                    // then 3 s for Escape
+        while (!menu && (int32_t)(end - TMRRead()) > 0) {
+            KBDSync();
+            if (KBDGetKey() == 27 || KBDEscapeSeen()) menu = true;
+        }
+        KBDClearEscapeSeen();                                                   // Not carried into the session
         if (!menu) { CONWriteString("-> %s\r",bootNames[bootChoice]);return; }
         bootChoice = -1;
     }

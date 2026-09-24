@@ -24,6 +24,7 @@
 //		keycode 8 is byte 1 bit 0 etc.
 //
 static uint8_t keyboardState[KBD_MAX_KEYCODE+1];
+static bool escapeSeen = false;  											// T-68 : Escape pressed since the last reset
 static uint8_t keyboardModifiers;
 //
 //		Queue of ASCII keycode presses.
@@ -74,11 +75,13 @@ void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers) {
 
 	if (isDown && keyCode == KEY_ESC) {   										// Pressed ESC
 		cpuMemory[controlPort+3] |= 0x80;  										// Set that flag.
+		escapeSeen = true;  													// T-68 : and remember it for the boot menu
 	}
 
 	if (keyCode == 0xFF) { 														// Reset request
 		queueHead = 0; 															// Empty keyboard queue
 		queueTail = 0; 															// Empty keyboard queue
+		escapeSeen = false;  													// T-68
 		for (unsigned int i = 0;i < sizeof(keyboardState);i++) {   				// No keys down.
 			keyboardState[i] = 0; 
 		}
@@ -139,6 +142,19 @@ void __time_critical_func(KBDCheckTimer)(void) {
 uint8_t *KBDGetStateArray(void) {
 	return keyboardState;
 }
+
+//		T-68 : the boot menu asks whether Escape was pressed at any time since the keyboard
+//		manager was reset — not only during its own 3 s window. Since T-66 the logos hold the
+//		screen for 3 s before the prompt appears, and that is when one presses Escape.
+
+bool KBDEscapeSeen(void) {
+	return escapeSeen;
+}
+
+void KBDClearEscapeSeen(void) {
+	escapeSeen = false;
+	cpuMemory[controlPort+3] &= 0x7F;  											// That Escape has been consumed by the
+}  																				// boot menu : the 6502 must not see it too
 
 uint8_t KBDGetModifiers(void) {
 	return keyboardModifiers;
