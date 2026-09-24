@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.15.1** (2026-09-24, retour carte bmarty : « toujours pas ») — **mesure : le firmware dit s'il a vu Échap
+  (T-68b)**. La correction T-68 n'a pas suffi sur carte, et deviner a assez duré. La ligne `USB settled` porte
+  maintenant deux témoins, relevés **avant** que le menu ne décide : **`KEY`** si le clavier a produit au moins un
+  caractère pendant la phase silencieuse — donc s'il était énuméré et si la frappe est arrivée — et **`ESC`** si le
+  drapeau que lit `BOOTSelect` est posé. Les trois issues se lisent directement : `ESC` sans menu accuse
+  `BOOTSelect` ; `KEY` sans `ESC` accuse le mappage de la touche ; **aucun des deux** dit que le clavier n'était pas
+  encore énuméré quand la touche a été pressée — et dans ce cas aucun drapeau ne rattrapera jamais une frappe que le
+  matériel n'a pas vue, il faudra afficher l'invite **pendant** les logos.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 100 o libres.
+
 - **0.15.0** (2026-09-24, constat carte bmarty : « je n'ai pas vmode sous dos ») — **NeoDOS 0.24.0 embarqué, avec la
   commande `MODE` (T-69)**. Aucune des 35 commandes de NeoDOS ne touchait au mode vidéo : le **mode 1 de Trinity
   n'était joignable que depuis NeoBASIC**, par `VMODE`. Or on démarre sous NeoDOS — le mode Hercules était donc, en

@@ -46,5 +46,10 @@ void USBWaitSettled(void) {
 //		The console is quiet while the logos show, so what the barrier found is announced here,
 //		once the text phase has begun.
 void USBReport(void) {
-	CONWriteString("USB settled (%d ms, %d dev)\r",settleMs,eventCount);
+	//	T-68b : say whether the keyboard was seen at all, and whether Escape reached the
+	//	firmware during the silent phase. Escape at boot still did not open the menu on the
+	//	board (bmarty 2026-09-24) and guessing has run its course : KEY means the keyboard
+	//	produced at least one character, ESC means the flag the boot menu reads is set.
+	CONWriteString("USB settled (%d ms, %d dev)%s%s\r",settleMs,eventCount,
+						KBDIsKeyAvailable() ? " KEY" : "",KBDEscapeSeen() ? " ESC" : "");
 }
