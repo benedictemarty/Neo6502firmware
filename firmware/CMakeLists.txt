@@ -61,6 +61,13 @@ endif()
 #   sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
 add_subdirectory(${picodvi_SOURCE_DIR}/software/libdvi ${picodvi_BINARY_DIR})
 
+#   T-58 : five TMDS buffers instead of three were tried on the board (2026-09-24) and changed
+#   nothing — the streaks and the late scanline counter stayed. The encoder does not lack SLACK,
+#   it lacks THROUGHPUT : while core 0 works the memory for a whole disk transfer, a reserve of
+#   buffers empties instead of absorbing. Left at the default, since the 7,7 Ko of heap bought
+#   nothing. Worth knowing for later : those buffers are malloc'd by dvi_init, so their cost is
+#   heap, not the RAM_LIMIT budget that had ruled this idea out.
+
 add_library(fatfs INTERFACE)
 # Trinity : FatFs for the USB key now lives in lib/fatfs (copy of TinyUSB 0.16's lib/fatfs, R0.15 ; TinyUSB 0.21 no longer bundles it)
 target_sources(fatfs INTERFACE

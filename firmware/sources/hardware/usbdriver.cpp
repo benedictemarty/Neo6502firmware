@@ -32,17 +32,31 @@
 
 static short lastReport[KBD_MAX_KEYCODE] = { 0 };                               // state at last HID report.
 
-// T-40 (withdrawn in 0.10.12) : lighting the Caps/Num/Scroll Lock LEDs means sending a HID output
-// report, which is a control transfer. Issued from tuh_hid_mount_cb and from the report callback —
-// that is, from inside tuh_task — it wrecked the USB host stack on the board : from 0.10.5 on, every
-// program died shortly after start (legdiag, NeoLegacy). Found by bissection with bmarty, 2026-09-23.
-// This is the ground T-31 describes : on the RP2040 TinyUSB shares endpoint EPX between the MSC bulk
-// transfers and the HID interrupt ones. The lock state itself stays (keyboard.cpp) : Function 2,23
-// reads it and T-41 needs it to read the keys. Only the LEDs are gone, to be done again safely
-// (request queued and sent from the main loop, outside any callback).
+// T-65 : the HID output report, done safely this time. Lighting the lock LEDs means a control
+// transfer ; issued from tuh_hid_mount_cb or from the report callback — that is, from inside
+// tuh_task — it wrecked the USB host stack, and from 0.10.5 on every program died shortly after
+// start (bissection with bmarty, 2026-09-23, T-40 withdrawn in 0.10.12). It is needed for more
+// than the LEDs : a keyboard with an EMBEDDED numeric keypad (the compact kind, where j k l give
+// 1 2 3) only switches it when the HOST tells it Num Lock is on, and this report is how. Without
+// it, that keypad can never work — which is what bmarty saw on his 1A2C:0B2A.
+// So : the request is only recorded here, and sent from KBDSync, between two tuh_task() calls,
+// never from inside one.
+
+static uint8_t kbdLedDev = 0xFF,kbdLedInst = 0;                                 // Keyboard interface to talk to
+static volatile bool kbdLedPending = false;                                     // A report is waiting to be sent
+static uint8_t kbdLedWanted = 0;                                                // What to send
 
 void KBDLockLEDUpdate(uint8_t locks) {
-    (void)locks;                                                                // No HID output report : see above
+    kbdLedWanted = locks;                                                       // Recorded, not sent : we may well
+    kbdLedPending = true;                                                       // be inside a TinyUSB callback here
+}
+
+// Called from KBDSync only, outside tuh_task. Bits match HID : num, caps, scroll.
+static void usbSendPendingLeds(void) {
+    if (!kbdLedPending || kbdLedDev == 0xFF) return;
+    static uint8_t leds;                                                        // Must outlive the call (async transfer)
+    leds = kbdLedWanted;
+    if (tuh_hid_set_report(kbdLedDev,kbdLedInst,0,HID_REPORT_TYPE_OUTPUT,&leds,1)) kbdLedPending = false;
 }
 
 static void usbProcessReport(uint8_t const *report) {
@@ -97,6 +111,8 @@ void tuh_hid_mount_cb(uint8_t dev_addr, uint8_t instance, uint8_t const* desc_re
 
     case HID_ITF_PROTOCOL_KEYBOARD:
         KBDSetPresent(true);                                                    // Boot menu waits for it (T-28)
+        kbdLedDev = dev_addr;kbdLedInst = instance;                             // T-65 : where the report goes
+        KBDLockLEDUpdate(KBDGetLocks());                                        // Queued, sent by KBDSync
         CONWriteString("USB keyboard found\r");
         break;
 
@@ -182,7 +198,7 @@ void __time_critical_func(KBDSync)(void) {
     if (tuh_task_event_ready()) {
       tuh_task_ext(0, false);
     }
-    
+    usbSendPendingLeds();                                                       // T-65 : between two tuh_task calls
     KBDCheckTimer();
     
 }

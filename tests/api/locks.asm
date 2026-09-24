@@ -3,11 +3,11 @@
 ; du pavé (/ * - +) et son Entrée sont enfin lus. Le firmware démarre Num Lock éteint.
 ; Scancodes HID injectés par le crochet hid: (locks.args) :
 ;   04 (a) 39 (Caps) 04 (a) 5D (KP5) 60 (KP8) 53 (Num) 5D (KP5) 57 (KP+) 54 (KP/) 58 (KP Entrée) 39 04
-; Sortie attendue (7 touches lues, les verrous et les touches muettes n'entrent pas dans la file) :
-;   KEYS 61 41 17 35 2B 2F 0D 61 / LOCK 01 / END
-;   61 a, 41 A (Caps), 17 curseur haut (KP8, Num éteint), 35 '5' (Num allumé), 2B '+', 2F '/',
-;   0D Entrée du pavé, 61 a (Caps relâché) ; LOCK 01 = Num Lock seul (2,23).
-; KP5 avec Num Lock éteint n'a rien à donner : il ne produit aucune touche, d'où 8 lectures pour 12 frappes.
+; Sortie attendue (9 touches lues ; les verrous n'entrent pas dans la file) :
+;   KEYS 61 41 35 38 35 2B 2F 0D 61 / LOCK 01 / END
+;   61 a, 41 A (Caps), puis le pavé qui donne TOUJOURS ses chiffres (T-64) : 35 '5', 38 '8',
+;   35 '5' de nouveau après Num Lock, 2B '+', 2F '/', 0D Entrée du pavé, 61 a (Caps relâché).
+;   LOCK 01 = Num Lock seul (2,23) : le verrou garde son état, il ne change plus la lecture.
 ; SPDX-License-Identifier: EUPL-1.2
 ; Auteur : bmarty <bmarty@mailo.com>
 ;   64tass --mw65c02 --nostart --output=locks.neo6502 locks.asm
@@ -33,10 +33,17 @@ start:
   lda #12
   jsr wchar                 ; CLS
 
-  ldx #<skeys               ; KEYS : les 8 touches lues par 2,1
+flush:                      ; vider la file clavier : un résidu s'y glissait et décalait tout
+  lda #1
+  ldx #2
+  jsr api
+  lda API_PARAMETERS
+  bne flush
+
+  ldx #<skeys               ; KEYS : les touches lues par 2,1
   ldy #>skeys
   jsr print
-  lda #8
+  lda #9
   sta cnt
 kloop:
   lda #1                    ; 2,1 Read Character (attend une touche)

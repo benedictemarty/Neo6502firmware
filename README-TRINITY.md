@@ -42,6 +42,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.4** (2026-09-24) — **le clavier de bmarty a un pavé numérique intégré, et il lui fallait le rapport HID (T-65)**.
+  « Le Num Lock ne fonctionne pas », « la touche **l** devrait afficher le chiffre **3** » : cette seconde phrase est la
+  signature d'un pavé **intégré**, celui des claviers compacts où `j k l` donnent `1 2 3`. Le relevé du clavier sur le
+  PC le confirme — un **1A2C:0B2A**, deux interfaces HID. Or ce basculement est fait **par le clavier lui-même**, et il
+  ne le fait que si l'hôte lui envoie le **rapport de sortie HID** annonçant Num Lock : exactement celui qui allume les
+  diodes. En retirant T-40 en 0.10.12, parce qu'elle détruisait la pile USB, j'avais donc aussi privé ce clavier du
+  seul moyen d'apprendre l'état du verrou. Refait comme le backlog le prévoyait : la demande est **enregistrée** par
+  `KBDLockLEDUpdate` et **émise par `KBDSync`, entre deux `tuh_task()`** — jamais depuis un callback, ce qui était la
+  faute de T-40.
+  **T-64** : le pavé donne désormais **toujours** ses chiffres (décision bmarty, revient sur T-41). Num Lock garde son
+  état et sa lecture par `2,23`, mais ne change plus ce que produisent les touches.
+  **T-58** : passer de 3 à 5 tampons TMDS a été essayé sur carte et n'a **rien changé** — l'encodeur ne manque pas
+  d'avance mais de débit. Revenu au défaut, l'essai est consigné.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 172 o libres.
+
 - **0.12.3** (2026-09-24, fin de la relecture) — dernier défaut trouvé dans les tables API :
   `3,23 Get Current Working Directory` écrivait à une adresse **et** sur une longueur toutes deux données par le
   programme, sans vérifier leur somme ; près du haut de la mémoire, l'écriture la dépassait. Relus **sans défaut** :

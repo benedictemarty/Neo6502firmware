@@ -41,12 +41,10 @@ static uint32_t nextRepeat = 9999;  											// Time of next repeat.
 //
 static uint8_t lockState = 0;
 //
-//		Keycode the keypad was mapped to when pressed, so releasing it undoes the same mapping
-//		even if Num Lock was toggled while the key was held down.
+//		T-64 : the keypad mapping no longer depends on any lock, so it is the same on press and
+//		on release — the padDown table that remembered it is gone.
 //
 #define KBD_PAD_FIRST KEY_KPSLASH   											// $54..$63 : the whole keypad
-#define KBD_PAD_COUNT (KEY_KPDOT-KEY_KPSLASH+1)
-static uint8_t padDown[KBD_PAD_COUNT];
 
 static uint8_t KBDMapToASCII(uint8_t keyCode,uint8_t modifiers);
 static uint8_t KBDKeypadMap(uint8_t keyCode);
@@ -69,12 +67,9 @@ void KBDEvent(uint8_t isDown,uint8_t keyCode,uint8_t modifiers) {
 		KBDLockLEDUpdate(lockState);  											// Light the LEDs of the keyboard.
 	}
 
-	if (keyCode >= KBD_PAD_FIRST && keyCode <= KEY_KPDOT) {  					// T-41 : keypad follows Num Lock
-		if (isDown) {
-			padDown[keyCode-KBD_PAD_FIRST] = KBDKeypadMap(keyCode);  			// Remember the mapping used
-		}
-		keyCode = padDown[keyCode-KBD_PAD_FIRST];  								// so key up matches key down.
-		if (keyCode == 0) return;  												// KP5 with Num Lock off : nothing.
+	if (keyCode >= KBD_PAD_FIRST && keyCode <= KEY_KPDOT) {  					// T-64 : keypad, always the figures
+		keyCode = KBDKeypadMap(keyCode);
+		if (keyCode == 0) return;
 	}
 
 	if (isDown && keyCode == KEY_ESC) {   										// Pressed ESC
@@ -241,17 +236,17 @@ static uint8_t KBDMapToASCII(uint8_t keyCode,uint8_t modifiers) {
 //
 // ***************************************************************************************
 
+//		T-64 (decision bmarty, board 2026-09-24) : the keypad now always gives its figures,
+//		whatever the lock says — "the keys marked 1234567890 should show the figure, whether
+//		L is 0 or 1". T-41 had made Num Lock switch them to the navigation keys printed on
+//		them, with the lock off at start ; in use that meant a keypad that typed nothing
+//		recognisable. Num Lock keeps its state and its reading through Function 2,23, it just
+//		no longer changes what the keys produce. The arrow and Home/End keys of the main
+//		block are unaffected — they are separate keys with their own scancodes.
 static uint8_t KBDKeypadMap(uint8_t keyCode) {
-	static const uint8_t navigation[] = {  										// KP1..KP9 then KP0
-		KEY_END,KEY_DOWN,KEY_PAGEDOWN,KEY_LEFT,0,KEY_RIGHT,KEY_HOME,KEY_UP,KEY_PAGEUP,KEY_INSERT
-	};
 	if (keyCode == KEY_KPENTER) return KEY_ENTER;  								// Same key state as the main Enter
-	if (keyCode >= KEY_KP1 && keyCode < KEY_KP1+10) {  							// The ten figure keys
-		return (lockState & KBD_LOCK_NUM) ? keyCode-KEY_KP1+KEY_1 : navigation[keyCode-KEY_KP1];
-	}
-	if (keyCode == KEY_KPDOT) {  												// . or Delete
-		return (lockState & KBD_LOCK_NUM) ? KEY_DOT : KEY_DELETE;
-	}
+	if (keyCode >= KEY_KP1 && keyCode < KEY_KP1+10) return keyCode-KEY_KP1+KEY_1;   // The ten figure keys
+	if (keyCode == KEY_KPDOT) return KEY_DOT;  									// The decimal point
 	return keyCode;  															// / * - + : mapped to ASCII above
 }
 
