@@ -19,6 +19,7 @@
 static uint32_t lastEvent = 0;                                                  // TMRRead() of the last enumeration event
 static uint16_t eventCount = 0;
 static bool settled = false;
+static int settleMs = 0;  														// T-66
 
 void USBNoteEvent(void) {
 	lastEvent = TMRRead();
@@ -35,8 +36,15 @@ void USBWaitSettled(void) {
 		KBDSync();                                                              // Serve the USB host : this is where enumeration happens
 		uint32_t now = TMRRead();
 		if (now - start >= USB_CEILING) break;                                  // Bounded : nothing (or a slow device) does not hang the boot
+		if (now - start < USB_FLOOR) continue;                                  // T-66 : hold the logos on screen first
 		if (eventCount > 0 && now - lastEvent >= USB_QUIET) break;              // Quiet bus after the last mount
 	}
 	settled = true;
-	CONWriteString("USB settled (%d ms, %d dev)\r",(int)((TMRRead() - start) * 10),eventCount);
+	settleMs = (int)((TMRRead() - start) * 10);  								// T-66 : reported later, in P2
+}
+
+//		The console is quiet while the logos show, so what the barrier found is announced here,
+//		once the text phase has begun.
+void USBReport(void) {
+	CONWriteString("USB settled (%d ms, %d dev)\r",settleMs,eventCount);
 }

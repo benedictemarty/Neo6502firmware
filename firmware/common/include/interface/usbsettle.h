@@ -17,7 +17,10 @@
 
 #define USB_QUIET   30                                                          // 300 ms without an enumeration event, after the first one
 #define USB_CEILING 400                                                         // At most 4 s (nothing plugged, or a device that never comes up)
+#define USB_FLOOR   300                                                         // T-66 : at least 3 s, so the logos can be seen — enumeration
+                                                                                // happens during this pause anyway, so it costs nothing but the wait
 
 void USBNoteEvent(void);                                                        // Called by every mount/umount callback
-void USBWaitSettled(void);                                                      // P1 : returns when the bus is quiet (or at the ceiling)
+void USBWaitSettled(void);
+void USBReport(void);  															// T-66 : printed in P2, after the logo pause                                                      // P1 : returns when the bus is quiet (or at the ceiling)
 bool USBIsSettled(void);                                                        // True once the barrier has been passed

@@ -481,7 +481,15 @@ static void CONInsertCharacter(void) {
 //
 // ***************************************************************************************
 
+//		T-66 : during the logo pause, nothing must be written — the console draws into the same
+//		memory as the logos, and the enumeration messages scrolled them off the screen. Quiet
+//		mode simply drops what is written ; a summary is printed once the pause is over.
+static bool conQuiet = false;
+
+void CONSetQuiet(bool quiet) { conQuiet = quiet; }
+
 void CONWrite(int c) {
+	if (conQuiet) return;  													// T-66 : logos are on screen
 	if (consoleEcho) {  														// 2,20 : text and newlines go to the debug UART / stderr
 		if (c == CC_ENTER) { FDBWrite(13);FDBWrite(10); }
 		else if ((c >= 32 && c < 127) || (c >= 0xA0 && consoleEcho > 1)) FDBWrite((uint8_t)c);

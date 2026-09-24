@@ -96,7 +96,6 @@ void TIMECRITICAL(DSPSync)(void)
 // ***************************************************************************************
 
 static void DSPResetP0(void) {  												// P0 : hardware and firmware state only
-	const char bootString[] = PROMPT;
 	MEMInitialiseMemory();                                                      // Set up memory, load kernel ROM
 	MSEInitialise();  															// Mouse first, before starting graphics.
 	CURInitialise();
@@ -114,23 +113,30 @@ static void DSPResetP0(void) {  												// P0 : hardware and firmware state 
 	IRQSetTick(0);                                                              // No interrupt tick, no frame IRQ (T-14)
 	IRQSetFrame(0);
 	LOGDrawLogo();                                                              // Draw logo
-	CONWrite(0x80+3);                                                           // Yellow text
-	for (int i = 0;i < 19;i++) CONWrite(19);
-	const char *c = bootString;
-	while (*c != '\0') CONWrite(*c++);
+	CONSetQuiet(true);                                                          // T-66 : and nothing over it until P2
 	SNDInitialise();                                                            // Initialise sound hardware
 	SNDManager();                                                               // Initialise sound manager
 }
 
+//		T-66 : the whole of P1 is silent. The logos stay on screen while the bus is discovered,
+//		and the text only starts in P2 — which is what bmarty asked for : logos, a pause, then
+//		everything else. The pause costs nothing : the barrier was already waiting here.
 static void DSPResetP1(void) {  												// P1 : USB discovery, up to the settle barrier
-	CONWrite(0x80+6);
 	KBDInitialise();                                                            // Start the USB host stack
 	KBDEvent(0,0xFF,0);                                                         // Reset the keyboard manager
 	USBWaitSettled();                                                           // T-32 : quiet bus, or the ceiling
-	STOSynchronise();                                                           // Report what was mounted
 }
 
 static void DSPResetP2(void) {  												// P2 : policy (no hardware init here)
+	const char bootString[] = PROMPT;
+	CONSetQuiet(false);                                                         // T-66 : the text starts here
+	CONWrite(0x80+3);                                                           // Yellow text
+	for (int i = 0;i < 19;i++) CONWrite(19);
+	const char *c = bootString;
+	while (*c != '\0') CONWrite(*c++);
+	CONWrite(0x80+6);
+	USBReport();                                                                // What the silent phase found
+	STOSynchronise();                                                           // Report what was mounted
 	TZLoadFromStorage();                                                        // Time zone from the settings sector (T-26)
 	BOOTSelect();                                                               // Boot menu from boot/
 }

@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.13.0** (2026-09-24, idée bmarty : « bloquer le DVI après les logos, attendre 3 secondes, puis afficher tout le
+  reste ») — **les logos restent visibles au démarrage (T-66)**. Ils étaient balayés par les messages d'énumération :
+  la console écrit dans la même mémoire, et passé la ligne 29 l'écran **défile** — plus il y avait de périphériques,
+  plus vite ils disparaissaient. Les phases sont réorganisées : **P0** dessine les logos puis fait taire la console
+  (`CONSetQuiet`) ; **P1** découvre l'USB **en silence**, avec un **plancher de 3 s** (`USB_FLOOR`) ; **P2** rétablit
+  la console et affiche tout d'un coup — bannière, bilan de la barrière, stockage, fuseau, menu `boot/`.
+  L'idée a un mérite que mes propres propositions n'avaient pas : **l'attente ne coûte rien**. La barrière de calme
+  de T-32 patientait déjà à cet endroit, et l'énumération se déroule pendant que les logos sont à l'écran.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 100 o libres.
+
 - **0.12.5** (2026-09-24, **les traits rouges sont réglés**) — **conversion de palette par mots de 32 bits (T-58)**.
   Après trois essais infructueux — cinq tampons TMDS, priorité du DMA (qui a **empiré** les choses), quatre tampons de
   ligne — la mesure avait fini par dire l'essentiel : core 1 ne manque pas de cycles ni d'avance, il manque de **bande

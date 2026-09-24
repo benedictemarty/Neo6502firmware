@@ -23,6 +23,7 @@ void CONSetDebugEcho(uint8_t on);  													// 2,20 echo to the debug port
 void CONInitialise(struct GraphicsMode *gMode);
 void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);
+void CONSetQuiet(bool quiet);  													// T-66 : drop output while the logos show
 void CONWriteHex(uint16_t h);	
 void CONWriteString(const char *s, ...);
 void CONClearScreen();
