@@ -42,6 +42,22 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.14.0** (2026-09-24, demande bmarty : « tu peux faire un dump spécifique au Hercules, pas MDA ? ») — **la police
+  du mode 1 est celle du vrai générateur de caractères MDA (T-67)**. Réponse à la question posée : **il n'existe pas
+  de police Hercules distincte**. En mode texte, la carte Hercules reprend tel quel le générateur de caractères
+  **MDA** d'IBM — sa nouveauté est le mode graphique, pas les glyphes. La police précédente venait de
+  `Lat15-VGA14.psf` (console Linux) : la bonne hauteur, mais un dessin **VGA**, plus épais et plus large, pas celui
+  d'un MDA. Elle est remplacée par le relevé du générateur MDA publié dans l'**Ultimate Oldschool PC Font Pack v2.2**
+  de VileR (int10h.org), fichier `Bm437_IBM_MDA.otb`, sous **CC BY-SA 4.0** (source et licence versionnées dans
+  `firmware/scripts/assets/`, attribution portée en tête du header généré).
+  Le MDA dessine dans une cellule **9 × 14** dont la neuvième colonne reste vide, sauf pour les semi-graphiques
+  `$C0-$DF` où elle réplique la huitième afin que les traits se joignent. Trinity n'exportant que `$20-$7F`,
+  **aucun glyphe n'est tronqué** par notre cellule de 8 colonnes, et l'espacement d'origine est conservé puisque notre
+  cellule 9 × 14 a elle aussi sa neuvième colonne vide. 87 des 96 glyphes changent ; le coût mémoire est **nul**
+  (la table est en flash). Génération : `firmware/scripts/mda14.py` (rendu FreeType à la taille native de la fonte
+  bitmap) ; `vga14.py` est conservé pour qui préfère la variante VGA.
+  `make test-api` 16/16, `make test-toolbox` 10/10, Phosphoneo 34/34 ; RAM 32 100 o libres.
+
 - **0.13.0** (2026-09-24, idée bmarty : « bloquer le DVI après les logos, attendre 3 secondes, puis afficher tout le
   reste ») — **les logos restent visibles au démarrage (T-66)**. Ils étaient balayés par les messages d'énumération :
   la console écrit dans la même mémoire, et passé la ligne 29 l'écran **défile** — plus il y avait de périphériques,
