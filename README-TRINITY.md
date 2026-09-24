@@ -56,6 +56,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   **T-58** : passer de 3 à 5 tampons TMDS a été essayé sur carte et n'a **rien changé** — l'encodeur ne manque pas
   d'avance mais de débit. Revenu au défaut, l'essai est consigné.
   `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 172 o libres.
+  **Validé carte le 2026-09-24** : le pavé intégré bascule (`j k l` donnent `1 2 3`) **et le jeu tourne** — l'émission
+  du rapport hors callback ne reproduit donc pas le désastre de T-40, qui tuait tout programme en quelques secondes.
+  Sur T-48, cela ne prouve rien à soi seul : c'est un binaire de plus qui tombe du bon côté, et seuls des essais
+  répétés diront si la relecture (0.12.0 à 0.12.3) a supprimé la cause.
 
 - **0.12.3** (2026-09-24, fin de la relecture) — dernier défaut trouvé dans les tables API :
   `3,23 Get Current Working Directory` écrivait à une adresse **et** sur une longueur toutes deux données par le
