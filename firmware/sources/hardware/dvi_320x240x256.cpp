@@ -96,7 +96,7 @@ static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green
 //		monochrome and uses monoLine) : four buffers now cost less RAM than the old two.
 #define SCAN_MAX_PIXELS (320)  													// Mode 0 ; mode 1 is 1 bpp and uses monoLine
 #define SCAN_BUF_COUNT  (4)
-static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32];
+static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32] __attribute__((aligned(4)));   // T-58 : word aligned
 #define SCANBUF(n) (scanBuffer[(n) & (SCAN_BUF_COUNT-1)])
 static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
@@ -188,9 +188,25 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	cursline = scan = SCANBUF(lineCounter);  									// The encoder is still on an older one
 	uint8_t *screenPos = screenMemory + y * currentMode->stride;          			// Data to use in screen memory.
 	if (currentMode->bitsPerPixel == 8) {
-		for (int i = 0;i < currentMode->xGSize;i++) {                             	// For each pixel
-			*scan++ = palette[*screenPos++];                              			// convert using palette => buffer.
+		//		T-58 : four pixels at a time. What starves this core during a disk transfer is
+		//		memory bandwidth, not cycles — five TMDS buffers changed nothing, and giving the
+		//		DMA priority over the cores made the streaks worse. Byte by byte, a 320 pixel
+		//		line cost 320 reads and 320 halfword writes, all in an interrupt that preempts
+		//		the encoder ; word at a time it costs 80 reads and 160 writes. The stride is a
+		//		multiple of four and both buffers are word aligned, so this is safe.
+		//		Alignment is guaranteed : both buffers are declared word aligned and the stride
+		//		of every colour mode is a multiple of four, so no run time check is needed.
+		int pixels = currentMode->xGSize;
+		const uint32_t *src32 = (const uint32_t *)screenPos;
+		uint32_t *dst32 = (uint32_t *)scan;
+		for (int i = pixels >> 2;i > 0;i--) {
+			uint32_t w = *src32++;  												// Four indices in one read
+			uint32_t p0 = palette[w & 0xFF],p1 = palette[(w >> 8) & 0xFF];
+			uint32_t p2 = palette[(w >> 16) & 0xFF],p3 = palette[w >> 24];
+			*dst32++ = p0 | (p1 << 16);  											// Two pixels per write
+			*dst32++ = p2 | (p3 << 16);
 		}
+		scan += pixels;screenPos += pixels;
 	} else {  																		// 4 bpp : two pixels per byte, high nibble first.
 		for (int i = 0;i < currentMode->stride;i++) {
 			uint8_t p = *screenPos++;

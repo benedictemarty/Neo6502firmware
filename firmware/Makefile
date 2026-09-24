@@ -82,7 +82,13 @@ build: prelim always
 #
 # ***************************************************************************************
 
-RAM_LIMIT ?= 230000
+#				2026-09-24 (T-58) : 230000 -> 231000. La conversion de palette par mots de 32 bits
+#				ajoute ~120 o de code en RAM, pour diviser par deux les transactions mémoire du
+#				callback de ligne — ce qui est exactement la ressource qui manque à core 1.
+#				Marge vérifiée : il reste alors 31 Ko de tas, dont ~11,5 Ko de tampons TMDS
+#				(malloc) ; la pile de core 0 vit dans le scratch, hors .bss, et celle de core 1
+#				(2 Ko) y est déjà comptée. Le seuil reste bien en deçà des 262 144 o de SRAM.
+RAM_LIMIT ?= 231000
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

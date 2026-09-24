@@ -42,6 +42,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.5** (2026-09-24, **les traits rouges sont réglés**) — **conversion de palette par mots de 32 bits (T-58)**.
+  Après trois essais infructueux — cinq tampons TMDS, priorité du DMA (qui a **empiré** les choses), quatre tampons de
+  ligne — la mesure avait fini par dire l'essentiel : core 1 ne manque pas de cycles ni d'avance, il manque de **bande
+  passante mémoire**. Or le callback de ligne, exécuté **en interruption sur le cœur même de l'encodeur**, faisait pour
+  chaque ligne de 320 pixels **320 lectures d'octets, 320 lectures de table et 320 écritures de 16 bits**. En traitant
+  quatre pixels par mot de 32 bits, on tombe à **80 lectures et 160 écritures** : moitié moins de transactions sur le
+  bus, précisément la ressource qui manquait. L'alignement est garanti à la déclaration des tampons, donc rien à
+  vérifier à l'exécution.
+  **Carte : plus aucun trait rouge, sauf au démarrage** — là où la contention est à son comble (énumération USB,
+  montage de la clé, catalogue `boot/`, DVI qui démarre). Ce résidu reste à traiter.
+  Coût : environ 120 octets de code en RAM, d'où **`RAM_LIMIT` porté de 230 000 à 231 000** (marge vérifiée : 31 Ko de
+  tas restants, dont 11,5 Ko de tampons TMDS ; la pile de core 0 vit dans le scratch, hors `.bss`).
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 108 o libres.
+
 - **0.12.4** (2026-09-24) — **le clavier de bmarty a un pavé numérique intégré, et il lui fallait le rapport HID (T-65)**.
   « Le Num Lock ne fonctionne pas », « la touche **l** devrait afficher le chiffre **3** » : cette seconde phrase est la
   signature d'un pavé **intégré**, celui des claviers compacts où `j k l` donnent `1 2 3`. Le relevé du clavier sur le
