@@ -601,7 +601,31 @@ static solidMaskedFn pickSolidMaskedFn(uint8_t srcFormat, uint8_t tgtFormat)
 //
 // ***************************************************************************************
 
+//		T-61 : only the FIRST address of each area was checked. width is 16 bit, so one line
+//		could copy 64 Ko ; and height (up to 255) times stride (up to 65535) walked as far as
+//		16 Mo from the start. Every one of those fields is read from a structure the 6502
+//		program writes itself, so this was an unbounded write into whatever follows the area.
+//		BLTSimpleCopy checks both ends — this one never did.
+//		The end of each area, so a line can be rejected before it is copied.
+static const uint8_t *_BLTAreaEnd(uint8_t page) {
+	switch(page) {
+		case 0x00: return cpuMemory + MEMORY_SIZE;
+		case 0x80:
+		case 0x81: return graphicsMemory + MAXGRAPHICSMEMORY;
+		case 0x90: return gfxObjectMemory + GFX_MEMORY_SIZE;
+	}
+	if (page >= BANK_PAGE && page < BANK_PAGE + BANK_COUNT) return (const uint8_t *)BNKStorage(page - BANK_PAGE) + BANK_SIZE;
+	return NULL;
+}
+
+//		A line fits when it starts inside the area and ends inside it too.
+static bool _BLTLineFits(const uint8_t *p,const uint8_t *end,uint16_t width) {
+	return p != NULL && end != NULL && p < end && (size_t)(end - p) >= width;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
+	const uint8_t *srcEnd = _BLTAreaEnd(source->page);  							// T-61
+	const uint8_t *tgtEnd = _BLTAreaEnd(target->page);
 
 	switch (action) {
 		case BLTACT_COPY:
@@ -615,7 +639,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
-					// Process a line.
+					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
+						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
 					(*copy)(tgt, src, source->width);
 					src += source->stride;
 					tgt += target->stride;
@@ -633,6 +658,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
+					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
+						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
 					(*copyMasked)(tgt, src, source->width, source->transparent);
 					src += source->stride;
 					tgt += target->stride;
@@ -650,6 +677,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
+					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
+						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
 					(*solidMasked)(tgt, src, source->width, source->transparent, source->solid);
 					src += source->stride;
 					tgt += target->stride;

@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.2** (2026-09-24, relecture lot 3) — **le blitter complexe pouvait écrire sans aucune limite (T-61)**.
+  `12,3` ne vérifiait que la **première** adresse de chaque zone : `width` étant sur 16 bits, une seule ligne pouvait
+  copier 64 Ko, et `height` (jusqu'à 255) fois `stride` (jusqu'à 65535) faisait avancer le pointeur de près de
+  **16 Mo**. Tous ces champs sont lus dans une structure que le programme 6502 écrit lui-même — c'était donc une
+  écriture illimitée dans ce qui suit la zone. `BLTSimpleCopy`, dans le même fichier, vérifie pourtant début **et**
+  fin. Désormais chaque ligne est rejetée si elle ne tient pas entièrement dans sa zone. C'est vraisemblablement le
+  défaut le plus grave de toute la relecture, et le blitter est très sollicité — NeoLegacy s'en sert pour tous ses
+  décors. Également : `mos.cpp` débordait de sept octets son tampon de paramètres sur une commande de 255 caractères.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 272 o libres.
+
 - **0.12.1** (2026-09-24, relecture lot 2) — **huit défauts de plus**, du même profil que la 0.12.0 : graphismes,
   console, éditeur, lien série et tables API.
   **Images** : `GFXDrawImage` ne testait pas le `-1` que `GFXFindImage` peut renvoyer et lisait **avant** la mémoire

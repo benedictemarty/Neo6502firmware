@@ -40,9 +40,15 @@ static void _MOSUnpackParameters(uint8_t *cmd) {
 		if (c == '\'' || c == '"') {  											// Quote surrounded, either.
 			endMarker = c;c = _MOSGet(cmd);  									// Ends with that
 		} 
+		//		T-61 : paramData holds 256 bytes, but a 255 character command with four
+		//		parameters also stores four length bytes and four terminators — 263 in all.
+		//		Stop writing at the end of the buffer ; the command is simply truncated.
+		const uint8_t *dataEnd = paramData + sizeof(paramData) - 1;
+		if (dataPos >= dataEnd) return;
 		params[paramCount] = dataPos; 											// Store param position, both length prefixed
 		*dataPos++ = 0;  														// and NULL terminated
 		do {
+			if (dataPos >= dataEnd) break;
 			*dataPos++ = c;
 			*(params[paramCount]) = *(params[paramCount])+1;
 			c = _MOSGet(cmd);  													// Get next command
