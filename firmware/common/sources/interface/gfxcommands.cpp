@@ -253,22 +253,29 @@ void GFXScaledText(struct GraphicsMode *gMode,char *s,int x,int y,int useSolidFi
 //
 // ***************************************************************************************
 
+//		T-60 : the counts this reads (gfxObjectMemory[1] and [2]) come from the graphics file
+//		the program loaded, so the address computed here is under its control : with the counts
+//		at their maximum it reached 97 Ko for a 32 Ko area. The element must fit, entirely,
+//		inside the graphics memory — otherwise there is no image to point at.
 int GFXFindImage(int type,int id) {
 	int addr = -1;
+	int bytes = 0;  															// Size of one element of that type
 
-	if (id >= gfxObjectMemory[type+1]) return -1;  								// Not a valid graphic element
+	if (type < 0 || type > 2) return -1;
+	if (id < 0 || id >= gfxObjectMemory[type+1]) return -1;  					// Not a valid graphic element
 
 	switch(type) {
 		case 0:  																// 16x16 tiles
-			addr = 256 + id * (16*16/2);
+			addr = 256 + id * (16*16/2);bytes = 16*16/2;
 			break;
 		case 1:  																// 16x16 sprites
-			addr = 256 + gfxObjectMemory[1]*(16*16/2) + id*(16*16/2);
+			addr = 256 + gfxObjectMemory[1]*(16*16/2) + id*(16*16/2);bytes = 16*16/2;
 			break;
 		case 2:  																// 32x32 sprites
-			addr = 256 + gfxObjectMemory[1]*(16*16/2) + gfxObjectMemory[2]*(16*16/2) + id*(32*32/2);
+			addr = 256 + gfxObjectMemory[1]*(16*16/2) + gfxObjectMemory[2]*(16*16/2) + id*(32*32/2);bytes = 32*32/2;
 			break;
 	}
+	if (addr < 0 || addr + bytes > GFX_MEMORY_SIZE) return -1;  					// Does not fit : no such image
 	return addr;
 }
 
@@ -292,7 +299,8 @@ void GFXDrawImage(struct GraphicsMode *gMode,int x,int y,int id,int scale,int fl
 	if (flip & 1) xFlip = size-1;  												// This is done with exclusive ORing.
 	if (flip & 2) yFlip = size-1;
 	int address = GFXFindImage(type,id);  										// Address in the graphics memory
-
+	if (address < 0) return;  													// T-60 : -1 was read as an address,
+																				// one byte before the array
 	for (int xc = 0;xc < size;xc++) {  											// For each pixel
 		for (int yc = 0;yc < size;yc++) {
 			int pixel = gfxObjectMemory[address+xc/2+(yc * size / 2)];   		// Access the pixel pair.

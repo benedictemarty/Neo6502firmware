@@ -42,6 +42,25 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.12.1** (2026-09-24, relecture lot 2) — **huit défauts de plus**, du même profil que la 0.12.0 : graphismes,
+  console, éditeur, lien série et tables API.
+  **Images** : `GFXDrawImage` ne testait pas le `-1` que `GFXFindImage` peut renvoyer et lisait **avant** la mémoire
+  graphique ; et cette adresse est calculée à partir de compteurs lus **dans le fichier de graphismes**, donc fournis
+  par le programme — au maximum elle atteignait 97 Ko pour une zone de 32 Ko.
+  **Tuiles** : avec 255 tuiles, l'adresse de base vaut déjà 32 768 pour 32 768 octets ; et la tilemap, lue dans la RAM
+  6502 avec des dimensions tirées d'elle-même, sortait des 64 Ko si le programme la plaçait haut.
+  **`CONInsertLine`** était doublement cassée, à la différence de sa symétrique `CONDeleteLine` : la boucle faisait
+  varier `y1` mais copiait toujours `y-1` vers `y`, si bien que **rien ne se décalait** ; et `CONCopy` prenant des
+  `uint16_t`, insérer à la **ligne 0** donnait `y-1` = 65535, soit une lecture plusieurs mégaoctets plus loin — une
+  adresse invalide sur RP2040, donc une **faute matérielle**. Atteignable par `2,10`.
+  **Éditeur** : ligne lue et réécrite à une adresse donnée par le 6502, jusqu'à 255 octets au-delà de la mémoire.
+  **Lien série** : quatre débordements — `sBuffer[256]` écrit jusqu'à l'indice 256, `fileName[32]` rempli avec une
+  longueur pouvant aller à 255, une adresse 16 bits pointant hors d'une zone graphique de 32 Ko, et un transfert sans
+  borne de fin. Tout cela alimenté par ce qui arrive sur la ligne série.
+  **Groupe 10** : les six transferts par blocs (I2C, SPI, UART) recevaient adresse **et** longueur sur 16 bits sans
+  jamais vérifier leur somme.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 272 o libres.
+
 - **0.12.0** (2026-09-23, relecture du code demandée par bmarty) — **huit écritures ou lectures hors limites**,
   toutes déclenchables depuis un programme 6502 et toutes du profil de T-48 : ce qu'elles écrasent dépend de la
   disposition des variables, donc du binaire.

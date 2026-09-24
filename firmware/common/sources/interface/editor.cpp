@@ -11,6 +11,7 @@
 // ***************************************************************************************
 
 #include "common.h"
+#include <algorithm>
 
 #define CPARAMS 	(cpuMemory+controlPort+4)
 #define EPRINTF 	printf 
@@ -203,7 +204,9 @@ static uint8_t _EDITStateLoadLine(void) {
 	edLineBufferAddress = CPARAMS[0]+(CPARAMS[1]<<8);  								// Preserve where buffer is
 	uint8_t *s = cpuMemory+edLineBufferAddress;  									// Line to read
 	edCurrentSize = 0;
-	for (uint8_t i = 0;i < *s;i++) {
+	uint32_t roomIn = MEMORY_SIZE - edLineBufferAddress;  							// T-60 : do not read past cpuMemory
+	uint8_t readable = (roomIn > 256) ? *s : (uint8_t)std::min((uint32_t)*s,roomIn-1);
+	for (uint8_t i = 0;i < readable;i++) {
 		uint8_t c = s[i+1];
 		if (ISDISPLAYABLE(c)) edCurrentLine[edCurrentSize++] = c; 					// Read in printables only.
 	}
@@ -300,10 +303,14 @@ static uint8_t _EDITStateEdit(void) {
 	edPendingAction = key;    														// Pending action, update line if required.
 	edState = ES_DISPATCH;   														// Next state handles that action.
 	if (edLineChanged) {
-		for (uint8_t i = 0;i < edCurrentSize;i++) {  								// Copy line back to make a length prefixed string.
+		//		T-60 : the buffer address comes from the 6502, and a 255 byte line written near
+		//		the top of memory ran past cpuMemory. Trim to what actually fits.
+		uint32_t roomOut = MEMORY_SIZE - edLineBufferAddress;
+		uint8_t writeable = (roomOut > 256) ? edCurrentSize : (uint8_t)std::min((uint32_t)edCurrentSize,roomOut-1);
+		for (uint8_t i = 0;i < writeable;i++) {  									// Copy line back to make a length prefixed string.
 			cpuMemory[edLineBufferAddress+i+1] = edCurrentLine[i];			
 		}
-		cpuMemory[edLineBufferAddress] = edCurrentSize;
+		cpuMemory[edLineBufferAddress] = writeable;
 		int line = edTopLine + edYPos;  											// Line number to write
 		CPARAMS[1] = line & 0xFF;  													// Store in parameters
 		CPARAMS[2] = line >> 8;

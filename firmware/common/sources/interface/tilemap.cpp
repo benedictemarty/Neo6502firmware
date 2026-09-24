@@ -38,6 +38,11 @@ void TMPSelectTileMap(uint8_t *data,uint16_t xOffset,uint16_t yOffset) {
 //	printf("TM:$%x %d,%d\n",data-cpuMemory,xOffset,yOffset);
 	mapData = data;xTilePos = xOffset;yTilePos = yOffset;
 	width = mapData[1];height = mapData[2];
+	//		T-60 : the map is read at mapData + 3 + y*width + x, with width and height taken
+	//		from the map itself. Placed high in the 6502 memory, a large map read past its end.
+	if (data + 3 + (uint32_t)width * height > cpuMemory + MEMORY_SIZE) {
+		mapData = NULL;  														// Does not fit : no map
+	}
 }
 
 // ***************************************************************************************
@@ -148,9 +153,14 @@ static void TMROutputBackground(uint16_t n) {
 //
 // ***************************************************************************************
 
+//		T-60 : the tile count comes from the graphics file, so with 255 tiles the last row
+//		landed past the end of the graphics memory — the base alone reaches 32 768 for a
+//		32 768 byte area, before the row offset is even added.
 static uint8_t *TMPGetTileRowAddress(uint8_t tileID,uint8_t yOffset) {
 	if (tileID >= gfxObjectMemory[1]) return NULL;
-	return gfxObjectMemory + 256 + tileID * 16*16/2 + yOffset * 8;
+	uint32_t offset = 256 + tileID * (16*16/2) + yOffset * 8;
+	if (offset + 8 > GFX_MEMORY_SIZE) return NULL;  							// Row must fit
+	return gfxObjectMemory + offset;
 }
 
 // ***************************************************************************************

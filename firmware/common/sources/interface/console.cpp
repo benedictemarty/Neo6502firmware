@@ -306,14 +306,19 @@ static void CONCopy(uint16_t xFrom,uint16_t yFrom,uint16_t xTo,uint16_t yTo) {
 //
 // ***************************************************************************************
 
+//		T-60 : this was doubly wrong, unlike its mirror CONDeleteLine. The loop varied y1 but
+//		copied y-1 to y, so the same line was recopied and nothing ever moved down ; and with
+//		y = 0, CONCopy takes uint16_t, so y-1 became 65535 and the read went several megabytes
+//		past the console memory — an invalid address on the RP2040, hence a hard fault. It is
+//		reachable from Function 2,10 with line 0.
 void CONInsertLine(uint8_t y) {
 	if (y >= graphMode->yCSize) return; 										// Bad line #
 	uint8_t y1 = graphMode->yCSize-1;  											// Copy to line.
 	while (y != y1) {  															// Copy the main block down.
 		for (int x = 0;x < graphMode->xCSize;x++) {
-			CONCopy(x,y-1,x,y);
-			graphMode->isExtLine[y] = graphMode->isExtLine[y-1];
+			CONCopy(x,y1-1,x,y1);
 		}
+		graphMode->isExtLine[y1] = graphMode->isExtLine[y1-1];
 		y1--;
 	}
 	for (int x = 0;x < graphMode->xCSize;x++) {  								// Blank bottom line and make it not extended.

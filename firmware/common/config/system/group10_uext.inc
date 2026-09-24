@@ -73,32 +73,50 @@ GROUP 10 UExt I/O
         If present, then Parameter:0 will contain a non-zero value.
 
     FUNCTION 9 Read I2C Block
-        *DERROR = IOI2CReadBlock(DPARAMS[0],cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60 : address and length are
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;                     // both 16 bit, so a+n ran up to
+            *DERROR = IOI2CReadBlock(DPARAMS[0],cpuMemory+a,n);                         // 64 Ko past the 6502 memory
+        }
     DOCUMENTATION
         Try to read a block of memory from I2C Device Parameter:0 into memory at Parameters:1,2, length Parameters:3,4.
 
     FUNCTION 10 Write I2C Block
-        *DERROR = IOI2CWriteBlock(DPARAMS[0],cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;
+            *DERROR = IOI2CWriteBlock(DPARAMS[0],cpuMemory+a,n);
+        }
     DOCUMENTATION
         Try to write a block of memory to I2C Device Parameter:0 from memory at Parameters:1,2, length Parameters:3,4.
 
     FUNCTION 11 Read SPI Block
-        *DERROR = IOSPIReadBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;
+            *DERROR = IOSPIReadBlock(cpuMemory+a,n);
+        }
     DOCUMENTATION
         Try to read a block of memory from SPI Device into memory at Parameters:1,2, length Parameters:3,4.
 
     FUNCTION 12 Write SPI Block
-        *DERROR = IOSPIWriteBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;
+            *DERROR = IOSPIWriteBlock(cpuMemory+a,n);
+        }
     DOCUMENTATION
         Try to write a block of memory to SPI Device from memory at Parameters:1,2, length Parameters:3,4.
 
     FUNCTION 13 Read UART Block
-        *DERROR = UARTRReadBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;
+            *DERROR = UARTRReadBlock(cpuMemory+a,n);
+        }
     DOCUMENTATION
         Try to read a block of memory from UART into memory at Parameters:1,2, length Parameters:3,4. This can fail with a timeout. If UART routing (10,19) selects a USB CDC modem, the block is read from it instead.
 
     FUNCTION 14 Write UART Block
-        *DERROR = UARTRWriteBlock(cpuMemory+DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        {   uint16_t a = DSPGetInt16(DCOMMAND,5),n = DSPGetInt16(DCOMMAND,7);         // T-60
+            if ((uint32_t)a + n > MEMORY_SIZE) n = MEMORY_SIZE - a;
+            *DERROR = UARTRWriteBlock(cpuMemory+a,n);
+        }
     DOCUMENTATION
         Try to write a block of memory to UART from memory
         at Parameters:1,2, length Parameters:3,4. Routed to a USB CDC modem if 10,19 selects it.
