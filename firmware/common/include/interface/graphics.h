@@ -70,6 +70,13 @@ void RNDResume(void);
 void RNDCursorUpdate(void);  													// T-32c : core 0 prepares the cursor for the line callback
 uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (diagnostic)
 void HWBusProbe(void);  														// T-49 : sample the PIO stall flags (RAM, called by DSPSync)
+void DBGInitialise(void);  														// T-73 : UART0 debug port (board only)
+void DBGWrite(const char *s);  													// Appends to a RAM ring, never blocks
+void DBGWriteNumber(const char *label,uint32_t value);
+void DBGFlush(void);  															// Pushes into free FIFO space, from DSPSync
+void DBGTelemetry(uint32_t late,uint32_t sectors,uint32_t mode);  				// T-73 : one line per second
+void DBGTelemetryTick(void);  													// T-73 : called from DSPSync
+void DBGPoll(void);  															// T-74 : terminal — UART to the keyboard queue
 uint32_t HWBusStalls(uint8_t which);  											// T-49 : 0 = data not ready, 1 = address FIFO late
 void HWBusStallsReset(void);
 uint32_t HWBusTiming(uint8_t which);  											// T-50 : µs away from the bus (sync / command)

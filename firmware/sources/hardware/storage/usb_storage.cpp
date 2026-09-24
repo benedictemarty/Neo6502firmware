@@ -163,6 +163,8 @@ DSTATUS disk_initialize(BYTE pdrv) {
     return 0;
 }
 
+extern volatile uint32_t stoSectorCount;  										// T-73 : defined in debugport.cpp
+
 DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const dev_addr = deviceOf(pdrv);
     if (dev_addr == 0) return RES_NOTRDY;
@@ -170,12 +172,14 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     int slot = mscSlot(dev_addr);
     if (slot < 0) return RES_PARERR;
     msc_volume_busy[slot] = true;                                               // Busy flag by device : the completion
+    stoSectorCount += count;  													// T-73
     tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);   // callback only knows dev_addr (T-24)
     wait_for_disk_io(dev_addr);
     return RES_OK;
 }
 
 DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
+    stoSectorCount += count;  													// T-73
     uint8_t const dev_addr = deviceOf(pdrv);
     if (dev_addr == 0) return RES_NOTRDY;
     uint8_t const lun = 0;

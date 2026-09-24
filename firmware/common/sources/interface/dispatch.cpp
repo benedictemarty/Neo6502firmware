@@ -78,6 +78,9 @@ void TIMECRITICAL(DSPSync)(void)
 {
 	KBDSync();
 	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
+	DBGPoll();  																	// T-74 : terminal input
+	DBGTelemetryTick();  															// T-73 : one line per second, if the port is on
+	DBGFlush();  																	// T-73 : push the trace, FIFO space only
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 
@@ -96,6 +99,8 @@ void TIMECRITICAL(DSPSync)(void)
 // ***************************************************************************************
 
 static void DSPResetP0(void) {  												// P0 : hardware and firmware state only
+	DBGInitialise();  															// T-73 : debug port first, so it can report P0 itself
+	CONSetDebugEcho(2);  														// T-74 : and the console mirrors to it (2,20), Latin-1 included
 	MEMInitialiseMemory();                                                      // Set up memory, load kernel ROM
 	MSEInitialise();  															// Mouse first, before starting graphics.
 	CURInitialise();

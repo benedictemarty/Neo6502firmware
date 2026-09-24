@@ -42,6 +42,27 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.0** (2026-09-25, demandes bmarty : une voie de debug, puis « un terminal permettant d'exécuter des
+  commandes », puis « vérifier l'état des famines ou l'état de la RAM ») — **terminal de debug sur UART0 (T-73,
+  T-74)**. Plusieurs défauts résistent parce qu'ils ne s'observent que sur carte et que le seul canal de mesure est
+  **l'écran** — précisément ce qui tombe en panne dans T-71.
+  **Pas par l'USB-C**, contrairement à l'idée de départ : le RP2040 n'a **qu'un seul contrôleur USB**, déjà en mode
+  hôte pour le clavier, le hub et la clé, et le connecteur de programmation *est* ce contrôleur. Hôte et CDC device
+  s'excluent, et basculer coûterait les périphériques dont on veut observer l'activité. UART0 (GPIO 28/29, **UEXT
+  broches 3 et 4**, 3,3 V) est libre de tout cela. Côté PC : un CP2104 à 115 200 bauds.
+  Le terminal marche dans les deux sens. Les caractères reçus entrent dans la **file clavier** — le Neo se pilote
+  depuis le PC comme depuis son propre clavier, **écran noir compris** ; le texte de la console revient par l'écho
+  `2,20`, qui existait déjà et dont seule la destination change. Une ligne par seconde donne `L=` lignes DVI en
+  retard, `S=` secteurs lus, `M=` mode. Commandes préfixées par `!` : **`!s`** famines, **`!m`** mémoire, **`!z`**
+  remise à zéro, **`!!`** un vrai `!`.
+  **La règle T-46 s'applique ici plus qu'ailleurs** : `DSPSync` est en RAM, donc tout ce que le port y expose est
+  `__not_in_flash_func` et n'utilise **pas** `snprintf` (qui vit en flash) — les nombres sortent en hexadécimal par
+  une conversion maison. Une trace qui calerait le bus fausserait la mesure qu'elle sert à prendre, et c'est
+  exactement la faute que 0.10.3 avait commise.
+  Coût : anneau de 2 Ko (un `DIR` produit ~1,5 Ko d'un coup, le port n'en sort que ~3 Ko/s), d'où **`RAM_LIMIT`
+  porté de 231 600 à 233 500** ; marge vérifiée, 29,2 Ko de tas restants.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 29 208 o libres.
+
 - **0.15.1** (2026-09-24, retour carte bmarty : « toujours pas ») — **mesure : le firmware dit s'il a vu Échap
   (T-68b)**. La correction T-68 n'a pas suffi sur carte, et deviner a assez duré. La ligne `USB settled` porte
   maintenant deux témoins, relevés **avant** que le menu ne décide : **`KEY`** si le clavier a produit au moins un

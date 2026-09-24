@@ -88,7 +88,18 @@ build: prelim always
 #				Marge vérifiée : il reste alors 31 Ko de tas, dont ~11,5 Ko de tampons TMDS
 #				(malloc) ; la pile de core 0 vit dans le scratch, hors .bss, et celle de core 1
 #				(2 Ko) y est déjà comptée. Le seuil reste bien en deçà des 262 144 o de SRAM.
-RAM_LIMIT ?= 231000
+#				2026-09-24 (T-73) : 231000 -> 231600. Le port de debug UART coûte 876 o : un anneau
+#				de 512 o en .bss, et DBGWrite/DBGFlush/DBGTelemetry en RAM — obligatoire, puisque
+#				DBGFlush est appelée depuis DSPSync et que rien de ce qu'appelle DSPSync ne doit
+#				vivre en flash (T-46). Sans ce relèvement il restait 80 o de marge, trop peu pour
+#				travailler. Marge vérifiée : 31,2 Ko de tas restants, tampons TMDS compris.
+#
+#				2026-09-25 (T-74) : 231600 -> 233500. Le terminal porte l'anneau de 512 o à 2 Ko :
+#				la console produit ~1,5 Ko d'un coup sur un DIR, et le port ne sort que ~3 Ko/s
+#				(32 o de FIFO à 95 Hz), donc un anneau plus petit perdrait justement la trace des
+#				moments chargés — ceux qu'on veut observer. Marge vérifiée : 29,2 Ko de tas
+#				restants, dont ~11,5 Ko de tampons TMDS ; la pile de core 0 est dans le scratch.
+RAM_LIMIT ?= 233500
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

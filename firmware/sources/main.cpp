@@ -45,10 +45,11 @@ int main() {
 //
 // ***************************************************************************************
 
+//		T-74 : the console echo (2,20) now goes to the debug port rather than straight to the
+//		6502's serial port. Same wire, but through the ring : CONWrite must never wait on it.
 void FDBWrite(uint8_t c) {
-    if (SERSetup()) {
-        SERWriteByte(c);
-    }
+    char s[2] = { (char)c,'\0' };
+    DBGWrite(s);
 }
 
 // ***************************************************************************************
