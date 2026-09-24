@@ -51,6 +51,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   L'idée a un mérite que mes propres propositions n'avaient pas : **l'attente ne coûte rien**. La barrière de calme
   de T-32 patientait déjà à cet endroit, et l'énumération se déroule pendant que les logos sont à l'écran.
   `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 100 o libres.
+  **Validé carte le 2026-09-24** : les logos tiennent leurs trois secondes, et **plus aucun trait rouge au
+  démarrage** — ce qui achève T-58.
 
 - **0.12.5** (2026-09-24, **les traits rouges sont réglés**) — **conversion de palette par mots de 32 bits (T-58)**.
   Après trois essais infructueux — cinq tampons TMDS, priorité du DMA (qui a **empiré** les choses), quatre tampons de
@@ -60,8 +62,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   quatre pixels par mot de 32 bits, on tombe à **80 lectures et 160 écritures** : moitié moins de transactions sur le
   bus, précisément la ressource qui manquait. L'alignement est garanti à la déclaration des tampons, donc rien à
   vérifier à l'exécution.
-  **Carte : plus aucun trait rouge, sauf au démarrage** — là où la contention est à son comble (énumération USB,
-  montage de la clé, catalogue `boot/`, DVI qui démarre). Ce résidu reste à traiter.
+  **Carte : plus aucun trait rouge.** Le résidu qui subsistait au démarrage a disparu avec la 0.13.0 (T-66), qui
+  sépare l'énumération silencieuse de la phase d'affichage du texte.
   Coût : environ 120 octets de code en RAM, d'où **`RAM_LIMIT` porté de 230 000 à 231 000** (marge vérifiée : 31 Ko de
   tas restants, dont 11,5 Ko de tampons TMDS ; la pile de core 0 vit dans le scratch, hors `.bss`).
   `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 32 108 o libres.
