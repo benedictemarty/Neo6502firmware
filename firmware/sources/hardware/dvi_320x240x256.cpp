@@ -460,7 +460,19 @@ void DVIStart(void) {                                                           
 	dvi0.scanline_callback = _scanline_callback;
 	dvi0.vertical_repeat = currentTiming->verticalRepeat;  						// bmarty PicoDVI patch (runtime vertical repeat)
 
-	dvi_init(&dvi0, next_striped_spin_lock_num(), next_striped_spin_lock_num());// Initialise DVI.
+	//		T-77 (0.16.35) : des spinlocks DEDIES, au lieu des « striped » du SDK.
+	//		`next_striped_spin_lock_num()` distribue les numeros 16 a 23 en round-robin entre
+	//		TOUS les utilisateurs du SDK -- files, mutex, pools d'alarmes, et ce que FatFs ou
+	//		TinyUSB emploient sur core 0. Lu sur la carte : picodvi tenait les numeros 18 et 19,
+	//		qui peuvent donc etre pris par core 0 pendant une rafale disque. Or `spin_lock_blocking`
+	//		MASQUE les interruptions du coeur qui attend : si l'interruption de ligne tombe pendant
+	//		que core 1 attend un verrou detenu par core 0, elle est retardee d'autant. L'ordre de
+	//		grandeur colle a ce qui est mesure -- une seule ligne de retard, pas un blocage long.
+	//		Les verrous sont reserves une fois pour toutes : DVIStart est rappele a chaque
+	//		changement de mode et il ne faut pas en consommer un nouveau a chaque fois.
+	static int slTmds = -1, slColour = -1;
+	if (slTmds < 0) { slTmds = spin_lock_claim_unused(true);slColour = spin_lock_claim_unused(true); }
+	dvi_init(&dvi0, slTmds, slColour);  										// Initialise DVI.
 	if (currentMode->bitsPerPixel == 1) {  											// Monochrome : black channel 1 in every TMDS buffer, lanes.
 		uint32_t words = dvi0.timing->h_active_pixels / DVI_SYMBOLS_PER_WORD;
 		uint32_t *bufs[DVI_N_TMDS_BUFFERS];int n = 0;
