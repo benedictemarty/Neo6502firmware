@@ -55,8 +55,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   `!v` affiche `rejets` et `tampons`, la télémétrie gagne une colonne `R=`. Rien n'est corrigé : c'est une mesure.
 
 - **0.16.9** (2026-09-25) — **retour à deux tampons de ligne : les quatre aggravaient (T-71)**. Mesuré au SWD
-  pendant un `DIR` à froid en mode 1, sur un **second écran** qui reconnaît pourtant le signal (son indicateur reste
-  à 60 Hz, là où le premier n'affichait plus rien) : **le compteur de trames se fige net** — onze secondes à la même
+  pendant un `DIR` à froid en mode 1, sur le seul écran de la carte, qui affichait alors son indicateur 60 Hz (il n'y
+  a **qu'un écran d'affichage** : la mention d'un « second écran » était une erreur de relevé, corrigée le
+  2026-09-25) : **le compteur de trames se fige net** — onze secondes à la même
   valeur, core 1 ne l'incrémente plus — puis **la carte redémarre d'elle-même**. Avec deux tampons, le même `DIR`
   laissait le firmware vivant, 60 trames par seconde et la mémoire vidéo pleine ; seule l'image était perdue.
   Transformer un écran noir en blocage complet n'est pas un progrès.
