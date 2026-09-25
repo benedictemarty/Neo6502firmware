@@ -69,12 +69,15 @@ void RNDSuspend(void);  														// T-17 : full teardown (unused)
 void RNDResume(void);
 void RNDCursorUpdate(void);  													// T-32c : core 0 prepares the cursor for the line callback
 uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (diagnostic)
+uint32_t RNDPublishRejects(void);  											// T-71 : lines dropped instead of blocking the line callback
+uint32_t RNDMonoBuffers(void);  											// T-71 : 1 bpp line buffers in use (2 or 4)
+void RNDSetMonoBuffers(int count);  										// T-71 : pick 2 or 4 at run time, same binary
 void HWBusProbe(void);  														// T-49 : sample the PIO stall flags (RAM, called by DSPSync)
 void DBGInitialise(void);  														// T-73 : UART0 debug port (board only)
 void DBGWrite(const char *s);  													// Appends to a RAM ring, never blocks
 void DBGWriteNumber(const char *label,uint32_t value);
 void DBGFlush(void);  															// Pushes into free FIFO space, from DSPSync
-void DBGTelemetry(uint32_t late,uint32_t sectors,uint32_t mode);  				// T-73 : one line per second
+void DBGTelemetry(uint32_t late,uint32_t rejects,uint32_t sectors,uint32_t mode);  // T-73 : one line per second (T-71 : R=)
 void DBGTelemetryTick(void);  													// T-73 : called from DSPSync
 void DBGPoll(void);  															// T-74 : terminal — UART to the keyboard queue
 void DBGClockChanged(void);  													// T-74 : re-derive the baud rate after a mode change

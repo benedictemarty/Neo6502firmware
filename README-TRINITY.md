@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.10** (2026-09-25) — **T-71 : instrumentation, deux lots dans une seule version.** *Lot 1* : le callback de
+  ligne ne publie plus par `queue_add_blocking_u32`. Il tourne en interruption sur core 1, et la file qu'il remplit
+  (8 places) n'a qu'un consommateur, l'encodeur, **sur ce même core**, que l'interruption préempte : au bout de huit
+  lignes de retard, l'attente ne peut plus être levée par personne. C'est la forme du gel de 0.16.6. Il jette
+  maintenant la ligne et la compte (`rejets`), ce qui rend le gel impossible et rend l'hypothèse falsifiable.
+  *Lot 2* : les **quatre** tampons de ligne du mode 1 sont désormais toujours alloués, et deux ou quatre sont
+  utilisés **au choix, à l'exécution** (`!2` / `!4` sur le port de debug). 0.16.6 avait été jugée contre 0.16.9 alors
+  que ses 392 octets supplémentaires déplaçaient toute la carte mémoire — or T-48 a prouvé que le placement seul fait
+  apparaître ou disparaître la panne sur cette carte. Les deux bras sont maintenant le **même binaire**.
+  Coût : 588 octets de RAM, **316 octets de marge seulement** sous la limite — version d'expérimentation.
+  `!v` affiche `rejets` et `tampons`, la télémétrie gagne une colonne `R=`. Rien n'est corrigé : c'est une mesure.
+
 - **0.16.9** (2026-09-25) — **retour à deux tampons de ligne : les quatre aggravaient (T-71)**. Mesuré au SWD
   pendant un `DIR` à froid en mode 1, sur un **second écran** qui reconnaît pourtant le signal (son indicateur reste
   à 60 Hz, là où le premier n'affichait plus rien) : **le compteur de trames se fige net** — onze secondes à la même

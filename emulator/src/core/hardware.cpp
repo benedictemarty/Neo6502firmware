@@ -177,7 +177,7 @@ void DBGInitialise(void) {}  													// T-73 : no UART here
 void DBGWrite(const char *s) { (void)s; }
 void DBGWriteNumber(const char *label,uint32_t value) { (void)label;(void)value; }
 void DBGFlush(void) {}
-void DBGTelemetry(uint32_t late,uint32_t sectors,uint32_t mode) { (void)late;(void)sectors;(void)mode; }
+void DBGTelemetry(uint32_t late,uint32_t rejects,uint32_t sectors,uint32_t mode) { (void)late;(void)rejects;(void)sectors;(void)mode; }
 void DBGTelemetryTick(void) {}
 void DBGPoll(void) {}
 void DBGClockChanged(void) {}

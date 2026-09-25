@@ -98,18 +98,35 @@ static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green
 #define SCAN_BUF_COUNT  (4)
 static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32] __attribute__((aligned(4)));   // T-58 : word aligned
 #define SCANBUF(n) (scanBuffer[(n) & (SCAN_BUF_COUNT-1)])
-//		T-71 : back to TWO 1 bpp line buffers. Four were tried in 0.16.6 and made things
-//		WORSE on the board (bmarty, 2026-09-25) : measured by SWD during a cold DIR in mode 1,
-//		the frame counter stops dead — core 1 no longer increments it — and the board then
-//		reboots on its own. With two buffers the same DIR left the firmware alive (frame
-//		counter still at 60 Hz, video memory holding the catalogue) and only the picture was
-//		lost. Turning a black screen into a lock-up is not progress, so this is reverted until
-//		the blocking publish in the line callback is understood.
-static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
+//		T-71, lot 2 (0.16.10) : the FOUR 1 bpp line buffers are ALWAYS allocated, and how many
+//		are actually used (two or four) is picked at RUN TIME by monoLineMask. 0.16.6 added
+//		392 bytes of data and so moved the whole memory map of the binary — and T-48 proved on
+//		this very board that placement alone makes the fault come and go. Comparing 0.16.6 with
+//		0.16.9 was therefore never a one variable experiment, and withdrawing the four buffers
+//		is a verdict still to be re-examined. Here both arms are the SAME binary, same size,
+//		same placement : only the mask differs (!2 / !4 on the debug port), applied on a frame
+//		boundary so the encoder never sees an index change mid line.
+//		With mask 1 the callback comes back to the buffer the encoder is still reading as soon
+//		as it falls behind ; with mask 3 it has three lines of slack.
+#define MONO_LINE_COUNT (4)
+static uint32_t monoLine[MONO_LINE_COUNT][MONO_LINE_WORDS/8+4]; 					// 4 x 1 bpp scanline buffers (word aligned copies), 784 bytes
+static volatile uint8_t monoLineMask = 1;  											// 1 = two buffers (0.16.9), 3 = four (0.16.6)
+static volatile uint8_t pendingMonoLineMask = 1;  								// Applied at the start of the next frame
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
 static volatile uint32_t lateTotal = 0;  										// T-57 : episodes of late scanlines, cumulative
+//		T-71, lot 1 (0.16.10) : the line callback used to publish with queue_add_blocking_u32.
+//		It runs in an interrupt ON CORE 1, and q_colour_valid (8 slots, picodvi dvi.c) has
+//		exactly one consumer : _encode_loop, which runs on that same core 1 and which the
+//		interrupt preempts. Once the encoder is eight lines behind, the callback waits for room
+//		that only the code it has preempted could make : a deadlock that no amount of bandwidth
+//		fixes. That is the shape of the 0.16.6 freeze (frame counter stuck at 661 for eleven
+//		seconds, then a spontaneous reboot). Publishing without blocking makes the freeze
+//		impossible — a dropped line costs one late line, which picodvi already handles — and
+//		the counter says whether the queue ever fills at all. Either answer is a measurement :
+//		rejets > 0 holds the mechanism, rejets == 0 during a black DIR kills it for good.
+static volatile uint32_t publishRejects = 0;  									// T-71 : lines dropped rather than blocking in the IRQ
 
 bool  isInitialised = false;                                      				// DVI running.
 
@@ -156,16 +173,17 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
 	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
-	if (currentMode->bitsPerPixel == 1) scanline = (lineCounter & 1) ? (uint32_t)monoLine1 : (uint32_t)monoLine2;
+	if (currentMode->bitsPerPixel == 1) scanline = (uint32_t)monoLine[lineCounter & monoLineMask];
 	if (lineCounter < currentTiming->yOffset ||  									// Outside the framebuffer : black line.
 			lineCounter >= currentTiming->yOffset + currentMode->yGSize) scanline = 0;
-	queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);                	// Send buffer to queue
+	if (!queue_try_add_u32(&dvi0.q_colour_valid, &scanline)) publishRejects = publishRejects + 1;  	// T-71 : NEVER block here (see above)
 
 	lineCounter++;               												// Adjust line and frame.
 	if (lineCounter == currentTiming->logicalLines) {
 		frameCounter++;
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
+		monoLineMask = pendingMonoLineMask;  									// T-71 : 2 <-> 4 line buffers, on a frame boundary
 		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
 		const struct CursorState *c = &cursorSlot[cursorSlotIndex];  			// T-43 : one consistent state, published
 		cursorEnabled = c->on;cursorImage = cursorPixels;  						// as a whole by core 0 ; the image is in
@@ -176,7 +194,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
 
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
-		uint32_t *mono = (lineCounter & 1) ? monoLine1 : monoLine2;
+		uint32_t *mono = monoLine[lineCounter & monoLineMask];
 		memcpy(mono,screenMemory + y * currentMode->stride,currentMode->stride);
 		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) {   					// Mouse cursor in
 			const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // monochrome (T-29) : colour 0 = off,
@@ -463,6 +481,18 @@ void RNDCursorUpdate(void) {
 //		wrongly cleared the display of any suspicion all day. The line callback runs on core 1
 //		every 31 µs, so sampling there does catch the episodes ; lateTotal counts them.
 uint32_t RNDLateScanlines(void) { return lateTotal; }
+
+//		T-71 (0.16.10). Two numbers the debug port reports and the SWD probe can read without
+//		stopping either core : lines dropped rather than blocking the callback, and how many
+//		1 bpp buffers the mode is currently rotating through.
+//		In RAM : the telemetry tick calls this from DSPSync, and nothing DSPSync reaches may
+//		live in flash (T-46). Reading a counter must not cost an XIP access on core 0 while
+//		core 1 is encoding — that is the very contention being measured.
+uint32_t __not_in_flash_func(RNDPublishRejects)(void) { return publishRejects; }
+uint32_t __not_in_flash_func(RNDMonoBuffers)(void) { return (uint32_t)monoLineMask + 1; }
+void RNDSetMonoBuffers(int count) {  											// 2 or 4 ; takes effect at the next frame
+	if (count == 2 || count == 4) pendingMonoLineMask = (uint8_t)(count - 1);
+}
 
 void RNDFlashPause(void) {
 	if (!isInitialised) return;

@@ -121,10 +121,12 @@ static void __not_in_flash_func(DBGHex)(char *out,uint32_t value) {
 	for (int i = 0;i < 8;i++) out[i] = hexDigits[(value >> ((7 - i) * 4)) & 0xF];
 }
 
-void __not_in_flash_func(DBGTelemetry)(uint32_t late,uint32_t sectors,uint32_t mode) {
-	char line[40];
+void __not_in_flash_func(DBGTelemetry)(uint32_t late,uint32_t rejects,uint32_t sectors,uint32_t mode) {
+	char line[64];
 	int p = 0;
 	line[p++] = 'L';line[p++] = '=';DBGHex(line + p,late);p += 8;
+	line[p++] = ' ';
+	line[p++] = 'R';line[p++] = '=';DBGHex(line + p,rejects);p += 8;  				// T-71 : lines dropped by the callback
 	line[p++] = ' ';
 	line[p++] = 'S';line[p++] = '=';DBGHex(line + p,sectors);p += 8;
 	line[p++] = ' ';
@@ -141,7 +143,7 @@ void __not_in_flash_func(DBGTelemetryTick)(void) {
 	if (!dbgOn) return;
 	if (++ticks < 95) return;
 	ticks = 0;
-	DBGTelemetry(RNDLateScanlines(),stoSectorCount,(uint32_t)GFXGetMode());
+	DBGTelemetry(RNDLateScanlines(),RNDPublishRejects(),stoSectorCount,(uint32_t)GFXGetMode());
 }
 
 // ***************************************************************************************
@@ -213,6 +215,8 @@ static void __not_in_flash_func(DBGReportVideo)(void) {
 	DBGPair("mode",(uint32_t)GFXGetMode());
 	DBGPair("trames",(uint32_t)RNDGetFrameCount());
 	DBGPair("late",RNDLateScanlines());
+	DBGPair("rejets",RNDPublishRejects());  									// T-71 lot 1 : lines the callback dropped rather than
+	DBGPair("tampons",RNDMonoBuffers());  										// block in the IRQ ; and lot 2 : 2 or 4 line buffers
 	DBGPair("x",gMode.xGSize);
 	DBGPair("y",gMode.yGSize);
 	DBGPair("stride",gMode.stride);
@@ -282,10 +286,15 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
 				  DBGReportUSB();DBGReportStorage();DBGReportMemory();DBGReportPlacement();break;
 		case 'z': HWBusStallsReset();DBGWrite("\r\ncompteurs de bus remis a zero\r\n");break;
+		//		T-71 lot 2 : the two arms of the buffer experiment, in ONE binary. 0.16.6 was judged
+		//		against 0.16.9 while the memory map moved under it (T-48) ; here nothing moves.
+		case '2': RNDSetMonoBuffers(2);DBGWrite("\r\nmode 1 : deux tampons de ligne\r\n");break;
+		case '4': RNDSetMonoBuffers(4);DBGWrite("\r\nmode 1 : quatre tampons de ligne\r\n");break;
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502
 		default:
 			DBGWrite("\r\n!s famines  !v video  !k clavier  !m memoire  !p placement\r\n"
-					 "!u usb  !f stockage  !a tout  !z remise a zero  !! un '!'\r\n");
+					 "!u usb  !f stockage  !a tout  !z remise a zero  !! un '!'\r\n"
+					 "!2 !4 tampons de ligne du mode 1 (T-71)\r\n");
 			break;
 	}
 }
