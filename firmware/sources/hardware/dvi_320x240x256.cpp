@@ -197,9 +197,19 @@ bool cursorEnabled = false;
 static volatile uint32_t irqGapMax = 0;  									// Pire ecart entre deux lignes, en us
 static volatile uint32_t irqGapLast = 0;  									// Dernier ecart
 static volatile uint32_t irqGapLong = 0;  									// Lignes retardees de plus de deux lignes
+//		T-77 (0.16.34) : COMBIEN DE TEMPS le callback lui-meme occupe-t-il core 1 ? La question
+//		vient de bmarty et elle est juste : l'encodage TMDS tourne dans _encode_loop, e.g. en mode
+//		thread, donc un encodage lent ne peut PAS retarder l'interruption -- elle le preempte. Ce
+//		qui peut la retarder, c'est ce qui s'execute EN interruption, ou une section a interruptions
+//		masquees. Le callback publie un pointeur, recopie 90 octets et dessine le curseur : si sa
+//		duree depasse une ligne (32 us), il est la cause ; sinon le retard vient d'ailleurs.
+static volatile uint32_t cbEntry = 0, cbDurMax = 0;
 
 uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
 uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
+uint32_t __not_in_flash_func(RNDCallbackMax)(void) { return cbDurMax; }
+
+#define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; } while (0)
 
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
@@ -235,6 +245,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			}
 		}
 		lastEntry = now;
+		cbEntry = now;  												// T-77 : duree du callback, mesuree en sortie
 	}
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
@@ -271,7 +282,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 				if (pixel) bits[px >> 3] |= (0x80 >> (px & 7)); else bits[px >> 3] &= ~(0x80 >> (px & 7));
 			}
 		}
-		return;
+		CB_END();return;
 	}
 
 	uint16_t *cursline,*scan;
@@ -313,6 +324,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			cursline++;
 		}
 	}
+	CB_END();
 }
 
 // ***************************************************************************************
