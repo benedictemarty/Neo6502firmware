@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.22** (2026-09-25) — **T-77 : attente de stabilisation après le changement d'horloge.** Trouvée en lisant
+  `pico-pacPlus`, qui pilote PicoDVI sur le même silicium et attend **100 ms après `set_sys_clock_khz`** là où
+  Trinity enchaînait aussitôt sur le recalcul des diviseurs et l'initialisation du DVI. Seul le mode 1 change
+  l'horloge (252 → 270 MHz), et c'est le seul mode qui casse. Coût : un dixième de seconde sur un changement de
+  mode qui démonte déjà l'affichage. Si la carte ne se comporte pas autrement, ce `sleep` ressort.
+
 - **0.16.21** (2026-09-25) — **T-77 : les lignes par trame sont comptées, et la phase verticale est innocentée.**
   Nominal du 720x480p60 : 525 lignes. Relevé sur carte : `525/525` en permanence, et les deux seules trames fautives
   (524 lignes) datent du **changement de mode**, pas du `DIR`. Pendant l'épisode, aucune trame ne perd ni ne gagne
