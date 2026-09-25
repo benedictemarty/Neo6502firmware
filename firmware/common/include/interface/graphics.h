@@ -70,6 +70,7 @@ void RNDResume(void);
 void RNDCursorUpdate(void);  													// T-32c : core 0 prepares the cursor for the line callback
 uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (diagnostic)
 uint32_t RNDPublishRejects(void);  											// T-71 : lines dropped instead of blocking the line callback
+uint32_t RNDDmaWaitEscapes(void);  										// T-71 : bounded DVI channel wait gave up (must stay 0)
 uint32_t RNDMonoBuffers(void);  											// T-71 : 1 bpp line buffers in use (2 or 4)
 void RNDSetMonoBuffers(int count);  										// T-71 : pick 2 or 4 at run time, same binary
 void HWBusProbe(void);  														// T-49 : sample the PIO stall flags (RAM, called by DSPSync)

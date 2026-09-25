@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.11** (2026-09-25) — **T-71 lot 4 : la boucle d'attente de picodvi est bornée.** L'interruption de ligne
+  attendait **sans limite** que les trois canaux DMA des lanes aient rechargé leur compte (`dvi.c:186`). Mesuré la
+  veille sur carte : après l'anomalie, deux canaux sont arrêtés et rechargent 320 là où le mode 1 exige 360, donc
+  l'attente ne se termine jamais et core 1 meurt dedans. Elle a maintenant un garde-fou de 128 tours — loin au-dessus
+  des « quelques cycles » attendus par l'amont, loin en dessous d'une ligne — et chaque échappée est comptée
+  (`dvi_tcr_timeouts`, lu sous `dma_secours` dans `!v`). La cause reste inconnue : on ne sait pas d'où vient ce 320.
+  Ce correctif supprime le **gel**, il ne prétend pas rendre l'image ; la carte dira si elle revient d'elle-même.
+
 - **0.16.10** (2026-09-25) — **T-71 : instrumentation, deux lots dans une seule version.** *Lot 1* : le callback de
   ligne ne publie plus par `queue_add_blocking_u32`. Il tourne en interruption sur core 1, et la file qu'il remplit
   (8 places) n'a qu'un consommateur, l'encodeur, **sur ce même core**, que l'interruption préempte : au bout de huit

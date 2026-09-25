@@ -216,7 +216,8 @@ static void __not_in_flash_func(DBGReportVideo)(void) {
 	DBGPair("trames",(uint32_t)RNDGetFrameCount());
 	DBGPair("late",RNDLateScanlines());
 	DBGPair("rejets",RNDPublishRejects());  									// T-71 lot 1 : lines the callback dropped rather than
-	DBGPair("tampons",RNDMonoBuffers());  										// block in the IRQ ; and lot 2 : 2 or 4 line buffers
+	DBGPair("tampons",RNDMonoBuffers());
+	DBGPair("dma_secours",RNDDmaWaitEscapes());  							// T-71 lot 4 : doit rester a zero  										// block in the IRQ ; and lot 2 : 2 or 4 line buffers
 	DBGPair("x",gMode.xGSize);
 	DBGPair("y",gMode.yGSize);
 	DBGPair("stride",gMode.stride);

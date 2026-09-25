@@ -489,6 +489,11 @@ uint32_t RNDLateScanlines(void) { return lateTotal; }
 //		live in flash (T-46). Reading a counter must not cost an XIP access on core 0 while
 //		core 1 is encoding — that is the very contention being measured.
 uint32_t __not_in_flash_func(RNDPublishRejects)(void) { return publishRejects; }
+//		T-71 lot 4 (0.16.11) : escapes from the bounded wait picodvi now does on the three data
+//		channels. It must stay at zero. Anything else is the reload anomaly measured on the board
+//		on 2026-09-25 -- two channels stopped, carrying another lane's control block, reload count
+//		320 where mode 1 needs 360 -- which used to hang that wait, and core 1 with it, for good.
+uint32_t __not_in_flash_func(RNDDmaWaitEscapes)(void) { return dvi_tcr_timeouts; }
 uint32_t __not_in_flash_func(RNDMonoBuffers)(void) { return (uint32_t)monoLineMask + 1; }
 void RNDSetMonoBuffers(int count) {  											// 2 or 4 ; takes effect at the next frame
 	if (count == 2 || count == 4) pendingMonoLineMask = (uint8_t)(count - 1);
