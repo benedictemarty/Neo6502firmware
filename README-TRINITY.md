@@ -42,6 +42,27 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.6** (2026-09-25, **T-71 mesuré et compris**) — **quatre tampons de ligne en mode 1, et l'outil SWD qui a
+  permis de trancher (T-71, T-76)**. Deux jours d'hypothèses sur l'écran noir du premier `DIR` en Hercules ont été
+  réglés par une mesure : une sonde SWD (un Pico flashé en `debugprobe`) lit la mémoire du RP2040 **pendant que la
+  carte tourne**, sans rien demander au firmware — ce que le port UART ne pouvait pas faire, puisqu'il suppose un
+  firmware en état de parler.
+  Le relevé pendant l'écran noir est sans appel : le compteur de trames garde ses **60 par seconde sans une seule
+  interruption**, la mémoire vidéo **contient le catalogue** (1/16 points non nuls avant le `DIR`, 11/16 après), et
+  `lateTotal` monte de 52 à 66 pour 22 secteurs lus. Donc ni firmware figé, ni encodeur arrêté, ni écran effacé :
+  **c'est le moniteur qui décroche**. Une quinzaine de lignes livrées en retard suffisent à lui faire perdre le
+  verrouillage sur le seul timing **natif** de Trinity (720×480p60, 270 MHz, sans marge) — et il ne le retrouve pas
+  seul, ce qui explique enfin pourquoi seul un changement de mode ramène l'image, et pourquoi le second `DIR` passe
+  (la FAT est en cache, il ne reste presque plus d'E/S).
+  Correction : `monoLine[4]` indexé par `lineCounter & 3` au lieu de deux tampons alternés — avec deux, le callback
+  revient sur celui que l'encodeur est en train de lire dès qu'il décroche ; quatre lui donnent trois lignes
+  d'avance, comme le mode 0 depuis T-53. Coût 392 o. **À valider sur carte, et le critère est mesurable** : `late`
+  ne doit plus monter pendant un `DIR` à froid.
+  **Une erreur de méthode à retenir** : j'ai d'abord mesuré « mémoire vidéo entièrement à zéro » et conclu à un
+  effacement. C'était faux — la mesure avait été prise après que mes propres points d'arrêt aient figé les deux
+  cœurs et cassé l'affichage. On ne diagnostique pas une panne d'affichage avec un outil qui arrête l'encodeur.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 172 o libres.
+
 - **0.16.5** (2026-09-25, firmware de diagnostic) — **balayage des broches UEXT (T-75)**. Après deux défauts réels
   corrigés (0.16.3 et 0.16.4) et toutes les permutations de câblage, le port restait muet sans qu'on puisse
   départager « le fil n'est pas sur la bonne broche » de « il reste un défaut » — et sans multimètre pour interroger

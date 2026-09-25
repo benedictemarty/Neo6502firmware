@@ -98,7 +98,15 @@ static uint8_t inkChannels = 7;  												// Mode 1 : bit 0 blue, bit 1 green
 #define SCAN_BUF_COUNT  (4)
 static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32] __attribute__((aligned(4)));   // T-58 : word aligned
 #define SCANBUF(n) (scanBuffer[(n) & (SCAN_BUF_COUNT-1)])
-static uint32_t monoLine1[MONO_LINE_WORDS/8+4],monoLine2[MONO_LINE_WORDS/8+4]; 	// 2 x 1 bpp scanline buffers (word aligned copies)
+//		T-71 : four 1 bpp line buffers, not two. Mode 1 runs the only native timing
+//		(720x480p60, 270 MHz) and has no slack : during the first DIR after a boot, FatFs
+//		reads the directory cold and core 1 delivers ~14 late lines. Measured by SWD on the
+//		board (2026-09-25) : the frame counter keeps its 60 Hz and the video memory holds the
+//		catalogue, yet the screen stays black — the monitor loses lock on those late lines and
+//		never regains it, which is why only a mode change brings the picture back. With two
+//		buffers the line callback returns to the one the encoder is still reading as soon as
+//		it falls behind ; four give it three lines of slack. Cost 392 bytes.
+static uint32_t monoLine[4][MONO_LINE_WORDS/8+4];  								// 4 x 1 bpp scanline buffers (word aligned)
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
@@ -149,7 +157,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
 	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
-	if (currentMode->bitsPerPixel == 1) scanline = (lineCounter & 1) ? (uint32_t)monoLine1 : (uint32_t)monoLine2;
+	if (currentMode->bitsPerPixel == 1) scanline = (uint32_t)monoLine[lineCounter & 3];  // T-71 : four buffers
 	if (lineCounter < currentTiming->yOffset ||  									// Outside the framebuffer : black line.
 			lineCounter >= currentTiming->yOffset + currentMode->yGSize) scanline = 0;
 	queue_add_blocking_u32(&dvi0.q_colour_valid, &scanline);                	// Send buffer to queue
@@ -169,7 +177,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
 
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
-		uint32_t *mono = (lineCounter & 1) ? monoLine1 : monoLine2;
+		uint32_t *mono = monoLine[lineCounter & 3];  								// T-71
 		memcpy(mono,screenMemory + y * currentMode->stride,currentMode->stride);
 		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) {   					// Mouse cursor in
 			const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // monochrome (T-29) : colour 0 = off,
