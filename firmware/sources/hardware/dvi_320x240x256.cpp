@@ -202,9 +202,18 @@ uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
 	{
+		//		T-77 (0.16.30) : la version 0.16.29 mesurait le VBLANK, pas un retard. Le callback
+		//		n'est appele que sur les lignes ACTIVES (480 sur 525) : entre la derniere d'une trame
+		//		et la premiere de la suivante il s'ecoule 45 lignes de blanking vertical, e.g.
+		//		1430 us -- et le compteur affichait 1462, ce trou a une ligne pres, au repos comme
+		//		sous charge. Il faut donc ignorer le premier appel de chaque trame et ne comparer que
+		//		deux lignes actives consecutives : la valeur nominale devient une ligne, 32 us, et
+		//		tout ce qui depasse est un vrai retard.
+		//		lineCounter est ici la ligne qu'on s'apprete a publier : zero signale le premier
+		//		appel de la trame, dont l'ecart avec le precedent contient tout le blanking.
 		static uint32_t lastEntry = 0;
 		uint32_t now = timer_hw->timerawl;  								// Registre, pas d'appel : rien de flash ici
-		if (lastEntry) {
+		if (lastEntry && lineCounter != 0) {
 			irqGapLast = now - lastEntry;
 			if (irqGapLast > irqGapMax && irqGapLast < 100000) irqGapMax = irqGapLast;
 		}
