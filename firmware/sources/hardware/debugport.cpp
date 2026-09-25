@@ -218,7 +218,8 @@ static void __not_in_flash_func(DBGReportVideo)(void) {
 	DBGPair("rejets",RNDPublishRejects());  									// T-71 lot 1 : lignes jetees plutot que de bloquer l'IRQ
 	DBGPair("tampons",RNDMonoBuffers());  										// T-71 lot 2 : deux, verdict rendu sur carte
 	DBGPair("dma_secours",RNDDmaWaitEscapes());  								// T-71 lot 4 : attente bornee des canaux, doit rester a 0
-	DBGPair("reprises",RNDDisplayRestarts());  									// T-71 lot 6 : modes redemarres par core 0
+	DBGPair("reprises",RNDDisplayRestarts());
+	DBGPair("ctrl_occupe",RNDCtrlBusyReconfig());  						// T-77 : l'hypothese a l'essai  									// T-71 lot 6 : modes redemarres par core 0
 	DBGPair("x",gMode.xGSize);
 	DBGPair("y",gMode.yGSize);
 	DBGPair("stride",gMode.stride);

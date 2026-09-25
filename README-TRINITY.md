@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.15** (2026-09-25) — **T-77 : la mesure qui met l'hypothèse à l'épreuve.** La boîte noire de 0.16.14 a
+  montré les trois canaux de contrôle chargeant chacun le bloc d'une autre lane — un décalage d'un rang, sans la
+  moindre ligne en retard. Reste une seule explication possible : la reconfiguration de chaque ligne tombe sur un
+  canal **qui transfère encore**, chaîné par son canal de données pendant que l'interruption était retardée par le
+  disque. `_dvi_load_dma_op` lit donc le bit `BUSY` avant de reprogrammer et compte les cas (`ctrl_occupe`). Rien
+  n'est corrigé : si ce compteur reste à zéro pendant un écran noir, l'hypothèse est morte et je le dirai.
+  La boîte noire est retirée, son relevé est archivé et ses 160 octets rendus à `RAM_LIMIT`.
+
 - **0.16.14** (2026-09-25) — **T-77 : une boîte noire sur le pipeline d'affichage.** Tout ce qu'on savait de
   l'anomalie avait été lu après coup. Celle-ci copie l'état des six canaux DMA et de la machine à états vidéo **à
   l'instant où le garde-fou se déclenche**, avant toute réparation et pour le seul premier épisode, afin de répondre

@@ -498,6 +498,10 @@ uint32_t __not_in_flash_func(RNDPublishRejects)(void) { return publishRejects; }
 //		on 2026-09-25 -- two channels stopped, carrying another lane's control block, reload count
 //		320 where mode 1 needs 360 -- which used to hang that wait, and core 1 with it, for good.
 uint32_t __not_in_flash_func(RNDDmaWaitEscapes)(void) { return dvi_tcr_timeouts; }
+//		T-77 (0.16.15) : reconfigurations of a lane control channel that landed while it was
+//		still transferring its four words. The hypothesis says this is what shifts the list by
+//		one rank ; zero here during a black screen would kill it.
+uint32_t __not_in_flash_func(RNDCtrlBusyReconfig)(void) { return dvi_ctrl_busy_reconfig; }
 //		T-71 lot 5 (0.16.12) : restarts of the three lane control channels, done from the
 //		interrupt itself because it is the only one that still runs once the channels stop.
 //

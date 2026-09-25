@@ -42,6 +42,7 @@ REJETS=$(addr _ZL14publishRejects)
 SECT=$(addr stoSectorCount)
 SECOURS=$(addr dvi_tcr_timeouts)   # T-71 lot 4 : echappees de l attente bornee des canaux
 REPRISES=$(addr _ZL15displayRestarts)   # T-71 lot 6 : modes redemarres par core 0
+OCCUPE=$(addr dvi_ctrl_busy_reconfig)   # T-77 : reconfigurations tombees sur un canal occupe
 GMODE=$(addr gMode)
 XG=$(printf "0x%x" $(( GMODE + 4 )))
 # La file clavier : deux symboles _ZL5queue existent (clavier 65 o, toolbox 256 o).
@@ -60,9 +61,9 @@ trap 'rm -f "$SCRIPT"' EXIT
     echo "}"
     echo "proc frappe {texte} { foreach ch [split \$texte \"\"] { touche [scan \$ch %c] } ; touche 13 }"
     echo "proc ligne {etiquette} {"
-    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d reprises=%3d sect=%4d larg=%4d\" \\"
+    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d reprises=%3d occupe=%6d sect=%4d larg=%4d\" \\"
     echo "        \$etiquette [read_memory 0x5020000c 32 1] [read_memory 0x50200008 32 1] \\"
-    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] [read_memory $REPRISES 32 1] \\"
+    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] [read_memory $REPRISES 32 1] [read_memory $OCCUPE 32 1] \\"
     echo "        [read_memory $SECT 32 1] [read_memory $XG 16 1]]"
     echo "}"
     echo "ligne depart"
