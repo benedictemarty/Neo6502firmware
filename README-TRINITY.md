@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.18** (2026-09-25) — **T-77 : le correctif — les blocs DMA sont rangés par lane, plus par liste.** La cause
+  racine mesurée la veille : pendant une rafale disque, les canaux de contrôle parcourent la liste tout seuls, et
+  comme les blocs étaient rangés **par liste**, une lane qui dépassait les siens tombait sur ceux de la **lane
+  voisine** — mauvais `TREQ`, mauvaise FIFO, deux canaux sur `TXF2`, aucun sur `TXF1`, TXOVER et écran mort.
+  Rangés **par lane**, le même débordement tombe sur la même lane d'une autre liste : au pire une ligne au contenu
+  faux. Une cinquième liste, jamais affichée, sert de garde pour le débordement venu de la dernière. Aucune
+  signature de picodvi n'a changé. `dvi0` passe de 712 à 900 octets, marge `RAM_LIMIT` : 236 octets.
+  **Le correctif n'empêche pas les canaux d'avancer** : `ctrl_avance` doit continuer à compter. C'est le critère —
+  l'anomalie persiste, ses conséquences disparaissent.
+
 - **0.16.17** (2026-09-25) — **T-77 : la mesure de 0.16.16 était mal calibrée, recalibrée ici.** Elle comptait
   ~96 000 cas par seconde dès le mode 0, sans aucune panne : j'attendais le pointeur un bloc plus loin, alors que le
   canal de contrôle est chaîné **une fois par bloc de sa propre lane** à chaque ligne — quatre fois pour la lane de
