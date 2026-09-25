@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.21** (2026-09-25) — **T-77 : les lignes par trame sont comptées, et la phase verticale est innocentée.**
+  Nominal du 720x480p60 : 525 lignes. Relevé sur carte : `525/525` en permanence, et les deux seules trames fautives
+  (524 lignes) datent du **changement de mode**, pas du `DIR`. Pendant l'épisode, aucune trame ne perd ni ne gagne
+  de ligne. Huitième hypothèse réfutée. **Fait nouveau** : l'écran a noirci puis est revenu **seul, avec
+  `reprises = 0`** — donc sans que core 0 redémarre le mode. Il existe au moins deux régimes du défaut, un
+  transitoire et un bloquant, que les relevés précédents mélangeaient. Reste debout : l'**ordre des phases dans la
+  ligne**, la lane de synchro jouant ses quatre blocs dans le désordre pendant le débordement.
+
 - **0.16.20** (2026-09-25) — **T-77 : la garde active, payée par l'anneau de trace.** L'anneau du port de debug
   passe de 2048 à 512 octets — ce port n'a jamais parlé (T-75) et la carte se pilote par la sonde — ce qui libère
   1536 octets. Chaque lane porte désormais, juste derrière ses blocs, **une copie complète d'elle-même** : mêmes
