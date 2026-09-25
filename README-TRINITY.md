@@ -59,6 +59,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   **TXOVER sur SM2**, pendant que la mémoire vidéo contient un catalogue parfait : le défaut est entre l'encodeur
   et le PIO. Nouvel outil : `firmware/scripts/neopilot.sh` tape au clavier du Neo par la sonde et relève le
   pipeline d'affichage — n'attacher que core 0, attacher core 1 fait tomber l'encodeur à 15 trames/s.
+  **Lot 3, mécanisme tenu** : en panne, deux des trois canaux DMA des lanes TMDS sont **arrêtés** et portent la
+  configuration d'une **autre lane** (rotation d'un rang), plus personne n'alimente `TXF1`, et leur compte
+  rechargé vaut **320** au lieu de **360**. Or l'interruption de picodvi attend 360 sur les trois canaux dans une
+  **boucle non bornée** (`dvi.c:186`) : elle ne rend jamais la main, et c'est là que core 1 gèle. Les listes en
+  mémoire sont intactes — le défaut est dans le chargement des registres, pas dans les données.
 
 - **0.16.9** (2026-09-25) — **retour à deux tampons de ligne : les quatre aggravaient (T-71)**. Mesuré au SWD
   pendant un `DIR` à froid en mode 1, sur le seul écran de la carte, qui affichait alors son indicateur 60 Hz (il n'y
