@@ -494,6 +494,9 @@ uint32_t __not_in_flash_func(RNDPublishRejects)(void) { return publishRejects; }
 //		on 2026-09-25 -- two channels stopped, carrying another lane's control block, reload count
 //		320 where mode 1 needs 360 -- which used to hang that wait, and core 1 with it, for good.
 uint32_t __not_in_flash_func(RNDDmaWaitEscapes)(void) { return dvi_tcr_timeouts; }
+//		T-71 lot 5 (0.16.12) : restarts of the three lane control channels, done from the
+//		interrupt itself because it is the only one that still runs once the channels stop.
+uint32_t __not_in_flash_func(RNDDmaRestarts)(void) { return dvi_dma_restarts; }
 uint32_t __not_in_flash_func(RNDMonoBuffers)(void) { return (uint32_t)monoLineMask + 1; }
 void RNDSetMonoBuffers(int count) {  											// 2 or 4 ; takes effect at the next frame
 	if (count == 2 || count == 4) pendingMonoLineMask = (uint8_t)(count - 1);

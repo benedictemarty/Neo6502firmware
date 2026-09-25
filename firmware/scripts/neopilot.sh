@@ -25,6 +25,9 @@
 #                           0x00040000 = TXOVER on SM2 — both appear during the cold DIR.
 #                  trames   frameCounter : frozen means core 1 has stopped.
 #                  rejets   T-71 lot 1 : lines the callback dropped. Stays at 0.
+#                  secours  T-71 lot 4 : escapes from the bounded wait on the three data
+#                           channels (dvi_tcr_timeouts). Must stay 0 : anything else is the
+#                           reload anomaly that used to freeze core 1 for good.
 #
 # ***************************************************************************************
 set -u
@@ -39,6 +42,7 @@ REJETS=$(addr _ZL14publishRejects)
 MASQUE=$(addr _ZL12monoLineMask)
 PMASQUE=$(addr _ZL19pendingMonoLineMask)
 SECT=$(addr stoSectorCount)
+SECOURS=$(addr dvi_tcr_timeouts)   # T-71 lot 4 : echappees de l attente bornee des canaux
 GMODE=$(addr gMode)
 XG=$(printf "0x%x" $(( GMODE + 4 )))
 # La file clavier : deux symboles _ZL5queue existent (clavier 65 o, toolbox 256 o).
@@ -57,9 +61,9 @@ trap 'rm -f "$SCRIPT"' EXIT
     echo "}"
     echo "proc frappe {texte} { foreach ch [split \$texte \"\"] { touche [scan \$ch %c] } ; touche 13 }"
     echo "proc ligne {etiquette} {"
-    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d sect=%4d masque=%d larg=%4d\" \\"
+    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d sect=%4d masque=%d larg=%4d\" \\"
     echo "        \$etiquette [read_memory 0x5020000c 32 1] [read_memory 0x50200008 32 1] \\"
-    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] \\"
+    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] \\"
     echo "        [read_memory $SECT 32 1] [read_memory $MASQUE 8 1] [read_memory $XG 16 1]]"
     echo "}"
     echo "ligne depart"

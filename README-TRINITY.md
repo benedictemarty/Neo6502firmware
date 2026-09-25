@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.12** (2026-09-25) — **T-71 lot 5 : les canaux DVI sont relancés depuis l'interruption.** Sur carte, la
+  0.16.11 a montré que borner l'attente ne suffit pas : le garde-fou se déclenche **une fois**, au `DIR` à froid, et
+  les trames restent figées — parce que les canaux arrêtés ne chaînent plus, donc l'interruption ne revient jamais et
+  l'encodeur attend indéfiniment des tampons que personne ne lui rend. La dernière interruption qui s'exécute est
+  donc le seul endroit où agir : elle redémarre maintenant les trois canaux de contrôle comme le fait `dvi_start`,
+  abandonne la ligne en cours et compte la relance (`dma_relances`). Une ligne perdue contre un cœur mort.
+  **Marge RAM : 52 octets.** Les quatre tampons de ligne du mode 1 ayant été jugés coupables (0.16.10), leurs
+  588 octets sont la réserve à puiser au prochain ajout.
+
 - **0.16.11** (2026-09-25) — **T-71 lot 4 : la boucle d'attente de picodvi est bornée.** L'interruption de ligne
   attendait **sans limite** que les trois canaux DMA des lanes aient rechargé leur compte (`dvi.c:186`). Mesuré la
   veille sur carte : après l'anomalie, deux canaux sont arrêtés et rechargent 320 là où le mode 1 exige 360, donc
