@@ -48,6 +48,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   synchronisation, deux pour les autres. L'attendu devient donc `bloc + 16 × nombre de blocs de la lane`, et le cas
   normal doit lire **zéro**. Seul indice exploitable de 0.16.16 : `ctrl_max` a sauté de 80 à 112 **au moment même du
   `DIR`**, soit un canal parti deux blocs plus loin que son régime habituel.
+  **Résultat, deux essais : la cause racine est établie.** Zéro partout en régime normal, puis exactement quatre
+  événements au `DIR` à froid, avec 3 à 4 blocs d'écart. Pendant que la rafale disque retarde l'interruption,
+  les canaux de données chaînent vers leurs canaux de contrôle, qui parcourent la liste tout seuls ; les trois
+  lanes n'ayant pas le même nombre de blocs (4, 2, 2), elles se décalent inégalement et chacune atterrit sur le
+  bloc d'une autre — deux sur `TXF2`, aucune sur `TXF1`, d'où le TXOVER et l'écran noir.
 
 - **0.16.16** (2026-09-25) — **T-77 : où en est le pointeur de lecture des canaux de contrôle ?** Seul relevé qui
   sépare les deux lectures restantes : un canal qui a tourné une seule fois laisse son `read_addr` à (bloc donné)
