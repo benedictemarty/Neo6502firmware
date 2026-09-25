@@ -49,6 +49,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   avec une **polarité de synchro verticale positive**, et le détournement mono (lanes partagées, canal noir
   prérempli) n'a jamais tourné dans ce cas. À reprendre en relisant un tampon TMDS sur la carte.
 
+- **0.16.26** (2026-09-25) — **T-77 : la polarité verticale du timing VGA passe en négative, pour trancher.**
+  Test décisif sur carte : forcer les trois lanes sur le canal noir prérempli donne un **noir uni et stable** en
+  720x480, et **ne change rien** en 720x400 — toujours blanc et bandes. Le contenu n'y est donc pour rien, le
+  défaut est dans le **blanking ou la synchro**. Or la polarité verticale positive, que la norme VGA impose pour ce
+  mode, est la seule différence structurelle avec tous les timings que Trinity a fait tourner. On la bascule non
+  pour être conforme mais pour savoir.
+
 - **0.16.25** (2026-09-25) — **T-77 : la tension suit l'horloge.** Sur carte, le timing VGA de 0.16.24 fait enfin
   **détecter un mode au moniteur (« 70 »)** — une première en mode 1 — mais l'image sort corrompue : bandes
   instables en haut et en bas, centre blanc. Vérifié au SWD avant de supposer : la mémoire vidéo est correcte et
