@@ -49,6 +49,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   masquées**, l'interruption de ligne arrivait **une ligne en retard**, et les canaux DMA prenaient un tour
   d'avance. Avec des verrous dédiés (`spin_lock_claim_unused`, numéros 24 et 25), le `DIR` à froid donne
   **`avance = 0`**, `gap = 33 µs` (le nominal) et `late` à **+1** au lieu de +16. Le défaut ne se produit plus.
+  **Validé carte, deux essais** dont un depuis une coupure d'alimentation : **aucune coupure, image parfaite**.
+  T-71 et T-77 sont donc résolus **à la racine**, et non contournés. Le filet de reprise (0.16.13) et
+  l'égalisation des lanes (0.16.31) restent en place comme ceintures : ils ne se déclenchent plus.
 
 - **0.16.33** (2026-09-25) — **T-77 : la latence est mesurée, et il n'y a pas de blocage long.** Le filtre de
   0.16.30 se fiait à `lineCounter`, que `DVIStart` force à 2 : il excluait le mauvais appel et remesurait le
