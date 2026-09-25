@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.26** (2026-09-25) — **T-77 : le timing VGA est mis en réserve, l'état de référence redevient 0.16.23.**
+  La tension n'a rien changé (« la même chose ») : le 720x400@70 est bien **identifié** par le moniteur — un
+  acquis, le 720x480p60 ne l'a jamais été — mais l'image sort fausse alors que la mémoire vidéo et les tampons
+  envoyés à l'encodeur contiennent du noir. Piste non instruite : c'est le seul mode jamais utilisé par Trinity
+  avec une **polarité de synchro verticale positive**, et le détournement mono (lanes partagées, canal noir
+  prérempli) n'a jamais tourné dans ce cas. À reprendre en relisant un tampon TMDS sur la carte.
+
 - **0.16.25** (2026-09-25) — **T-77 : la tension suit l'horloge.** Sur carte, le timing VGA de 0.16.24 fait enfin
   **détecter un mode au moniteur (« 70 »)** — une première en mode 1 — mais l'image sort corrompue : bandes
   instables en haut et en bas, centre blanc. Vérifié au SWD avant de supposer : la mémoire vidéo est correcte et
