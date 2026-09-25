@@ -50,9 +50,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   la **bonne longueur**, sinon le signal lui-même cesse d'être valide. Le bloc actif d'une garde affiche les
   symboles vides équilibrés, jamais un tampon d'image qui pourrait avoir été rendu. `dvi0` : 712 → 1224 octets,
   marge `RAM_LIMIT` : **1180 octets** contre 204. **Jugé sur l'écran avant tout autre indicateur.**
-  **Validé carte, deux essais** : `avance = 6` (l'anomalie se produit toujours) mais aucune reprise, aucun
-  TXOVER, les trois FIFO pleines, les trames à 60/s — et **l'image tient, sans une coupure**. La cause n'est
-  pas supprimée, elle est rendue inoffensive. Le filet de 0.16.13 reste en place et ne se déclenche plus.
+  **RÉFUTÉ sur carte** : `avance = 6`, aucune reprise, aucun TXOVER, les trois FIFO pleines, les trames à 60/s
+  — et **pas d'image, pas de signal**. Les compteurs disent oui pendant que l'écran est muet, comme en 0.16.18.
+  La garde rejoue une ligne de bonne durée mais quelque chose casse encore la synchronisation verticale.
+  **État de référence : 0.16.19**, où l'image revient seule.
 
 - **0.16.19** (2026-09-25) — **T-77 : annulation de 0.16.18, qui était aggravant.** Tous les compteurs disaient oui
   — `fdebug` propre, les trois FIFO alimentées, les trames à 60/s, aucune reprise nécessaire — et **l'écran n'avait
