@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.14** (2026-09-25) — **T-77 : une boîte noire sur le pipeline d'affichage.** Tout ce qu'on savait de
+  l'anomalie avait été lu après coup. Celle-ci copie l'état des six canaux DMA et de la machine à états vidéo **à
+  l'instant où le garde-fou se déclenche**, avant toute réparation et pour le seul premier épisode, afin de répondre
+  à la question restée ouverte : d'où sort le compte rechargé de 320, et les canaux de contrôle lisaient-ils alors
+  hors des listes ? Pur instrument : le comportement de 0.16.13 ne change pas.
+
 - **0.16.13** (2026-09-25) — **T-71 lot 6 : core 0 redémarre le mode quand les trames s'arrêtent.** La 0.16.12 est
   retirée : relancer les canaux depuis l'interruption les fait bien repartir (le compteur passe de 1 à ~65 000 par
   seconde) mais sauter la fin du gestionnaire saute aussi le callback qui compte les trames, et la machine s'installe
