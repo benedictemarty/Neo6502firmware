@@ -49,6 +49,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   valide. Pire, le firmware ne s'apercevait de rien, donc la reprise de core 0 ne se déclenchait plus : un défaut
   dont la machine guérissait seule depuis 0.16.13 devenait un écran définitivement muet. Retour au rangement par
   liste. **Leçon** : un correctif jugé sur ses compteurs et non sur l'écran est un correctif non jugé.
+  **Validé carte** : l'image revient bien à l'écran, la machine est au comportement de 0.16.13.
 
 - **0.16.18** (2026-09-25) — **T-77 : le correctif — les blocs DMA sont rangés par lane, plus par liste.** La cause
   racine mesurée la veille : pendant une rafale disque, les canaux de contrôle parcourent la liste tout seuls, et
