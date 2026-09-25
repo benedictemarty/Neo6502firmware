@@ -53,7 +53,8 @@ LIGNES=$(addr dvi_frame_lines_last)    # T-77 : lignes de la derniere trame
 LKO=$(addr dvi_frame_lines_bad)        # T-77 : trames au compte de lignes anormal
 LPIRE=$(addr dvi_frame_lines_worst)    # T-77 : compte de la derniere trame fautive
 LNOM=$(addr dvi_frame_lines_nominal)   # T-77 : ce que le timing demande
-GAP=$(addr _ZL9irqGapMax)              # T-77 : pire retard d entree dans l IRQ de ligne, en us
+GAP=$(addr _ZL9irqGapMax)              # T-77 : pire retard reel entre deux lignes actives, en us
+GLONG=$(addr _ZL10irqGapLong)          # T-77 : lignes retardees de plus de deux lignes
 PHASE=$(addr dvi_lane_en_phase)        # T-77 : debordements ou les trois lanes ont bouge ensemble
 DEPH=$(addr dvi_lane_dephase)          # T-77 : debordements ou elles ont diverge (dedoublement)
 GMODE=$(addr gMode)
@@ -74,9 +75,9 @@ trap 'rm -f "$SCRIPT"' EXIT
     echo "}"
     echo "proc frappe {texte} { foreach ch [split \$texte \"\"] { touche [scan \$ch %c] } ; touche 13 }"
     echo "proc ligne {etiquette} {"
-    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d reprises=%3d avance=%5d phase=%4d deph=%4d gap=%4d lignes=%4d/%4d ko=%5d pire=%4d sect=%4d larg=%4d\" \\"
+    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d reprises=%3d avance=%5d phase=%4d deph=%4d gap=%4d long=%5d lignes=%4d/%4d ko=%5d pire=%4d sect=%4d larg=%4d\" \\"
     echo "        \$etiquette [read_memory 0x5020000c 32 1] [read_memory 0x50200008 32 1] \\"
-    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] [read_memory $REPRISES 32 1] [read_memory $AVANCE 32 1] [read_memory $PHASE 32 1] [read_memory $DEPH 32 1] [read_memory $GAP 32 1] [read_memory $LIGNES 32 1] [read_memory $LNOM 32 1] [read_memory $LKO 32 1] [read_memory $LPIRE 32 1] \\"
+    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] [read_memory $REPRISES 32 1] [read_memory $AVANCE 32 1] [read_memory $PHASE 32 1] [read_memory $DEPH 32 1] [read_memory $GAP 32 1] [read_memory $GLONG 32 1] [read_memory $LIGNES 32 1] [read_memory $LNOM 32 1] [read_memory $LKO 32 1] [read_memory $LPIRE 32 1] \\"
     echo "        [read_memory $SECT 32 1] [read_memory $XG 16 1]]"
     echo "}"
     echo "ligne depart"

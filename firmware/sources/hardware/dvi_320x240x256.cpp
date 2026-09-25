@@ -196,8 +196,10 @@ bool cursorEnabled = false;
 //		l'interruption saute une ligne (environ 64) ou bien davantage.
 static volatile uint32_t irqGapMax = 0;  									// Pire ecart entre deux lignes, en us
 static volatile uint32_t irqGapLast = 0;  									// Dernier ecart
+static volatile uint32_t irqGapLong = 0;  									// Lignes retardees de plus de deux lignes
 
 uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
+uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
 
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
@@ -209,13 +211,28 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		//		sous charge. Il faut donc ignorer le premier appel de chaque trame et ne comparer que
 		//		deux lignes actives consecutives : la valeur nominale devient une ligne, 32 us, et
 		//		tout ce qui depasse est un vrai retard.
-		//		lineCounter est ici la ligne qu'on s'apprete a publier : zero signale le premier
-		//		appel de la trame, dont l'ecart avec le precedent contient tout le blanking.
+		//		T-77 (0.16.33) : le filtre de 0.16.30 ne marchait pas. Il excluait l'appel ou
+		//		lineCounter vaut zero, en croyant y reconnaitre le premier de la trame -- mais
+		//		DVIStart force lineCounter a DEUX et publie deux lignes d'avance, donc ce compteur
+		//		est decale de deux sur le balayage et le premier appel apres le blanking ne vaut
+		//		jamais zero. Le compteur affichait donc toujours 1462 us, e.g. les 46 lignes de
+		//		blanking vertical, au repos comme sous charge, et la valeur ne bougeait pas d'un
+		//		micrometre d'un essai a l'autre : c'etait la signature d'une mesure constante, pas
+		//		d'un defaut.
+		//
+		//		On filtre donc sur la DUREE, pas sur l'indice : au-dela de mille microsecondes c'est
+		//		le blanking (1430 us theoriques), en dessous c'est un vrai retard entre deux lignes
+		//		actives. La ligne nominale fait 32 us ; irqGapMax retient le pire retard reel et
+		//		irqGapLong compte les lignes ou le retard a depasse deux lignes.
 		static uint32_t lastEntry = 0;
 		uint32_t now = timer_hw->timerawl;  								// Registre, pas d'appel : rien de flash ici
-		if (lastEntry && lineCounter != 0) {
-			irqGapLast = now - lastEntry;
-			if (irqGapLast > irqGapMax && irqGapLast < 100000) irqGapMax = irqGapLast;
+		if (lastEntry) {
+			uint32_t d = now - lastEntry;
+			if (d < 1000) {  											// Au-dela : c'est le blanking vertical
+				irqGapLast = d;
+				if (d > irqGapMax) irqGapMax = d;
+				if (d > 64) irqGapLong = irqGapLong + 1;  				// Plus de deux lignes de retard
+			}
 		}
 		lastEntry = now;
 	}

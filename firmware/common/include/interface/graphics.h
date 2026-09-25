@@ -75,7 +75,8 @@ uint32_t RNDDmaRestarts(void);  										// T-71 : lane channels restarted from
 uint32_t RNDMonoBuffers(void);
 void RNDDisplayWatchdog(void);  										// T-71 : core 0 restarts the mode if the frames stop (RAM)
 uint32_t RNDDisplayRestarts(void);
-uint32_t RNDIrqGapMax(void);  											// T-77 : pire retard d'entree dans l'IRQ de ligne (us)
+uint32_t RNDIrqGapMax(void);
+uint32_t RNDIrqGapLong(void);  											// T-77 : lignes retardees de plus de deux lignes  											// T-77 : pire retard d'entree dans l'IRQ de ligne (us)
 uint32_t RNDCtrlOverrun(void);  										// T-77 : canal de controle parti seul dans la liste
 uint32_t RNDCtrlOverrunMax(void);  										// T-77 : pire ecart, en octets (16 = un bloc)
 uint32_t RNDCtrlBehind(void);  											// T-77 : canal pas encore termine  									// T-71 : recoveries performed  											// T-71 : 1 bpp line buffers in use (2 or 4)
