@@ -42,6 +42,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.23** (2026-09-25) — **T-77 : l'attente de 0.16.22 est retirée, elle ne changeait rien.** Sur carte, le
+  `DIR` à froid produit le même épisode au chiffre près et le même noir bref suivi d'un retour. Neuvième piste
+  réfutée — et retirée comme annoncé avant l'essai, pour ne pas garder une attente « au cas où ».
+
 - **0.16.22** (2026-09-25) — **T-77 : attente de stabilisation après le changement d'horloge.** Trouvée en lisant
   `pico-pacPlus`, qui pilote PicoDVI sur le même silicium et attend **100 ms après `set_sys_clock_khz`** là où
   Trinity enchaînait aussitôt sur le recalcul des diviseurs et l'initialisation du DVI. Seul le mode 1 change

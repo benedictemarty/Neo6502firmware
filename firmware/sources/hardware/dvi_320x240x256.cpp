@@ -368,15 +368,11 @@ void DVIStart(void) {                                                           
 	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
-	//		T-77 (0.16.22) : let the new clock settle before anything else touches the chip.
-	//		Found by reading pico-pacPlus (~/neo-deps/etude), which drives PicoDVI on the same
-	//		silicon and waits 100 ms AFTER set_sys_clock_khz, where we went straight on to
-	//		re-deriving the UART divider and initialising the DVI. Only mode 1 changes the system
-	//		clock at all (252 -> 270 MHz), and mode 1 is the only mode that fails -- so this costs
-	//		a tenth of a second on a mode change that already tears the display down, and it
-	//		removes one difference between us and a driver known to work on this part.
-	//		If the board behaves no differently, this comes straight back out.
-	sleep_ms(100);
+	//		T-77 (0.16.22, RETIRE en 0.16.23) : pico-pacPlus attend 100 ms ici, apres
+	//		set_sys_clock_khz. Essaye sur carte : le defaut se produit exactement comme avant,
+	//		ecran noir bref puis retour, meme avance des canaux, memes compteurs. L'attente ne
+	//		change rien, donc elle repart : une attente gardee au cas ou est une superstition,
+	//		pas un correctif, et elle couterait un dixieme de seconde a chaque changement de mode.
 	HWClockChanged();  															// Re-derive UART baud rate and sound sample rate.
 
 	dvi0.timing = currentTiming->timing;                                        // Set up timing, config, callback.
