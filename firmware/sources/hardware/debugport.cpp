@@ -23,7 +23,8 @@
 #include "common.h"
 #include "hardware/uart.h"
 #include "hardware/gpio.h"
-#include <unistd.h>  															// sbrk, for the heap report
+#include <unistd.h>
+#include "interface/usbsettle.h"  															// sbrk, for the heap report
 
 #define DBG_UART 		uart0
 #define DBG_TX_PIN 		(28)  													// As serial.cpp : UEXT
@@ -223,6 +224,33 @@ static void __not_in_flash_func(DBGReportPlacement)(void) {
 	DBGWrite("(2xxxxxxx = RAM, 10xxxxxx = flash)\r\n");
 }
 
+
+//		USB (T-70, T-31). Only what the firmware already holds in RAM : the barrier, how many
+//		enumeration events it saw, and whether the keyboard came up. Asking TinyUSB itself
+//		would mean calling into flash from DSPSync, which is the fault T-46 exists to forbid.
+
+static void __not_in_flash_func(DBGReportUSB)(void) {
+	DBGWrite("\r\nusb : ");
+	DBGPair("barriere",USBIsSettled() ? 1 : 0);
+	DBGPair("evenements",USBEventCount());
+	DBGPair("clavier",KBDIsPresent() ? 1 : 0);
+	DBGWrite("\r\n");
+}
+
+//		Storage (T-54, T-31). One line per FatFs drive : the USB address serving it, 0 when
+//		free. A drive still marked busy long after a transfer is the signature T-31 chases.
+
+static void __not_in_flash_func(DBGReportStorage)(void) {
+	DBGWrite("\r\nstockage : ");
+	for (int drive = 0;drive < 2;drive++) {  									// FF_VOLUMES : the FatFs header is not for this file
+		char label[8] = { 'd','r',(char)('0' + drive),'\0' };
+		DBGPair(label,STODebugDrive(drive));
+	}
+	DBGPair("occupe0",STODebugBusy(0) ? 1 : 0);
+	DBGPair("secteurs",stoSectorCount);
+	DBGWrite("\r\n");
+}
+
 static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 	switch (c) {
 		case 's': DBGReportStarvation();break;
@@ -230,13 +258,15 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 		case 'v': DBGReportVideo();break;
 		case 'k': DBGReportKeyboard();break;
 		case 'p': DBGReportPlacement();break;
+		case 'u': DBGReportUSB();break;
+		case 'f': DBGReportStorage();break;
 		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
-				  DBGReportMemory();DBGReportPlacement();break;
+				  DBGReportUSB();DBGReportStorage();DBGReportMemory();DBGReportPlacement();break;
 		case 'z': HWBusStallsReset();DBGWrite("\r\ncompteurs de bus remis a zero\r\n");break;
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502
 		default:
 			DBGWrite("\r\n!s famines  !v video  !k clavier  !m memoire  !p placement\r\n"
-					 "!a tout  !z remise a zero  !! un '!'\r\n");
+					 "!u usb  !f stockage  !a tout  !z remise a zero  !! un '!'\r\n");
 			break;
 	}
 }

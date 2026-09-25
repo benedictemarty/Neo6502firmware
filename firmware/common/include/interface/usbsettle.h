@@ -24,3 +24,4 @@ void USBNoteEvent(void);                                                        
 void USBWaitSettled(void);
 void USBReport(void);  															// T-66 : printed in P2, after the logo pause                                                      // P1 : returns when the bus is quiet (or at the ceiling)
 bool USBIsSettled(void);                                                        // True once the barrier has been passed
+uint16_t USBEventCount(void);                                                   // T-74 : enumeration events seen

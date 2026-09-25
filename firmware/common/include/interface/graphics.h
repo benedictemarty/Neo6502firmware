@@ -77,6 +77,8 @@ void DBGFlush(void);  															// Pushes into free FIFO space, from DSPSyn
 void DBGTelemetry(uint32_t late,uint32_t sectors,uint32_t mode);  				// T-73 : one line per second
 void DBGTelemetryTick(void);  													// T-73 : called from DSPSync
 void DBGPoll(void);  															// T-74 : terminal — UART to the keyboard queue
+uint8_t STODebugDrive(int drive);  												// T-74 : FatFs drive -> USB address (RAM)
+bool STODebugBusy(int slot);
 uint32_t HWBusStalls(uint8_t which);  											// T-49 : 0 = data not ready, 1 = address FIFO late
 void HWBusStallsReset(void);
 uint32_t HWBusTiming(uint8_t which);  											// T-50 : µs away from the bus (sync / command)

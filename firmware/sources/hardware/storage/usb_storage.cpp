@@ -163,6 +163,16 @@ DSTATUS disk_initialize(BYTE pdrv) {
     return 0;
 }
 
+//		T-74 : what the !f report needs, straight from RAM — no FatFs call, no TinyUSB call,
+//		because the report is emitted from DSPSync.
+uint8_t __not_in_flash_func(STODebugDrive)(int drive) {
+	return (drive >= 0 && drive < FF_VOLUMES) ? driveDevice[drive] : 0;
+}
+
+bool __not_in_flash_func(STODebugBusy)(int slot) {
+	return (slot >= 0 && slot < CFG_TUH_DEVICE_MAX) ? msc_volume_busy[slot] : false;
+}
+
 extern volatile uint32_t stoSectorCount;  										// T-73 : defined in debugport.cpp
 
 DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {

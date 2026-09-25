@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.2** (2026-09-25, demande bmarty) — **rapports `!u` usb et `!f` stockage (T-74)**. `!u` donne la barrière
+  d'énumération, le nombre d'événements vus et la présence du clavier ; `!f` donne, pour chaque lecteur FatFs,
+  l'adresse USB qui le sert, l'état occupé et les secteurs déplacés — **un lecteur resté occupé longtemps après un
+  transfert est la signature même de T-31**, le clavier muet pendant les accès disque.
+  Le point de conception vaut d'être noté : ces rapports partent de `DSPSync`, donc ils ne lisent **que ce que le
+  firmware garde déjà en RAM**. Interroger TinyUSB ou FatFs aurait été plus riche, mais tout TinyUSB vit en flash
+  (`hcd_rp2040_irq` à `0x1001b38c`) et appeler du code flash depuis `DSPSync` est exactement la faute qui tuait tous
+  les programmes en 0.10.x. D'où trois accesseurs placés en RAM plutôt qu'un appel commode.
+  Jeu complet : `!s` famines, `!v` vidéo, `!k` clavier, `!u` usb, `!f` stockage, `!m` mémoire, `!p` placement,
+  `!a` tout, `!z` remise à zéro, `!!` un vrai `!`.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 584 o libres, 940 o de marge.
+
 - **0.16.1** (2026-09-25, question bmarty : « y a-t-il d'autres commandes intéressantes pour le debug ? ») — **trois
   rapports de plus, un par ticket ouvert (T-74)**. **`!v`** donne le mode, les dimensions, les lignes en retard et
   surtout le **compteur de trames** : core 1 l'incrémente au début de chaque trame, donc s'il monte pendant l'écran

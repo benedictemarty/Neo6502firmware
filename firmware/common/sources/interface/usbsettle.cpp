@@ -16,6 +16,12 @@
 
 #include "common.h"
 
+#ifdef PICO
+#define TIMECRITICAL(x) __time_critical_func(x)
+#else
+#define TIMECRITICAL(x) x
+#endif
+
 static uint32_t lastEvent = 0;                                                  // TMRRead() of the last enumeration event
 static uint16_t eventCount = 0;
 static bool settled = false;
@@ -28,6 +34,10 @@ void USBNoteEvent(void) {
 }
 
 bool USBIsSettled(void) { return settled; }
+
+//		T-74 : read by the !u report, which runs from DSPSync — hence in RAM, and hence not
+//		a call into TinyUSB (all of which lives in flash, T-48).
+uint16_t TIMECRITICAL(USBEventCount)(void) { return eventCount; }
 
 void USBWaitSettled(void) {
 	uint32_t start = TMRRead();
