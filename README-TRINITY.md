@@ -42,6 +42,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.9** (2026-09-25) — **retour à deux tampons de ligne : les quatre aggravaient (T-71)**. Mesuré au SWD
+  pendant un `DIR` à froid en mode 1, sur un **second écran** qui reconnaît pourtant le signal (son indicateur reste
+  à 60 Hz, là où le premier n'affichait plus rien) : **le compteur de trames se fige net** — onze secondes à la même
+  valeur, core 1 ne l'incrémente plus — puis **la carte redémarre d'elle-même**. Avec deux tampons, le même `DIR`
+  laissait le firmware vivant, 60 trames par seconde et la mémoire vidéo pleine ; seule l'image était perdue.
+  Transformer un écran noir en blocage complet n'est pas un progrès.
+  Ce relevé **invalide aussi l'explication précédente** : sur un écran qui accepte le signal, le firmware se bloque
+  quand même. Ce n'est donc pas le moniteur qui décroche. Piste à instruire : le callback de ligne publie par
+  `queue_add_blocking_u32`, qui **bloque en interruption sur core 1** quand la file est pleine.
+  **Leçon de méthode, notée au backlog** : quatre explications successives ont été démenties par la mesure suivante
+  — famine mémoire, mémoire vidéo effacée, décrochage du moniteur, contenu corrompu. Ne plus rien expliquer avant
+  d'avoir comparé deux firmwares dans des conditions identiques, ce qui n'a jamais été fait proprement ici.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 548 o libres.
+
 - **0.16.8** (2026-09-25) — **retour en arrière : la priorité du bus à core 1 est annulée (T-71)**. Sur carte, la
   0.16.7 était pire que le mal : **l'écran noircissait dès `MODE 1`**, sans le moindre accès disque, et même les
   lectures SWD échouaient. La priorité s'applique à tout ce qui partage le bus — en mode 1 core 1 tourne à plein et
