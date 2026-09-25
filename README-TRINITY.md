@@ -42,6 +42,21 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.8** (2026-09-25) — **retour en arrière : la priorité du bus à core 1 est annulée (T-71)**. Sur carte, la
+  0.16.7 était pire que le mal : **l'écran noircissait dès `MODE 1`**, sans le moindre accès disque, et même les
+  lectures SWD échouaient. La priorité s'applique à tout ce qui partage le bus — en mode 1 core 1 tourne à plein et
+  monopolise la SRAM, si bien que core 0 ne peut plus écrire la mémoire vidéo, ni le port de debug lire la sienne.
+  Comme T-56 en son temps, l'essai instruit : les deux cœurs se disputent bien la même bande passante, mais **aucun
+  ne peut être privilégié**. Il faut diminuer la demande, pas arbitrer entre elles.
+  Restent les quatre tampons de ligne de la 0.16.6, seule amélioration réelle (`late` 59 → 70 au lieu de 59 → 73),
+  insuffisante à elle seule.
+  **Piste ouverte par une observation de bmarty** : « en mode 0 mon moniteur affiche 60 ; en mode 1 l'indicateur
+  n'apparaît plus ». Le moniteur ne **reconnaît pas** le signal du mode 1, ce qui suggère plus qu'un décrochage
+  passager — le **timing lui-même** serait marginal. Le mode 1 est le seul mode natif, 720×480p60 avec le RP2040
+  poussé à 270 MHz, sans marge : les lignes en retard n'achèveraient qu'un signal déjà limite. La suite est donc à
+  chercher du côté des marges de synchronisation, pas de la bande passante.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 172 o libres.
+
 - **0.16.7** (2026-09-25) — **priorité du bus mémoire à core 1 (T-71)**. Les quatre tampons de la 0.16.6 n'ont pas
   suffi : mesuré sur carte, `late` monte encore de 59 à 70 pendant un `DIR` à froid — trois épisodes de moins
   seulement — et **l'écran noircit toujours**. Il faut donc réduire le nombre de lignes en retard, pas leur ménager

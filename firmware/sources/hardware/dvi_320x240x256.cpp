@@ -335,14 +335,15 @@ void DVIStart(void) {                                                           
 	//		on the board (bmarty, 2026-09-23). Useful all the same — it says the starved party is
 	//		core 1, the encoder, not the display DMA : taking bandwidth from the cores hurts.
 	//
-	//		T-71 : so give the bandwidth to core 1 instead — the conclusion of T-56 that was
-	//		never actually tried. Core 1 must deliver a scanline every 31 µs while core 0 hammers
-	//		the SRAM for FatFs and TinyUSB ; the RP2040 arbiter serves them round robin unless
-	//		told otherwise. Four line buffers alone did not settle it (0.16.6 on the board :
-	//		lateTotal still 59 -> 70 during a cold DIR, screen still black), so the cure has to
-	//		be fewer late lines, not more room for them. One register, no memory cost. Watch
-	//		txstall/rxstall : slowing core 0 must not starve the 6502 bus loop in turn.
-	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;
+	//		T-71, ANNULÉ : donner la priorité du bus à core 1 (BUSCTRL_BUS_PRIORITY_PROC1_BITS)
+	//		était la conclusion logique de T-56 — jamais essayée — mais sur carte elle est pire
+	//		que le mal (bmarty, 2026-09-25, 0.16.7) : **l'écran noircit dès `MODE 1`, sans le
+	//		moindre accès disque**, et même les lectures SWD échouent. La priorité s'applique à
+	//		tout ce qui partage le bus : en mode 1 core 1 tourne à plein et monopolise la SRAM,
+	//		si bien que core 0 ne peut plus écrire la mémoire vidéo, ni le port de debug lire
+	//		la sienne. Comme T-56, l'essai reste instructif : les deux cœurs se disputent bien
+	//		la même bande passante, mais **aucun des deux ne peut être privilégié** — il faut
+	//		diminuer la demande, pas arbitrer entre elles.
 	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
