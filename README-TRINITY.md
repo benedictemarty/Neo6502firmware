@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.31** (2026-09-25) — **T-77 : toutes les lanes ont le même nombre de blocs.** Le blanking des lanes 1 et 2
+  est découpé en trois blocs comme celui de la lane de synchro, au lieu d'un seul. Fondement venu de l'écran :
+  après un `DIR`, seul le **bleu** glissait, rouge et vert restant alignés — et le bleu est la lane de synchro, la
+  seule à porter quatre blocs, donc la seule qu'un débordement d'un rang ne déplaçait pas de la même quantité. À
+  nombre de blocs égal, un débordement décale les trois lanes **de la même phase**. Cela ne supprime pas le
+  débordement, cela rend sa conséquence inoffensive. Coût 512 octets, marge `RAM_LIMIT` à 428.
+
 - **0.16.28** (2026-09-25) — **T-77 : retour au 720x480p60, et le constat qui compte.** Le 720x540p50 échoue deux
   fois : l'écran perd le signal, et surtout `avance` reste à 10 — **vingt mégahertz de moins ne réduisent pas le
   débordement des canaux**. La piste « diminuer la demande » est donc fermée côté horloge. **Trois timings 720 ont
