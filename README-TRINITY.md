@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.19** (2026-09-25) — **T-77 : annulation de 0.16.18, qui était aggravant.** Tous les compteurs disaient oui
+  — `fdebug` propre, les trois FIFO alimentées, les trames à 60/s, aucune reprise nécessaire — et **l'écran n'avait
+  plus de signal**. En retombant sur la même lane d'une autre liste, le canal prenait un bloc de **longueur
+  différente** (blanking au lieu d'actif) : la ligne n'avait plus la bonne durée et le signal DVI cessait d'être
+  valide. Pire, le firmware ne s'apercevait de rien, donc la reprise de core 0 ne se déclenchait plus : un défaut
+  dont la machine guérissait seule depuis 0.16.13 devenait un écran définitivement muet. Retour au rangement par
+  liste. **Leçon** : un correctif jugé sur ses compteurs et non sur l'écran est un correctif non jugé.
+
 - **0.16.18** (2026-09-25) — **T-77 : le correctif — les blocs DMA sont rangés par lane, plus par liste.** La cause
   racine mesurée la veille : pendant une rafale disque, les canaux de contrôle parcourent la liste tout seuls, et
   comme les blocs étaient rangés **par liste**, une lane qui dépassait les siens tombait sur ceux de la **lane
