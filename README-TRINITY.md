@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.33** (2026-09-25) — **T-77 : la latence est mesurée, et il n'y a pas de blocage long.** Le filtre de
+  0.16.30 se fiait à `lineCounter`, que `DVIStart` force à 2 : il excluait le mauvais appel et remesurait le
+  blanking (toujours 1462 µs). En filtrant sur la **durée**, le chiffre tombe : **34 µs au repos, 63 µs au pire
+  pendant le `DIR`** — moins de deux lignes, et aucune au-delà. L'interruption n'est retardée que **d'une ligne**,
+  et cela suffit à faire prendre un tour d'avance aux canaux DMA. L'hypothèse d'une section critique longue est
+  écartée, et cela explique pourquoi baisser l'horloge à 250 MHz n'avait rien changé : ce n'est pas un problème de
+  débit.
+
 - **0.16.31** (2026-09-25) — **T-77 : toutes les lanes ont le même nombre de blocs.** Le blanking des lanes 1 et 2
   est découpé en trois blocs comme celui de la lane de synchro, au lieu d'un seul. Fondement venu de l'écran :
   après un `DIR`, seul le **bleu** glissait, rouge et vert restant alignés — et le bleu est la lane de synchro, la
