@@ -42,6 +42,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.13** (2026-09-25) — **T-71 lot 6 : core 0 redémarre le mode quand les trames s'arrêtent.** La 0.16.12 est
+  retirée : relancer les canaux depuis l'interruption les fait bien repartir (le compteur passe de 1 à ~65 000 par
+  seconde) mais sauter la fin du gestionnaire saute aussi le callback qui compte les trames, et la machine s'installe
+  à relancer sans fin. Une réparation faite depuis l'interruption ne reconstruit pas un état cohérent. Core 0, lui,
+  est vivant pendant toute la panne — il continue de consommer le clavier — et il existe une réparation qui marche
+  depuis le premier jour : `MODE 0` puis `MODE 1`. `RNDDisplayWatchdog` surveille donc le compteur de trames depuis
+  `DSPSync` (en RAM, une comparaison par tick) et refait le cycle complet de mode après ~250 ms de gel (`reprises`).
+  La borne du lot 4 reste. **Le lot 2 est clos** : les quatre tampons étant jugés coupables, la bascule et les deux
+  tampons en trop disparaissent, et la marge RAM remonte de 52 à **552 octets**.
+
 - **0.16.12** (2026-09-25) — **T-71 lot 5 : les canaux DVI sont relancés depuis l'interruption.** Sur carte, la
   0.16.11 a montré que borner l'attente ne suffit pas : le garde-fou se déclenche **une fois**, au `DIR` à froid, et
   les trames restent figées — parce que les canaux arrêtés ne chaînent plus, donc l'interruption ne revient jamais et

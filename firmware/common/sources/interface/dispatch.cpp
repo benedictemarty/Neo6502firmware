@@ -77,6 +77,7 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 void TIMECRITICAL(DSPSync)(void) 
 {
 	KBDSync();
+	RNDDisplayWatchdog();  													// T-71 : frames frozen = display dead, core 0 restarts the mode
 	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
 	if (!DBGScanTick()) {  															// T-75 : the pin scan owns the port for 30 s
 		DBGPoll();  																// T-74 : terminal input

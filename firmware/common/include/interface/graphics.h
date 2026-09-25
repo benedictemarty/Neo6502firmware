@@ -72,8 +72,9 @@ uint32_t RNDLateScanlines(void);  												// T-32c : late scanline counter (
 uint32_t RNDPublishRejects(void);  											// T-71 : lines dropped instead of blocking the line callback
 uint32_t RNDDmaWaitEscapes(void);
 uint32_t RNDDmaRestarts(void);  										// T-71 : lane channels restarted from the IRQ  										// T-71 : bounded DVI channel wait gave up (must stay 0)
-uint32_t RNDMonoBuffers(void);  											// T-71 : 1 bpp line buffers in use (2 or 4)
-void RNDSetMonoBuffers(int count);  										// T-71 : pick 2 or 4 at run time, same binary
+uint32_t RNDMonoBuffers(void);
+void RNDDisplayWatchdog(void);  										// T-71 : core 0 restarts the mode if the frames stop (RAM)
+uint32_t RNDDisplayRestarts(void);  									// T-71 : recoveries performed  											// T-71 : 1 bpp line buffers in use (2 or 4)
 void HWBusProbe(void);  														// T-49 : sample the PIO stall flags (RAM, called by DSPSync)
 void DBGInitialise(void);  														// T-73 : UART0 debug port (board only)
 void DBGWrite(const char *s);  													// Appends to a RAM ring, never blocks

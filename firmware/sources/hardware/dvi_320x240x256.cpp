@@ -108,10 +108,14 @@ static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32] __attribute__((al
 //		boundary so the encoder never sees an index change mid line.
 //		With mask 1 the callback comes back to the buffer the encoder is still reading as soon
 //		as it falls behind ; with mask 3 it has three lines of slack.
-#define MONO_LINE_COUNT (4)
-static uint32_t monoLine[MONO_LINE_COUNT][MONO_LINE_WORDS/8+4]; 					// 4 x 1 bpp scanline buffers (word aligned copies), 784 bytes
-static volatile uint8_t monoLineMask = 1;  											// 1 = two buffers (0.16.9), 3 = four (0.16.6)
-static volatile uint8_t pendingMonoLineMask = 1;  								// Applied at the start of the next frame
+//		VERDICT (0.16.13) : TWO. Measured on the board on 2026-09-25 with the run time switch
+//		above, same binary both ways : with four buffers, entering mode 1 is enough to leave only
+//		ONE of the three TMDS lanes fed, TXSTALL and TXOVER raised at once, without a single disk
+//		access. The experiment is over, so the switch and the two spare buffers go : 392 bytes
+//		back, and RAM_LIMIT was down to 52 free.
+#define MONO_LINE_COUNT (2)
+static uint32_t monoLine[MONO_LINE_COUNT][MONO_LINE_WORDS/8+4]; 					// 2 x 1 bpp scanline buffers (word aligned copies)
+#define monoLineMask (MONO_LINE_COUNT-1)
 static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
@@ -126,6 +130,7 @@ static volatile uint32_t lateTotal = 0;  										// T-57 : episodes of late sc
 //		impossible — a dropped line costs one late line, which picodvi already handles — and
 //		the counter says whether the queue ever fills at all. Either answer is a measurement :
 //		rejets > 0 holds the mechanism, rejets == 0 during a black DIR kills it for good.
+#define DISPLAY_STUCK_TICKS (24)  											// T-71 : DSPSync ticks (95 Hz) before declaring the display dead
 static volatile uint32_t publishRejects = 0;  									// T-71 : lines dropped rather than blocking in the IRQ
 
 bool  isInitialised = false;                                      				// DVI running.
@@ -183,7 +188,6 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		frameCounter++;
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
-		monoLineMask = pendingMonoLineMask;  									// T-71 : 2 <-> 4 line buffers, on a frame boundary
 		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
 		const struct CursorState *c = &cursorSlot[cursorSlotIndex];  			// T-43 : one consistent state, published
 		cursorEnabled = c->on;cursorImage = cursorPixels;  						// as a whole by core 0 ; the image is in
@@ -496,11 +500,37 @@ uint32_t __not_in_flash_func(RNDPublishRejects)(void) { return publishRejects; }
 uint32_t __not_in_flash_func(RNDDmaWaitEscapes)(void) { return dvi_tcr_timeouts; }
 //		T-71 lot 5 (0.16.12) : restarts of the three lane control channels, done from the
 //		interrupt itself because it is the only one that still runs once the channels stop.
-uint32_t __not_in_flash_func(RNDDmaRestarts)(void) { return dvi_dma_restarts; }
-uint32_t __not_in_flash_func(RNDMonoBuffers)(void) { return (uint32_t)monoLineMask + 1; }
-void RNDSetMonoBuffers(int count) {  											// 2 or 4 ; takes effect at the next frame
-	if (count == 2 || count == 4) pendingMonoLineMask = (uint8_t)(count - 1);
+//
+//		T-71 lot 6 (0.16.13) : the recovery net, and it runs on CORE 0 on purpose.
+//
+//		Everything tried inside the scanline interrupt failed, and the measurements say why :
+//		when the lane channels stop, core 1 is gone -- the interrupt stops firing, the encoder
+//		waits for TMDS buffers nobody returns, and a repair attempted from the one interrupt that
+//		still runs cannot rebuild a coherent state (0.16.12 restarted the channels 65000 times a
+//		second without the frame counter ever moving again). Core 0, meanwhile, is measurably
+//		alive : during the freeze it still consumes the keyboard queue. And there is a repair
+//		that is known to work, because bmarty has been doing it by hand since the first day :
+//		MODE 0 then MODE 1, e.g. a full mode restart.
+//
+//		So core 0 watches the frame counter. If it stops moving while a mode is running, it does
+//		the restart itself. The check is in RAM and costs a comparison per tick (T-46) ; the
+//		restart path is in flash but is only ever reached when the display is already dead.
+static volatile uint32_t displayRestarts = 0;  									// Recoveries performed
+
+uint32_t __not_in_flash_func(RNDDisplayRestarts)(void) { return displayRestarts; }
+
+void __not_in_flash_func(RNDDisplayWatchdog)(void) {
+	static uint16_t lastFrame = 0;
+	static uint8_t stuck = 0;
+	if (!isInitialised || core1FlashPause || core1StopRequest) { stuck = 0;return; }   // Legitimate pauses, not a fault
+	if (frameCounter != lastFrame) { lastFrame = frameCounter;stuck = 0;return; }
+	if (++stuck < DISPLAY_STUCK_TICKS) return;  								// ~250 ms of a frozen counter at 95 Hz
+	stuck = 0;
+	displayRestarts = displayRestarts + 1;
+	DVIStopMode();  															// The MODE 0 / MODE 1 that has always worked,
+	DVIStart();  																// done by the core that is still standing
 }
+uint32_t __not_in_flash_func(RNDMonoBuffers)(void) { return MONO_LINE_COUNT; }
 
 void RNDFlashPause(void) {
 	if (!isInitialised) return;

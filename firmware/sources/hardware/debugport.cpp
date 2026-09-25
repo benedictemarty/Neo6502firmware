@@ -215,10 +215,10 @@ static void __not_in_flash_func(DBGReportVideo)(void) {
 	DBGPair("mode",(uint32_t)GFXGetMode());
 	DBGPair("trames",(uint32_t)RNDGetFrameCount());
 	DBGPair("late",RNDLateScanlines());
-	DBGPair("rejets",RNDPublishRejects());  									// T-71 lot 1 : lines the callback dropped rather than
-	DBGPair("tampons",RNDMonoBuffers());
-	DBGPair("dma_secours",RNDDmaWaitEscapes());
-	DBGPair("dma_relances",RNDDmaRestarts());  							// T-71 lot 5  							// T-71 lot 4 : doit rester a zero  										// block in the IRQ ; and lot 2 : 2 or 4 line buffers
+	DBGPair("rejets",RNDPublishRejects());  									// T-71 lot 1 : lignes jetees plutot que de bloquer l'IRQ
+	DBGPair("tampons",RNDMonoBuffers());  										// T-71 lot 2 : deux, verdict rendu sur carte
+	DBGPair("dma_secours",RNDDmaWaitEscapes());  								// T-71 lot 4 : attente bornee des canaux, doit rester a 0
+	DBGPair("reprises",RNDDisplayRestarts());  									// T-71 lot 6 : modes redemarres par core 0
 	DBGPair("x",gMode.xGSize);
 	DBGPair("y",gMode.yGSize);
 	DBGPair("stride",gMode.stride);
@@ -288,15 +288,11 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
 				  DBGReportUSB();DBGReportStorage();DBGReportMemory();DBGReportPlacement();break;
 		case 'z': HWBusStallsReset();DBGWrite("\r\ncompteurs de bus remis a zero\r\n");break;
-		//		T-71 lot 2 : the two arms of the buffer experiment, in ONE binary. 0.16.6 was judged
-		//		against 0.16.9 while the memory map moved under it (T-48) ; here nothing moves.
-		case '2': RNDSetMonoBuffers(2);DBGWrite("\r\nmode 1 : deux tampons de ligne\r\n");break;
-		case '4': RNDSetMonoBuffers(4);DBGWrite("\r\nmode 1 : quatre tampons de ligne\r\n");break;
+
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502
 		default:
 			DBGWrite("\r\n!s famines  !v video  !k clavier  !m memoire  !p placement\r\n"
-					 "!u usb  !f stockage  !a tout  !z remise a zero  !! un '!'\r\n"
-					 "!2 !4 tampons de ligne du mode 1 (T-71)\r\n");
+					 "!u usb  !f stockage  !a tout  !z remise a zero  !! un '!'\r\n");
 			break;
 	}
 }
