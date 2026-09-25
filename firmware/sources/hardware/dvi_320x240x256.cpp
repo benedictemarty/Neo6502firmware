@@ -185,8 +185,31 @@ bool cursorEnabled = false;
 //
 // ***************************************************************************************
 
+//		T-77 (0.16.29) : COMBIEN DE TEMPS l'interruption de ligne a-t-elle ete retardee ?
+//		Le debordement des canaux ne bouge pas quand on baisse l'horloge de 270 a 250 MHz
+//		(mesure du 2026-09-25) : ce n'est donc pas un manque de debit, c'est que quelque chose
+//		retient l'interruption plus d'une ligne entiere -- 31,78 us -- quelle que soit la
+//		frequence. Le chemin d'interruption est entierement en RAM, verifie par les adresses, donc
+//		la flash est hors de cause ; restent une section critique longue ailleurs, ou la
+//		contention de bus. Ce compteur mesure l'ecart entre deux entrees, en microsecondes, et en
+//		garde le pire. En regime normal il doit valoir une ligne ; pendant le DIR il dira si
+//		l'interruption saute une ligne (environ 64) ou bien davantage.
+static volatile uint32_t irqGapMax = 0;  									// Pire ecart entre deux lignes, en us
+static volatile uint32_t irqGapLast = 0;  									// Dernier ecart
+
+uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
+
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
+	{
+		static uint32_t lastEntry = 0;
+		uint32_t now = timer_hw->timerawl;  								// Registre, pas d'appel : rien de flash ici
+		if (lastEntry) {
+			irqGapLast = now - lastEntry;
+			if (irqGapLast > irqGapMax && irqGapLast < 100000) irqGapMax = irqGapLast;
+		}
+		lastEntry = now;
+	}
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
 	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
