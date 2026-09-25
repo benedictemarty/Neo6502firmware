@@ -219,7 +219,9 @@ static void __not_in_flash_func(DBGReportVideo)(void) {
 	DBGPair("tampons",RNDMonoBuffers());  										// T-71 lot 2 : deux, verdict rendu sur carte
 	DBGPair("dma_secours",RNDDmaWaitEscapes());  								// T-71 lot 4 : attente bornee des canaux, doit rester a 0
 	DBGPair("reprises",RNDDisplayRestarts());
-	DBGPair("ctrl_occupe",RNDCtrlBusyReconfig());  						// T-77 : l'hypothese a l'essai  									// T-71 lot 6 : modes redemarres par core 0
+	DBGPair("ctrl_avance",RNDCtrlOverrun());  							// T-77 : l'hypothese a l'essai
+	DBGPair("ctrl_max",RNDCtrlOverrunMax());
+	DBGPair("ctrl_retard",RNDCtrlBehind());  									// T-71 lot 6 : modes redemarres par core 0
 	DBGPair("x",gMode.xGSize);
 	DBGPair("y",gMode.yGSize);
 	DBGPair("stride",gMode.stride);

@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.16** (2026-09-25) — **T-77 : où en est le pointeur de lecture des canaux de contrôle ?** Seul relevé qui
+  sépare les deux lectures restantes : un canal qui a tourné une seule fois laisse son `read_addr` à (bloc donné)
+  + 16 octets, ses quatre mots consommés ; au-delà, il a refait un tour **tout seul** entre deux interruptions, et
+  c'est le décalage que la boîte noire avait attrapé. `ctrl_avance` les compte, `ctrl_max` retient le pire écart en
+  octets (16 = un bloc entier) et `ctrl_retard` couvre le cas inverse. Le code de mesure vit dans une fonction non
+  inlinée : écrit dans la boucle, il était recopié sur les cinq sites d'appel et dépassait `RAM_LIMIT` de 356 octets.
+  Toujours aucune correction : si `ctrl_avance` reste à zéro pendant un écran noir, ce sera la sixième réfutation.
+
 - **0.16.15** (2026-09-25) — **T-77 : la mesure qui met l'hypothèse à l'épreuve.** La boîte noire de 0.16.14 a
   montré les trois canaux de contrôle chargeant chacun le bloc d'une autre lane — un décalage d'un rang, sans la
   moindre ligne en retard. Reste une seule explication possible : la reconfiguration de chaque ligne tombe sur un
