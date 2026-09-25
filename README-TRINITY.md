@@ -53,6 +53,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   apparaître ou disparaître la panne sur cette carte. Les deux bras sont maintenant le **même binaire**.
   Coût : 588 octets de RAM, **316 octets de marge seulement** sous la limite — version d'expérimentation.
   `!v` affiche `rejets` et `tampons`, la télémétrie gagne une colonne `R=`. Rien n'est corrigé : c'est une mesure.
+  **Relevé carte du jour** : `rejets` reste à 0 partout, donc le lot 1 est réfuté ; les quatre tampons cassent le
+  mode 1 **dès l'entrée dans le mode**, sans disque, donc l'annulation de 0.16.6 est confirmée à binaire constant.
+  Le `DIR` à froid vide les trois FIFO du PIO (`flevel` = 0) avec TXSTALL sur les trois machines à états et un
+  **TXOVER sur SM2**, pendant que la mémoire vidéo contient un catalogue parfait : le défaut est entre l'encodeur
+  et le PIO. Nouvel outil : `firmware/scripts/neopilot.sh` tape au clavier du Neo par la sonde et relève le
+  pipeline d'affichage — n'attacher que core 0, attacher core 1 fait tomber l'encodeur à 15 trames/s.
 
 - **0.16.9** (2026-09-25) — **retour à deux tampons de ligne : les quatre aggravaient (T-71)**. Mesuré au SWD
   pendant un `DIR` à froid en mode 1, sur le seul écran de la carte, qui affichait alors son indicateur 60 Hz (il n'y
