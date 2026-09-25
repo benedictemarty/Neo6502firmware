@@ -49,6 +49,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   disque. `_dvi_load_dma_op` lit donc le bit `BUSY` avant de reprogrammer et compte les cas (`ctrl_occupe`). Rien
   n'est corrigé : si ce compteur reste à zéro pendant un écran noir, l'hypothèse est morte et je le dirai.
   La boîte noire est retirée, son relevé est archivé et ses 160 octets rendus à `RAM_LIMIT`.
+  **Mesuré sur carte, deux essais : l'hypothèse est morte.** `ctrl_occupe` reste à zéro, y compris à l'instant
+  du déclenchement. La reconfiguration ne tombe jamais sur un canal occupé. Reste la piste inverse : le canal a
+  **déjà fini** parce qu'il a été déclenché une fois de trop par son canal de données pendant que
+  l'interruption était retardée — il aurait avancé d'un bloc tout seul.
 
 - **0.16.14** (2026-09-25) — **T-77 : une boîte noire sur le pipeline d'affichage.** Tout ce qu'on savait de
   l'anomalie avait été lu après coup. Celle-ci copie l'état des six canaux DMA et de la machine à états vidéo **à
