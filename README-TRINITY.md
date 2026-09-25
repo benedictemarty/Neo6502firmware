@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.20** (2026-09-25) — **T-77 : la garde active, payée par l'anneau de trace.** L'anneau du port de debug
+  passe de 2048 à 512 octets — ce port n'a jamais parlé (T-75) et la carte se pilote par la sonde — ce qui libère
+  1536 octets. Chaque lane porte désormais, juste derrière ses blocs, **une copie complète d'elle-même** : mêmes
+  phases, mêmes durées. Un canal qui déborde rejoue **une ligne entière légale** au lieu de voler celle de la lane
+  voisine. C'est 0.16.18 corrigé de son erreur : il ne suffit pas que le bloc soit de la bonne lane, il doit avoir
+  la **bonne longueur**, sinon le signal lui-même cesse d'être valide. Le bloc actif d'une garde affiche les
+  symboles vides équilibrés, jamais un tampon d'image qui pourrait avoir été rendu. `dvi0` : 712 → 1224 octets,
+  marge `RAM_LIMIT` : **1180 octets** contre 204. **Jugé sur l'écran avant tout autre indicateur.**
+
 - **0.16.19** (2026-09-25) — **T-77 : annulation de 0.16.18, qui était aggravant.** Tous les compteurs disaient oui
   — `fdebug` propre, les trois FIFO alimentées, les trames à 60/s, aucune reprise nécessaire — et **l'écran n'avait
   plus de signal**. En retombant sur la même lane d'une autre liste, le canal prenait un bloc de **longueur

@@ -30,7 +30,13 @@
 #define DBG_TX_PIN 		(28)  													// As serial.cpp : UEXT
 #define DBG_RX_PIN 		(29)
 #define DBG_BAUD 		(115200)  												// Standard, and the 95 Hz flush caps us at ~3 KB/s anyway
-#define DBG_RING 		(2048)  												// Power of two ; a DIR is ~1,5 KB
+//		T-77 (0.16.20) : 512 bytes, down from 2048. The trace ring was sized for a whole DIR,
+//		but this port has NEVER SPOKEN -- T-75 hunted the UEXT pin through two real faults and
+//		every cabling permutation without finding it -- and the board is now driven through the
+//		probe instead (firmware/scripts/neopilot.sh), which does not touch this ring at all.
+//		1536 bytes of a mute port paid for the lane guards that T-77 needs. If the wire is ever
+//		found and the trace comes up short, this is the number to raise.
+#define DBG_RING 		(512)  												// Power of two
 
 static char ring[DBG_RING];
 static volatile uint16_t head = 0,tail = 0;  									// head = write, tail = read
