@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.17** (2026-09-25) — **T-77 : la mesure de 0.16.16 était mal calibrée, recalibrée ici.** Elle comptait
+  ~96 000 cas par seconde dès le mode 0, sans aucune panne : j'attendais le pointeur un bloc plus loin, alors que le
+  canal de contrôle est chaîné **une fois par bloc de sa propre lane** à chaque ligne — quatre fois pour la lane de
+  synchronisation, deux pour les autres. L'attendu devient donc `bloc + 16 × nombre de blocs de la lane`, et le cas
+  normal doit lire **zéro**. Seul indice exploitable de 0.16.16 : `ctrl_max` a sauté de 80 à 112 **au moment même du
+  `DIR`**, soit un canal parti deux blocs plus loin que son régime habituel.
+
 - **0.16.16** (2026-09-25) — **T-77 : où en est le pointeur de lecture des canaux de contrôle ?** Seul relevé qui
   sépare les deux lectures restantes : un canal qui a tourné une seule fois laisse son `read_addr` à (bloc donné)
   + 16 octets, ses quatre mots consommés ; au-delà, il a refait un tour **tout seul** entre deux interruptions, et
