@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.35** (2026-09-25) — **T-77 : la cause première est trouvée et supprimée — les spinlocks étaient partagés.**
+  Les files de picodvi utilisaient `next_striped_spin_lock_num()`, qui distribue les verrous 16 à 23 **en
+  round-robin avec tous les autres utilisateurs du SDK** : lus sur la carte, picodvi tenait les numéros 18 et 19.
+  Pendant une rafale disque, core 0 (FatFs, TinyUSB) prenait l'un d'eux, core 1 l'attendait **interruptions
+  masquées**, l'interruption de ligne arrivait **une ligne en retard**, et les canaux DMA prenaient un tour
+  d'avance. Avec des verrous dédiés (`spin_lock_claim_unused`, numéros 24 et 25), le `DIR` à froid donne
+  **`avance = 0`**, `gap = 33 µs` (le nominal) et `late` à **+1** au lieu de +16. Le défaut ne se produit plus.
+
 - **0.16.33** (2026-09-25) — **T-77 : la latence est mesurée, et il n'y a pas de blocage long.** Le filtre de
   0.16.30 se fiait à `lineCounter`, que `DVIStart` force à 2 : il excluait le mauvais appel et remesurait le
   blanking (toujours 1462 µs). En filtrant sur la **durée**, le chiffre tombe : **34 µs au repos, 63 µs au pire
