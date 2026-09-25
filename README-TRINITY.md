@@ -51,6 +51,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   **Validé carte, deux essais** dont un depuis une coupure d'alimentation : `avance = 9` à l'identique (le
   débordement est intact, c'était le critère) et **texte net, plus de dédoublement**. L'écran ne décroche plus
   pendant le `DIR` à froid. La cause première reste ouverte : elle est comprise, pas supprimée.
+  **Confirmé sous charge** (quatre `DIR` enchaînés) : `avance = 15`, `phase = 5`, `deph = 0` — soit 15 = 5 × 3,
+  les trois lanes débordant ensemble à chaque épisode — et photo à l'appui, texte net sans aucune frange.
+  Une mire de cinq repères montre que le rendu vertical est linéaire et complet ; la ligne 0 manquante est
+  l'overscan du moniteur (le repère à y = 3 est visible).
 
 - **0.16.28** (2026-09-25) — **T-77 : retour au 720x480p60, et le constat qui compte.** Le 720x540p50 échoue deux
   fois : l'écran perd le signal, et surtout `avance` reste à 10 — **vingt mégahertz de moins ne réduisent pas le
