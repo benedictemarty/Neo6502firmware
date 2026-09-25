@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.3** (2026-09-25) — **le port de debug recalcule son débit après un changement de mode (T-74)**. Le port
+  restait muet, et la cause était dans le firmware, pas dans le câble : `DVIStart` appelle `set_sys_clock_khz` (252
+  ou 270 MHz selon le mode vidéo), `clk_peri` suit, et le diviseur UART calculé en P0 cesse d'être juste dès que le
+  premier mode démarre. `serial.cpp` connaît ce piège et le règle par `SERClockChanged` — mais **seulement pour un
+  port que le 6502 a ouvert** (`currentBaudRate != 0`), ce qui n'est jamais le cas du port de debug, qui
+  s'initialise de lui-même. D'où `DBGClockChanged()`, accroché à `HWClockChanged()` aux côtés de `SERClockChanged()`
+  et `SNDClockChanged()`.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 584 o libres.
+
 - **0.16.2** (2026-09-25, demande bmarty) — **rapports `!u` usb et `!f` stockage (T-74)**. `!u` donne la barrière
   d'énumération, le nombre d'événements vus et la présence du clavier ; `!f` donne, pour chaque lecteur FatFs,
   l'adresse USB qui le sert, l'état occupé et les secteurs déplacés — **un lecteur resté occupé longtemps après un

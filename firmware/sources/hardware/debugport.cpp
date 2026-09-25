@@ -52,6 +52,17 @@ void DBGInitialise(void) {
 	DBGWrite("\r\n-- Trinity debug port (T-73), built " __DATE__ " --\r\n");
 }
 
+//		The video mode sets clk_sys (252 or 270 MHz), and clk_peri follows it — so the UART
+//		divisor computed at P0 stops being right the moment the first mode starts. serial.cpp
+//		has the same problem and solves it through SERClockChanged, but only for a port the
+//		6502 has opened (currentBaudRate != 0), which is never the case here. Hence our own
+//		hook, called from HWClockChanged : without it the port talks at the wrong speed and
+//		the PC sees nothing usable.
+
+void DBGClockChanged(void) {
+	if (dbgOn) uart_set_baudrate(DBG_UART,DBG_BAUD);
+}
+
 //		Appending is a pair of writes and a masked increment : safe to call from anywhere on
 //		core 0, including from an interrupt. Full ring drops the character rather than wait.
 

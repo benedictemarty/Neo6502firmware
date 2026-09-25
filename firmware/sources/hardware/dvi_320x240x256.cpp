@@ -319,6 +319,7 @@ static void _DVISetLanes(void) {
 void HWClockChanged(void) {
 	SERClockChanged();
 	SNDClockChanged();
+	DBGClockChanged();  														// T-74 : the debug port has its own baud rate
 }
 
 void DVIStart(void) {                                                             // Public and not inlined : Phosphoneo co-sim hooks this symbol (HLE).
