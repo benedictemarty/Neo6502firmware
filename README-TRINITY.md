@@ -42,6 +42,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.4** (2026-09-25) — **le port de debug n'est plus éteint en P3 (T-74)**. Le port restait muet pour une
+  seconde raison, la vraie : `GPIOMapping[]` associe les broches UEXT du 6502 aux GPIO du RP2040, et ses entrées 3 et
+  4 sont **28 et 29**, c'est-à-dire l'UART. `IOInitialise()` tourne en **P3**, après `DBGInitialise()` en P0, et remet
+  chaque broche de cette table en entrée — or `gpio_init()` réinitialise la fonction du GPIO en SIO et **détruit la
+  fonction UART**. Le port était donc coupé à chaque démarrage, et aucun câblage n'y aurait rien changé. La table
+  prévoyait le cas (`IOPINDisabled`, « probably in use by SPI, Serial, I2C ») : `DBGOwnsGPIO()` réserve les deux
+  broches et `IOInitialise` les saute.
+  La trouvaille vient d'un **test de bouclage** de l'adaptateur : `NEOTEST-12345` renvoyé intact prouvait que le
+  matériel, le pilote et le débit étaient bons, ce qui obligeait à chercher dans le firmware plutôt que dans le
+  câble, le brochage ou le schéma de la carte. Sans lui, la recherche partait pour des heures au mauvais endroit.
+  Conséquence : les broches 3 et 4 de l'UEXT ne sont plus offertes au 6502 tant que le port de debug est actif.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 584 o libres.
+
 - **0.16.3** (2026-09-25) — **le port de debug recalcule son débit après un changement de mode (T-74)**. Le port
   restait muet, et la cause était dans le firmware, pas dans le câble : `DVIStart` appelle `set_sys_clock_khz` (252
   ou 270 MHz selon le mode vidéo), `clk_peri` suit, et le diviseur UART calculé en P0 cesse d'être juste dès que le

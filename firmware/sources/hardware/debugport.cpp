@@ -59,6 +59,14 @@ void DBGInitialise(void) {
 //		hook, called from HWClockChanged : without it the port talks at the wrong speed and
 //		the PC sees nothing usable.
 
+//		Told to IOInitialise, which would otherwise hand these pins back to the 6502 as plain
+//		inputs and kill the port. False when the port is off, so nothing is reserved for
+//		nothing.
+
+bool DBGOwnsGPIO(int gpio) {
+	return dbgOn && (gpio == DBG_TX_PIN || gpio == DBG_RX_PIN);
+}
+
 void DBGClockChanged(void) {
 	if (dbgOn) uart_set_baudrate(DBG_UART,DBG_BAUD);
 }

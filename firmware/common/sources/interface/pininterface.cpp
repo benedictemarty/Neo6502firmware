@@ -52,8 +52,17 @@ static int IOMapPinToGPIO(int pinID) {
 //
 // ***************************************************************************************
 
+//		T-74 : the debug port owns the UEXT UART pins, and this loop used to take them back.
+//		gpio_init() resets a pin to SIO, so setting GPIO 28/29 to input here destroyed the
+//		UART function set up in P0 — the port was switched off at every boot, in P3, and that
+//		is why it never emitted a single byte. The pin table already has a way to say a pin is
+//		spoken for ("probably in use by SPI, Serial, I2C") : we use it.
 void IOInitialise(void) {
 	for (int i = IOPIN_MIN;i <= IOPIN_MAX;i++) {  									// Scan range
+		if (DBGOwnsGPIO(GPIOMapping[i])) {  										// T-74 : debug port pin
+			IOPINDisabled[i] = true;  												// Not the 6502's to use
+			continue;
+		}
 		if (GPIOMapping[i] != 0) { 													// Pin exists ?
 			IOPINDisabled[i] = false;  												// Not disabled
 			IOPINOutputLatch[i] = false; 											// Clear O/P Latch
