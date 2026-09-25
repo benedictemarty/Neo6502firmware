@@ -48,6 +48,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   seule à porter quatre blocs, donc la seule qu'un débordement d'un rang ne déplaçait pas de la même quantité. À
   nombre de blocs égal, un débordement décale les trois lanes **de la même phase**. Cela ne supprime pas le
   débordement, cela rend sa conséquence inoffensive. Coût 512 octets, marge `RAM_LIMIT` à 428.
+  **Validé carte, deux essais** dont un depuis une coupure d'alimentation : `avance = 9` à l'identique (le
+  débordement est intact, c'était le critère) et **texte net, plus de dédoublement**. L'écran ne décroche plus
+  pendant le `DIR` à froid. La cause première reste ouverte : elle est comprise, pas supprimée.
 
 - **0.16.28** (2026-09-25) — **T-77 : retour au 720x480p60, et le constat qui compte.** Le 720x540p50 échoue deux
   fois : l'écran perd le signal, et surtout `avance` reste à 10 — **vingt mégahertz de moins ne réduisent pas le
