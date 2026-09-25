@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.24** (2026-09-25) — **T-77 : le mode 1 passe au timing VGA 720x400 @ 70 Hz.** Il utilisait jusqu'ici le
+  720x480p60, qui est un timing **CEA/EDTV de téléviseur** — celui sur lequel le moniteur de la carte n'a jamais
+  affiché son indicateur. Le nouveau est le **mode texte VGA d'IBM** : 720 pixels de large exactement, conçu pour
+  le 720x350 du MDA/Hercules, accepté par tous les moniteurs PC. 900 × 449, pixel 28,32 MHz, `clk_sys` 283,2 MHz —
+  atteint exactement par la PLL (VCO 1416, fbdiv 118, postdiv 5), vérifié avant d'écrire une ligne. Les 350 lignes
+  sont centrées dans 400. **Cela ne corrige pas le débordement DMA** : cela vise l'autre moitié du problème, le
+  moniteur qui ne se raccroche pas. Risque assumé : 13 MHz de plus, à tension inchangée.
+
 - **0.16.23** (2026-09-25) — **T-77 : l'attente de 0.16.22 est retirée, elle ne changeait rien.** Sur carte, le
   `DIR` à froid produit le même épisode au chiffre près et le même noir bref suivi d'un retour. Neuvième piste
   réfutée — et retirée comme annoncé avant l'essai, pour ne pas garder une attente « au cas où ».

@@ -65,7 +65,15 @@ struct DisplayTiming {
 
 static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 0
-	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
+	//		T-77 (0.16.24) : mode 1 passe du 720x480p60 au 720x400p70. Le premier est un timing
+	//		CEA/EDTV, e.g. un mode de TELEVISEUR (59,94 Hz) : le moniteur de la carte n'a jamais
+	//		affiche son indicateur 60 Hz dessus et ne se raccroche pas seul apres une
+	//		perturbation. Le second est le mode texte VGA, accepte par tous les moniteurs PC
+	//		depuis 1987, large de 720 pixels exactement, et concu a l'epoque pour le 720x350 du
+	//		MDA/Hercules -- qui est justement ce que ce mode affiche. 283,2 MHz au lieu de 270,
+	//		atteint exactement par la PLL (VCO 1416, fbdiv 118, postdiv 5), 70,08 Hz.
+	//		350 lignes centrees dans 400 : yOffset = 25.
+	{ &dvi_timing_720x400p_70hz, 1, 400, 25 },  									// Mode 1 : 350 lines centred in 400
 };
 
 // ***************************************************************************************
