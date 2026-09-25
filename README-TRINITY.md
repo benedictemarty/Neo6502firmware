@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.28** (2026-09-25) — **T-77 : retour au 720x480p60, et le constat qui compte.** Le 720x540p50 échoue deux
+  fois : l'écran perd le signal, et surtout `avance` reste à 10 — **vingt mégahertz de moins ne réduisent pas le
+  débordement des canaux**. La piste « diminuer la demande » est donc fermée côté horloge. **Trois timings 720 ont
+  été essayés, un seul fonctionne** : 480p60 affiche, 400p70 donne du blanc, 540p50 ne donne pas de signal — sans
+  que la polarité, l'horloge, la tension ni le contenu n'expliquent l'écart. Quelque chose est calibré pour le
+  720x480p60 en particulier, et c'est là qu'il faudra chercher plutôt que dans un énième timing.
+
 - **0.16.27** (2026-09-25) — **T-77 : le mode 1 passe au 720x540p50 — 250 MHz au lieu de 270.** Timing repris de
   `ikjordan/PicoDVI`, vérifié avant emploi : c'est un CVT retouché (la formule donne 24,50 MHz et 880 de total
   horizontal, eux élargissent à 896 pour tomber sur 25,00 MHz pile). La formule a été réimplémentée et confirmée au

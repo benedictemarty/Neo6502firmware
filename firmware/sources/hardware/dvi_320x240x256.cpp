@@ -73,12 +73,11 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	//		MDA/Hercules -- qui est justement ce que ce mode affiche. 283,2 MHz au lieu de 270,
 	//		atteint exactement par la PLL (VCO 1416, fbdiv 118, postdiv 5), 70,08 Hz.
 	//		350 lignes centrees dans 400 : yOffset = 25.
-	//		T-77 (0.16.27) : essai du 720x540p50 (CVT retouche, repris de ikjordan/PicoDVI).
-	//		Ce qui compte ici n'est pas la resolution mais l'horloge : 250 MHz contre 270, a
-	//		largeur utile identique. Le defaut vient d'une interruption de ligne qui arrive trop
-	//		tard sous charge disque, et diminuer la demande est la seule direction que les
-	//		mesures n'ont pas encore fermee. 350 lignes centrees dans 540 : yOffset = 95.
-	{ &dvi_timing_720x540p_50hz, 1, 540, 95 },  									// Mode 1 : 350 lines centred in 540
+	//		T-77 : RETOUR au 720x480p60 apres trois essais. 720x400p70 (VGA) donne du blanc et des
+	//		bandes, 720x540p50 (CVT, 250 MHz) ne donne pas de signal, et aucun des deux n'a fait
+	//		baisser le debordement des canaux. Ni la polarite verticale, ni l'horloge, ni la
+	//		tension, ni le contenu n'expliquent l'ecart : quelque chose est calibre pour CE timing.
+	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
 };
 
 // ***************************************************************************************
