@@ -79,6 +79,7 @@ void DBGTelemetryTick(void);  													// T-73 : called from DSPSync
 void DBGPoll(void);  															// T-74 : terminal — UART to the keyboard queue
 void DBGClockChanged(void);  													// T-74 : re-derive the baud rate after a mode change
 bool DBGOwnsGPIO(int gpio);  													// T-74 : true for the debug UART pins
+bool DBGScanTick(void);  														// T-75 : which UEXT pin is the wire on ?
 uint8_t STODebugDrive(int drive);  												// T-74 : FatFs drive -> USB address (RAM)
 bool STODebugBusy(int slot);
 uint32_t HWBusStalls(uint8_t which);  											// T-49 : 0 = data not ready, 1 = address FIFO late

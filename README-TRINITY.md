@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.5** (2026-09-25, firmware de diagnostic) — **balayage des broches UEXT (T-75)**. Après deux défauts réels
+  corrigés (0.16.3 et 0.16.4) et toutes les permutations de câblage, le port restait muet sans qu'on puisse
+  départager « le fil n'est pas sur la bonne broche » de « il reste un défaut » — et sans multimètre pour interroger
+  la carte. La question est donc renversée : **c'est le firmware qui dit où il parle**. Pendant les 30 premières
+  secondes, il déplace la fonction UART TX d'une broche UEXT à la suivante, une par seconde, en annonçant
+  `UEXT GPIO=nn`. Le fil ne bouge pas ; l'annonce qui arrive nomme la broche.
+  Candidates : 28 et 29 (l'UART), puis 22 à 27 (I2C et SPI du firmware — les piloter une seconde est sans danger,
+  rien n'étant branché). L'écriture va droit au matériel avec `uart_tx_wait_blocking`, car le message doit avoir
+  quitté le registre à décalage avant que la broche ne change sous lui ; cette attente bloquante est la raison pour
+  laquelle le balayage ne tourne **que** pendant ces 30 s. Quatre passes, puis retour au port normal sur 28/29.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 548 o libres.
+
 - **0.16.4** (2026-09-25) — **le port de debug n'est plus éteint en P3 (T-74)**. Le port restait muet pour une
   seconde raison, la vraie : `GPIOMapping[]` associe les broches UEXT du 6502 aux GPIO du RP2040, et ses entrées 3 et
   4 sont **28 et 29**, c'est-à-dire l'UART. `IOInitialise()` tourne en **P3**, après `DBGInitialise()` en P0, et remet

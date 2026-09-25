@@ -182,6 +182,7 @@ void DBGTelemetryTick(void) {}
 void DBGPoll(void) {}
 void DBGClockChanged(void) {}
 bool DBGOwnsGPIO(int gpio) { (void)gpio;return false; }
+bool DBGScanTick(void) { return false; }
 uint32_t HWBusStalls(uint8_t which) { (void)which;return 0; }
 void HWBusStallsReset(void) {}
 uint32_t HWBusTiming(uint8_t which) { (void)which;return 0; }  					// T-50

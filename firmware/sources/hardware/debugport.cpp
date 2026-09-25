@@ -304,3 +304,63 @@ void __not_in_flash_func(DBGPoll)(void) {
 		KBDInsertQueue(c == 127 ? 8 : c);  										// Backspace of the terminal
 	}
 }
+
+// ***************************************************************************************
+//
+//		T-75 : find out which UEXT pin the wire is actually on.
+//
+//		The port stayed silent through two real firmware faults and every cabling permutation,
+//		and there is no multimeter here to ask the board directly (bmarty, 2026-09-25). So the
+//		firmware answers instead : for the first 30 seconds it moves the UART TX function from
+//		one UEXT pin to the next, once a second, announcing each one. Whatever pin the wire is
+//		on, one of those announcements lands in the terminal and names it.
+//
+//		Writing goes straight to the hardware here, not through the ring : the message must be
+//		out of the FIFO before the pin changes under it, so we wait for the shift register.
+//		That wait is why this only runs during the scan, never in normal operation.
+//
+//		The candidates are the eight UEXT GPIO. 22-27 are the firmware's I2C and SPI pins ;
+//		driving them as UART for one second is harmless with nothing plugged into the port.
+//
+// ***************************************************************************************
+
+static const uint8_t scanPins[] = { 28,29,22,23,24,25,26,27 };
+#define SCAN_COUNT 	(sizeof(scanPins)/sizeof(scanPins[0]))
+
+static void DBGScanSay(uint8_t pin) {
+	char text[24] = "\r\nUEXT GPIO=";
+	int p = 13;
+	text[p++] = '0' + pin / 10;
+	text[p++] = '0' + pin % 10;
+	text[p++] = '\r';text[p++] = '\n';text[p] = '\0';
+	for (const char *c = text;*c != '\0';c++) uart_putc_raw(DBG_UART,*c);
+	uart_tx_wait_blocking(DBG_UART);  											// Out of the wire before the pin moves
+}
+
+//		Returns true while scanning, so DSPSync knows the normal port is not in charge yet.
+
+bool DBGScanTick(void) {
+	static uint16_t ticks = 0;
+	static uint8_t index = 0;
+	static bool done = false;
+	if (done || !dbgOn) return false;
+	if (++ticks < 95) return true;  											// One pin per second
+	ticks = 0;
+	DBGScanSay(scanPins[index]);
+	gpio_set_function(scanPins[index],GPIO_FUNC_SIO);  							// Release this one
+	gpio_set_dir(scanPins[index],GPIO_IN);
+	index++;
+	if (index >= SCAN_COUNT) {
+		index = 0;
+		static uint8_t passes = 0;
+		if (++passes >= 4) {  													// 4 passes, then back to normal
+			done = true;
+			gpio_set_function(DBG_TX_PIN,GPIO_FUNC_UART);
+			gpio_set_function(DBG_RX_PIN,GPIO_FUNC_UART);
+			DBGWrite("\r\n-- fin du balayage, port sur GPIO 28/29 --\r\n");
+			return false;
+		}
+	}
+	gpio_set_function(scanPins[index],GPIO_FUNC_UART);  						// Talk on the next one
+	return true;
+}

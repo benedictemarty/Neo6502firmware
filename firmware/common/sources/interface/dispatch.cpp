@@ -78,9 +78,11 @@ void TIMECRITICAL(DSPSync)(void)
 {
 	KBDSync();
 	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
-	DBGPoll();  																	// T-74 : terminal input
-	DBGTelemetryTick();  															// T-73 : one line per second, if the port is on
-	DBGFlush();  																	// T-73 : push the trace, FIFO space only
+	if (!DBGScanTick()) {  															// T-75 : the pin scan owns the port for 30 s
+		DBGPoll();  																// T-74 : terminal input
+		DBGTelemetryTick();  														// T-73 : one line per second, if the port is on
+		DBGFlush();  																// T-73 : push the trace, FIFO space only
+	}
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 
