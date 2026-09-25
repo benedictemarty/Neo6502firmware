@@ -39,10 +39,9 @@ addr() { arm-none-eabi-nm "$ELF" | awk -v s="$1" '$3 == s { print "0x" $1 }'; }
 FRAMES=$(addr frameCounter)
 LATE=$(addr _ZL9lateTotal)
 REJETS=$(addr _ZL14publishRejects)
-MASQUE=$(addr _ZL12monoLineMask)
-PMASQUE=$(addr _ZL19pendingMonoLineMask)
 SECT=$(addr stoSectorCount)
 SECOURS=$(addr dvi_tcr_timeouts)   # T-71 lot 4 : echappees de l attente bornee des canaux
+REPRISES=$(addr _ZL15displayRestarts)   # T-71 lot 6 : modes redemarres par core 0
 GMODE=$(addr gMode)
 XG=$(printf "0x%x" $(( GMODE + 4 )))
 # La file clavier : deux symboles _ZL5queue existent (clavier 65 o, toolbox 256 o).
@@ -61,10 +60,10 @@ trap 'rm -f "$SCRIPT"' EXIT
     echo "}"
     echo "proc frappe {texte} { foreach ch [split \$texte \"\"] { touche [scan \$ch %c] } ; touche 13 }"
     echo "proc ligne {etiquette} {"
-    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d sect=%4d masque=%d larg=%4d\" \\"
+    echo "    echo [format \"%-11s flevel=0x%08x fdebug=0x%08x trames=%5d late=%4d rejets=%4d secours=%4d reprises=%3d sect=%4d larg=%4d\" \\"
     echo "        \$etiquette [read_memory 0x5020000c 32 1] [read_memory 0x50200008 32 1] \\"
-    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] \\"
-    echo "        [read_memory $SECT 32 1] [read_memory $MASQUE 8 1] [read_memory $XG 16 1]]"
+    echo "        [read_memory $FRAMES 16 1] [read_memory $LATE 32 1] [read_memory $REJETS 32 1] [read_memory $SECOURS 32 1] [read_memory $REPRISES 32 1] \\"
+    echo "        [read_memory $SECT 32 1] [read_memory $XG 16 1]]"
     echo "}"
     echo "ligne depart"
     for texte in "$@"; do
@@ -75,11 +74,6 @@ trap 'rm -f "$SCRIPT"' EXIT
     echo "for {set i 1} {\$i <= 20} {incr i} { ligne [format \"+%4.1fs\" [expr {\$i * 0.25}]] ; sleep 250 }"
     echo "shutdown"
 } >"$SCRIPT"
-
-# tampons de ligne du mode 1 : NEOPILOT_MASQUE=3 pour quatre, 1 pour deux (T-71 lot 2)
-if [ -n "${NEOPILOT_MASQUE:-}" ]; then
-    sed -i "1i write_memory $PMASQUE 8 [list ${NEOPILOT_MASQUE}]" "$SCRIPT"
-fi
 
 exec openocd -f interface/cmsis-dap.cfg -c "set USE_CORE 0" -f target/rp2040.cfg \
     -c "adapter speed 1000" -c "init" -f "$SCRIPT"

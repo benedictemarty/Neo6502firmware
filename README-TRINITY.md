@@ -51,6 +51,9 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   `DSPSync` (en RAM, une comparaison par tick) et refait le cycle complet de mode après ~250 ms de gel (`reprises`).
   La borne du lot 4 reste. **Le lot 2 est clos** : les quatre tampons étant jugés coupables, la bascule et les deux
   tampons en trop disparaissent, et la marge RAM remonte de 52 à **552 octets**.
+  **Validé sur carte** : deux `DIR` à froid consécutifs en mode 1, l'anomalie se produit toujours (`secours`
+  monte) mais `reprises` vaut 1, les trames repartent à 60/s, les trois lanes sont réalimentées et **l'image
+  revient sans intervention**. Le défaut est contourné, pas corrigé : la cause première devient **T-77**.
 
 - **0.16.12** (2026-09-25) — **T-71 lot 5 : les canaux DVI sont relancés depuis l'interruption.** Sur carte, la
   0.16.11 a montré que borner l'attente ne suffit pas : le garde-fou se déclenche **une fois**, au `DIR` à froid, et
