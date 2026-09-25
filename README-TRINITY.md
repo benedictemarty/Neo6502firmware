@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.27** (2026-09-25) — **T-77 : le mode 1 passe au 720x540p50 — 250 MHz au lieu de 270.** Timing repris de
+  `ikjordan/PicoDVI`, vérifié avant emploi : c'est un CVT retouché (la formule donne 24,50 MHz et 880 de total
+  horizontal, eux élargissent à 896 pour tomber sur 25,00 MHz pile). La formule a été réimplémentée et confirmée au
+  chiffre près, ce qui explique au passage la polarité verticale positive : elle vient de la norme. **L'intérêt
+  n'est pas la résolution mais l'horloge** : vingt mégahertz de moins sur le cœur qui encode, à largeur utile
+  identique (350 lignes centrées dans 540). Le défaut vient d'une interruption qui arrive trop tard sous charge :
+  diminuer la demande est la seule direction que les mesures n'ont pas fermée. **Critère : `avance` doit baisser.**
+
 - **0.16.26** (2026-09-25) — **T-77 : le timing VGA est mis en réserve, l'état de référence redevient 0.16.23.**
   La tension n'a rien changé (« la même chose ») : le 720x400@70 est bien **identifié** par le moniteur — un
   acquis, le 720x480p60 ne l'a jamais été — mais l'image sort fausse alors que la mémoire vidéo et les tampons
