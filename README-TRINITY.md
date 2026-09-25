@@ -42,6 +42,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.7** (2026-09-25) — **priorité du bus mémoire à core 1 (T-71)**. Les quatre tampons de la 0.16.6 n'ont pas
+  suffi : mesuré sur carte, `late` monte encore de 59 à 70 pendant un `DIR` à froid — trois épisodes de moins
+  seulement — et **l'écran noircit toujours**. Il faut donc réduire le nombre de lignes en retard, pas leur ménager
+  plus de place.
+  `bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS` est la conclusion de T-56 qui n'avait **jamais été
+  essayée**. Donner la priorité au DMA avait empiré les traits rouges, ce qui désignait core 1 comme la partie
+  affamée : il fallait donc la donner à **core 1 lui-même**. L'encodeur doit livrer une ligne toutes les 31 µs
+  pendant que core 0 martèle la SRAM pour FatFs et TinyUSB, et l'arbitre du RP2040 les sert à tour de rôle tant
+  qu'on ne lui dit rien. Un registre, aucun coût mémoire.
+  **À surveiller sur carte** : ralentir core 0 ne doit pas affamer en retour la boucle du bus 6502 — `txstall` et
+  `rxstall` doivent rester à zéro. Critère : `late` doit cesser de monter pendant le `DIR`.
+  `make test-api` 16/16, `make test-toolbox` 10/10 ; RAM 28 172 o libres.
+
 - **0.16.6** (2026-09-25, **T-71 mesuré et compris**) — **quatre tampons de ligne en mode 1, et l'outil SWD qui a
   permis de trancher (T-71, T-76)**. Deux jours d'hypothèses sur l'écran noir du premier `DIR` en Hercules ont été
   réglés par une mesure : une sonde SWD (un Pico flashé en `debugprobe`) lit la mémoire du RP2040 **pendant que la

@@ -334,6 +334,15 @@ void DVIStart(void) {                                                           
 	//		T-56, withdrawn : giving the DMA priority over the cores made the streaks MUCH worse
 	//		on the board (bmarty, 2026-09-23). Useful all the same — it says the starved party is
 	//		core 1, the encoder, not the display DMA : taking bandwidth from the cores hurts.
+	//
+	//		T-71 : so give the bandwidth to core 1 instead — the conclusion of T-56 that was
+	//		never actually tried. Core 1 must deliver a scanline every 31 µs while core 0 hammers
+	//		the SRAM for FatFs and TinyUSB ; the RP2040 arbiter serves them round robin unless
+	//		told otherwise. Four line buffers alone did not settle it (0.16.6 on the board :
+	//		lateTotal still 59 -> 70 during a cold DIR, screen still black), so the cure has to
+	//		be fewer late lines, not more room for them. One register, no memory cost. Watch
+	//		txstall/rxstall : slowing core 0 must not starve the 6502 bus loop in turn.
+	bus_ctrl_hw->priority = BUSCTRL_BUS_PRIORITY_PROC1_BITS;
 	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
