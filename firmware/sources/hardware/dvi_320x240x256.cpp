@@ -373,7 +373,14 @@ void DVIStart(void) {                                                           
 	//		la sienne. Comme T-56, l'essai reste instructif : les deux cœurs se disputent bien
 	//		la même bande passante, mais **aucun des deux ne peut être privilégié** — il faut
 	//		diminuer la demande, pas arbitrer entre elles.
-	vreg_set_voltage(VREG_VSEL);                                      			// Set Voltage on CPU
+	//		T-77 (0.16.25) : la tension suit l'horloge. Le mode 1 en 720x400p70 demande 283,2 MHz,
+	//		treize de plus qu'avant, et a 1,20 V la carte affiche du blanc et des bandes qui
+	//		bougent alors que les tampons envoyes a l'encodeur contiennent bien du noir (verifie
+	//		au SWD) : ce n'est ni le firmware ni l'encodage, c'est le signal qui sort corrompu.
+	//		Au-dela de 270 MHz on monte donc a 1,25 V, et le mode 0 (252 MHz) garde 1,20 V --
+	//		inutile de chauffer la puce dans le mode qui n'a jamais eu de probleme.
+	vreg_voltage volts = (currentTiming->timing->bit_clk_khz > 270000) ? VREG_VOLTAGE_1_25 : VREG_VSEL;
+	vreg_set_voltage(volts);                                      				// Set Voltage on CPU
 	sleep_ms(10);
 	set_sys_clock_khz(currentTiming->timing->bit_clk_khz, true);                // Set the correct clock speed.
 	//		T-77 (0.16.22, RETIRE en 0.16.23) : pico-pacPlus attend 100 ms ici, apres

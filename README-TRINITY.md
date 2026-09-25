@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.25** (2026-09-25) — **T-77 : la tension suit l'horloge.** Sur carte, le timing VGA de 0.16.24 fait enfin
+  **détecter un mode au moniteur (« 70 »)** — une première en mode 1 — mais l'image sort corrompue : bandes
+  instables en haut et en bas, centre blanc. Vérifié au SWD avant de supposer : la mémoire vidéo est correcte et
+  les tampons envoyés à l'encodeur contiennent bien du noir. Ce n'est donc ni le firmware ni l'encodage, c'est le
+  signal. À 283,2 MHz sous 1,20 V, des symboles TMDS corrompus donnent exactement ce tableau : au-delà de 270 MHz,
+  `DVIStart` monte donc à **1,25 V**, le mode 0 gardant 1,20 V.
+
 - **0.16.24** (2026-09-25) — **T-77 : le mode 1 passe au timing VGA 720x400 @ 70 Hz.** Il utilisait jusqu'ici le
   720x480p60, qui est un timing **CEA/EDTV de téléviseur** — celui sur lequel le moniteur de la carte n'a jamais
   affiché son indicateur. Le nouveau est le **mode texte VGA d'IBM** : 720 pixels de large exactement, conçu pour
