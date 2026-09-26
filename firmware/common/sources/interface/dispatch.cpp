@@ -79,11 +79,9 @@ void TIMECRITICAL(DSPSync)(void)
 	KBDSync();
 	RNDDisplayWatchdog();  													// T-71 : frames frozen = display dead, core 0 restarts the mode
 	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
-	if (!DBGScanTick()) {  															// T-75 : the pin scan owns the port for 30 s
-		DBGPoll();  																// T-74 : terminal input
-		DBGTelemetryTick();  														// T-73 : one line per second, if the port is on
-		DBGFlush();  																// T-73 : push the trace, FIFO space only
-	}
+	DBGPoll();  																	// T-74 : terminal input
+	DBGTelemetryTick();  															// T-73 : one line per second, if the port is on
+	DBGFlush();  																	// T-73 : push the trace, FIFO space only
 	CONBlinkSync();  															// Hercules blink attribute (F-52)
 }
 

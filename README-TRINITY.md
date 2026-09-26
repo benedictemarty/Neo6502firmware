@@ -42,6 +42,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.38** (2026-09-26) — **le balayage des broches UEXT est retiré (T-75, T-78).** Il avait répondu à sa
+  question sur la carte (broche 3 du UEXT = GPIO 28, le port de debug fonctionne), et la 0.16.37 faisait pire que
+  rien : elle pilotait aussi la **GPIO 26, qui est RESB du 6502** (`wdc65C02cpu.h`), si bien que chaque passage
+  redémarrait le 6502 — un bip et une bannière NeoDOS de plus à chaque fois, pendant les 30 premières secondes
+  (constat bmarty : « cela ne le fait que pendant ton test »). La liste des « broches UEXT » (22-27) avait été
+  prise dans `ports.cpp` sans la confronter aux lignes du 6502. Le port de debug est actif dès le démarrage ;
+  `DBGScanTick` disparaît de `DSPSync`. RAM : 234 244 o (164 o rendus). `make test-api` 16/16,
+  `make test-toolbox` 10/10. **Test instable constaté** : `locks` a échoué une fois (`KEYS 61 4E 41 …`, un `N`
+  intercalé, `LOCK 03`) puis réussi quatre fois de suite sans changement — l'émulateur injecte les touches à des
+  cycles donnés ; cause non établie, à surveiller. À valider carte : une seule bannière, un seul bip.
+
 - **0.16.37** (2026-09-26) — **T-75 : le balayage des broches UEXT peut enfin répondre.** Celui de la 0.16.5 ne le
   pouvait pas : il passait chaque broche en `GPIO_FUNC_UART` et écrivait sur `uart0`, or la fonction UART d'une
   broche est **fixe** sur le RP2040 (`io_bank0.h`) — 28 = UART0 TX, 29 = UART0 RX, 24 = UART1 TX, 25 = UART1 RX,
@@ -54,7 +65,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   depuis la flash depuis la 0.16.5 (règle T-46) ; l'annonce reste en flash, faute de place (+308 octets
   au-dessus de `RAM_LIMIT` une fois en ligne, mesuré) — elle ne s'exécute que 32 fois, pendant les 30 s du
   balayage. RAM : 234 408 o (limite 234 500). `make test-api` 16/16, `make test-toolbox` 10/10 (ce code n'est pas
-  dans `neo`, ils ne le couvrent pas) ; décodage des 256 octets vérifié par simulation des fronts. À relever carte.
+  dans `neo`, ils ne le couvrent pas) ; décodage des 256 octets vérifié par simulation des fronts. **Relevé carte :
+  broche 3 = GPIO 28 ; mais le 6502 redémarrait à chaque passage (GPIO 26 = RESB), retiré en 0.16.38.**
 
 - **0.16.36** (2026-09-26) — **T-68b : Échap sans `boot/` le dit enfin.** Le relevé carte et sonde SWD de la 0.16.35
   a montré que la capture d'Échap était bonne (`USB settled (3000 ms, 4 dev) KEY ESC`, `escapeSeen` posé dès 2,39 s)
