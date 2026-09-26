@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.40** (2026-09-27) — **T-81 : 1,26 Bank Checksum.** Le firmware calcule la somme de Fletcher 16 bits d'une
+  banque de flash (s1 = Σ octets, s2 = Σ des s1, mod 65 536, dans P0-P3), sans la copier dans la RAM du 6502 : c'est
+  la somme que NeoDune2000 et Wolf3D calculaient en 6502, environ 50 ms par banque sur la carte. Erreur si la banque
+  dépasse 31. Nouveau test `tests/api/bankcsum`. `make test-api` 17/17, `test-snd` OK ; `make test-toolbox` : `events`
+  a échoué sur des événements souris parasites (position qui change pendant le test), **aussi sans la modification**
+  (1 échec sur 4 passes) — sans doute la souris du bureau vue par la fenêtre SDL, non établi. Durée sur carte à mesurer.
+
 - **0.16.39** (2026-09-27) — **T-80 : le synthétiseur joue des carrés.** Depuis le passage à 4 canaux de l'amont
   (`3651bc1`), un canal ne contribuait qu'à l'échantillon de sa bascule : un train d'impulsions à 2,8 % de la puissance
   d'un carré. Chaque canal garde maintenant son niveau entre deux bascules ; les sons sont plus forts et changent de

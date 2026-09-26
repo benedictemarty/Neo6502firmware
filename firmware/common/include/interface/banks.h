@@ -25,6 +25,7 @@
 uint8_t BNKSelect(uint8_t bank,uint16_t address);                               // 1,18
 void BNKGetState(uint8_t *bank,uint16_t *address);                              // 1,19
 uint8_t BNKWrite(uint8_t bank,uint16_t address);                                // 1,22
+uint8_t BNKChecksum(uint8_t bank,uint16_t *s1,uint16_t *s2);                  // 1,26 (T-81)
 void BNKReset(void);
 const uint8_t *BNKStorage(uint8_t bank);                                        // Read only view of a bank (NULL if none)
 

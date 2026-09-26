@@ -130,6 +130,19 @@ GROUP 1 System
         emulators keep the banks in the file "banks.flash" of the storage directory. Sets the error flag if the bank or
         the address is invalid or the verification fails (Trinity T-17). Flash wears : write banks once, not in loops.
 
+    FUNCTION 26 Bank Checksum
+        {
+            uint16_t s1 = 0,s2 = 0;
+            *DERROR = BNKChecksum(DPARAMS[0],&s1,&s2);
+            DSPSetInt16(DPARAMS,0,s1);DSPSetInt16(DPARAMS,2,s2);
+        }
+    DOCUMENTATION
+        Returns the Fletcher 16 checksum of bank Parameter:0 (0-31) as stored in flash, without copying it to 6502 RAM
+        (Trinity T-81) : s1 = sum of the 8192 bytes modulo 65536 in Parameters:0,1, s2 = sum of the successive values of s1
+        modulo 65536 in Parameters:2,3. A bank never written reads as $FF (s1 = $E000). Sets the error flag if the bank is
+        invalid (the parameters are then zero). The 65C02 waits for the call ; it avoids copying each bank with Function
+        1,18 and summing it in 6502 code to find which banks of a cache need writing with Function 1,22.
+
     FUNCTION 12 Set Interrupt Tick
         *DERROR = IRQSetTick(DSPGetInt16(DPARAMS,0));
     DOCUMENTATION

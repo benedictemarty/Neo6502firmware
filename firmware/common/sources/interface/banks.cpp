@@ -48,6 +48,16 @@ uint8_t BNKWrite(uint8_t bank,uint16_t address) {
     return HWBankWrite(bank,cpuMemory + address) ? 1 : 0;
 }
 
+// 1,26 : Fletcher 16 of the bank as in flash (T-81) : s1 = sum of the bytes, s2 = sum of the successive s1, mod 65536
+uint8_t BNKChecksum(uint8_t bank,uint16_t *s1,uint16_t *s2) {
+    const uint8_t *src = BNKStorage(bank);
+    if (src == NULL) return 1;
+    uint16_t a = 0,b = 0;
+    for (int i = 0;i < BANK_SIZE;i++) { a += src[i];b += a; }
+    *s1 = a;*s2 = b;
+    return 0;
+}
+
 const uint8_t *BNKStorage(uint8_t bank) {
     return (bank < BANK_COUNT) ? HWBankStorage(bank) : NULL;
 }
