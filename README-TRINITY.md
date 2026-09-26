@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.36** (2026-09-26) — **T-68b : Échap sans `boot/` le dit enfin.** Le relevé carte et sonde SWD de la 0.16.35
+  a montré que la capture d'Échap était bonne (`USB settled (3000 ms, 4 dev) KEY ESC`, `escapeSeen` posé dès 2,39 s)
+  mais que la clé n'avait **pas de répertoire `boot/`** (`bootCount = 0`) : `BOOTSelect` sortait sans rien afficher,
+  et Échap semblait mort. Désormais, **si Échap a été pressé**, les deux sorties sans menu s'annoncent —
+  `Boot : pas de boot/ -> NeoDOS` ou `Boot : boot/ vide -> NeoDOS` — et consomment cet Échap comme le chemin
+  `auto.txt`, pour que le 6502 ne le voie pas. Sans Échap, rien ne change à l'écran. `make test-api` 16/16,
+  `make test-toolbox` OK (le message n'est pas couvert : `neo` n'injecte de touches qu'après le boot). À valider carte.
+
 - **0.16.35** (2026-09-25) — **T-77 : la cause première est trouvée et supprimée — les spinlocks étaient partagés.**
   Les files de picodvi utilisaient `next_striped_spin_lock_num()`, qui distribue les verrous 16 à 23 **en
   round-robin avec tous les autres utilisateurs du SDK** : lus sur la carte, picodvi tenait les numéros 18 et 19.

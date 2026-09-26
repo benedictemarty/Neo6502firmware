@@ -22,9 +22,19 @@ static bool _BOOTEndsWith(const char *s,const char *suffix) {
     return true;
 }
 
+//      T-68b : without boot/ (or with nothing to start in it) there is no menu to open, and the
+//      firmware used to say nothing — Escape looked dead on the board (bmarty 2026-09-26, the key
+//      had no boot/). Say it, only when Escape was pressed, and consume that Escape as the auto
+//      path does.
+static void _BOOTNoMenu(const char *why) {
+    if (!KBDEscapeSeen()) return;
+    CONWriteString("Boot : %s -> NeoDOS\r",why);
+    KBDClearEscapeSeen();
+}
+
 void BOOTSelect(void) {
     bootCount = 0;bootChoice = -1;
-    if (FIOOpenDir(BOOT_DIR) != 0) return;                                      // No boot directory : no menu
+    if (FIOOpenDir(BOOT_DIR) != 0) { _BOOTNoMenu("pas de boot/");return; }      // No boot directory : no menu
     std::string name;uint32_t size;uint8_t attribs;
     while (bootCount < BOOT_MAX && FIOReadDir(name,&size,&attribs) == 0) {
         if (name.size() == 0 || name[0] == '.' || name.size() > BOOT_NAME_MAX) continue;
@@ -32,7 +42,7 @@ void BOOTSelect(void) {
         strcpy(bootNames[bootCount++],name.c_str());
     }
     FIOCloseDir();
-    if (bootCount == 0) return;
+    if (bootCount == 0) { _BOOTNoMenu("boot/ vide");return; }                   // Nothing to start : no menu
     int8_t autoChoice = -1;                                                     // boot/auto.txt : name of the entry to start at once
     {
         uint8_t exists = 0;
