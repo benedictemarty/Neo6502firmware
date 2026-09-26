@@ -48,6 +48,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   dépasse 31. Nouveau test `tests/api/bankcsum`. `make test-api` 17/17, `test-snd` OK ; `make test-toolbox` : `events`
   a échoué sur des événements souris parasites (position qui change pendant le test), **aussi sans la modification**
   (1 échec sur 4 passes) — sans doute la souris du bureau vue par la fenêtre SDL, non établi. Durée sur carte à mesurer.
+  RAM : 234 324 o (+64 depuis la 0.16.39, 176 o sous `RAM_LIMIT`).
 
 - **0.16.39** (2026-09-27) — **T-80 : le synthétiseur joue des carrés.** Depuis le passage à 4 canaux de l'amont
   (`3651bc1`), un canal ne contribuait qu'à l'échantillon de sa bascule : un train d'impulsions à 2,8 % de la puissance
