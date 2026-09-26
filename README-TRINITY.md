@@ -42,6 +42,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.37** (2026-09-26) — **T-75 : le balayage des broches UEXT peut enfin répondre.** Celui de la 0.16.5 ne le
+  pouvait pas : il passait chaque broche en `GPIO_FUNC_UART` et écrivait sur `uart0`, or la fonction UART d'une
+  broche est **fixe** sur le RP2040 (`io_bank0.h`) — 28 = UART0 TX, 29 = UART0 RX, 24 = UART1 TX, 25 = UART1 RX,
+  22/26 = UART1 CTS, 23/27 = UART1 RTS. Sur les huit candidates, **seule la 28 pouvait émettre**, et elle était
+  déjà muette en T-74. Le balayage pilote désormais chaque broche lui-même en **UART logicielle** (SIO, 115 200 8N1),
+  ce que toute GPIO sait faire : fronts calculés en temps absolu sur le timer à 1 MHz (625/72 µs par bit, sans
+  division : écart ≤ 0,8 µs, soit 0,09 bit, sans cumul), interruptions masquées le temps d'un caractère (86 µs),
+  pad à 2 mA pendant l'émission. La configuration de chaque broche est **sauvée puis restaurée** (la 0.16.5
+  laissait 22-27 en entrées SIO). **`DBGScanTick` passe en RAM** : `DSPSync` l'appelait ~95 fois par seconde
+  depuis la flash depuis la 0.16.5 (règle T-46) ; l'annonce reste en flash, faute de place (+308 octets
+  au-dessus de `RAM_LIMIT` une fois en ligne, mesuré) — elle ne s'exécute que 32 fois, pendant les 30 s du
+  balayage. RAM : 234 408 o (limite 234 500). `make test-api` 16/16, `make test-toolbox` 10/10 (ce code n'est pas
+  dans `neo`, ils ne le couvrent pas) ; décodage des 256 octets vérifié par simulation des fronts. À relever carte.
+
 - **0.16.36** (2026-09-26) — **T-68b : Échap sans `boot/` le dit enfin.** Le relevé carte et sonde SWD de la 0.16.35
   a montré que la capture d'Échap était bonne (`USB settled (3000 ms, 4 dev) KEY ESC`, `escapeSeen` posé dès 2,39 s)
   mais que la clé n'avait **pas de répertoire `boot/`** (`bootCount = 0`) : `BOOTSelect` sortait sans rien afficher,

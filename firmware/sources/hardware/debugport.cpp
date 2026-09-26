@@ -327,56 +327,99 @@ void __not_in_flash_func(DBGPoll)(void) {
 //
 //		The port stayed silent through two real firmware faults and every cabling permutation,
 //		and there is no multimeter here to ask the board directly (bmarty, 2026-09-25). So the
-//		firmware answers instead : for the first 30 seconds it moves the UART TX function from
-//		one UEXT pin to the next, once a second, announcing each one. Whatever pin the wire is
+//		firmware answers instead : for the first 30 seconds it announces itself on one UEXT
+//		pin after the other, once a second. Whatever pin the wire is
 //		on, one of those announcements lands in the terminal and names it.
 //
-//		Writing goes straight to the hardware here, not through the ring : the message must be
-//		out of the FIFO before the pin changes under it, so we wait for the shift register.
-//		That wait is why this only runs during the scan, never in normal operation.
+//		0.16.37 : the 0.16.5 scan could not work. It switched each pin to GPIO_FUNC_UART and
+//		wrote to uart0, but on the RP2040 a pin's UART function is fixed (io_bank0.h) : 28 is
+//		UART0 TX, 29 UART0 RX, 24 UART1 TX, 25 UART1 RX, 22/26 UART1 CTS, 23/27 UART1 RTS. Of
+//		the eight candidates only GPIO 28 could ever carry uart0's output — and 28 was already
+//		known to be silent (T-74). The scan now drives each pin itself as a software UART
+//		(SIO, 115200 8N1), which any GPIO can do.
 //
-//		The candidates are the eight UEXT GPIO. 22-27 are the firmware's I2C and SPI pins ;
-//		driving them as UART for one second is harmless with nothing plugged into the port.
+//		Only DBGScanTick lives in RAM : DSPSync calls it ~95 times a second for ever (T-46 ;
+//		it was in flash from 0.16.5 to 0.16.36). The announcement itself is in flash, on
+//		purpose : RAM_LIMIT leaves no room for it (+308 bytes over when inlined, measured), and
+//		it runs 32 times in all, once a second during the first 30 s. It touches registers
+//		only, no SDK call. Each pin's configuration (function, pad, output enable, level) is
+//		saved before and restored after, so the firmware's I2C/SPI pins (22-27) come back as
+//		they were — the 0.16.5 scan left them as SIO inputs.
+//
+//		Bit timing comes from the 1 MHz timer, each edge at an absolute time from the start bit
+//		(1e6/115200 = 625/72 us, kept as 8 + 49/72 without a division) : the rounding never
+//		exceeds 1 us, about 0.12 bit, and never accumulates ; a flash cache miss can only delay
+//		one edge by a few us, it does not carry over to the next. Interrupts are masked for one character (~87 us) so an
+//		IRQ cannot stretch a bit ; a whole announcement (~20 chars, ~1.8 ms) happens once a
+//		second, and only during the 30 s scan. The pad is set to 2 mA while driving, which
+//		limits the current if the pin happens to face the adapter's own TX.
 //
 // ***************************************************************************************
+
+#include "hardware/structs/iobank0.h"
+#include "hardware/structs/padsbank0.h"
+#include "hardware/structs/sio.h"
+#include "hardware/structs/timer.h"
+#include "hardware/sync.h"
 
 static const uint8_t scanPins[] = { 28,29,22,23,24,25,26,27 };
 #define SCAN_COUNT 	(sizeof(scanPins)/sizeof(scanPins[0]))
 
-static void DBGScanSay(uint8_t pin) {
-	char text[24] = "\r\nUEXT GPIO=";
-	int p = 13;
-	text[p++] = '0' + pin / 10;
-	text[p++] = '0' + pin % 10;
-	text[p++] = '\r';text[p++] = '\n';text[p] = '\0';
-	for (const char *c = text;*c != '\0';c++) uart_putc_raw(DBG_UART,*c);
-	uart_tx_wait_blocking(DBG_UART);  											// Out of the wire before the pin moves
+static void __attribute__((noinline)) DBGSoftPutc(uint32_t mask,uint8_t c) {
+	uint32_t frame = ((uint32_t)c << 1) | 0x200;  								// Start bit 0, 8 data bits LSB first, stop bit 1
+	uint32_t irq = save_and_disable_interrupts();
+	uint32_t start = timer_hw->timerawl;
+	uint32_t edge = 0,frac = 0;
+	for (uint32_t n = 0;n < 10;n++) {
+		if (frame & (1u << n)) sio_hw->gpio_set = mask; else sio_hw->gpio_clr = mask;
+		edge += 8;frac += 49;  													// + 625/72 us per bit
+		if (frac >= 72) { frac -= 72;edge++; }
+		while (timer_hw->timerawl - start < edge) {}
+	}
+	restore_interrupts(irq);
+}
+
+static void __attribute__((noinline)) DBGScanSay(uint8_t pin) {
+	static const char head[] = "\r\nUEXT GPIO=";
+	uint32_t mask = 1u << pin;
+	uint32_t ctrl = iobank0_hw->io[pin].ctrl;  									// Save the pin as it is
+	uint32_t pad = padsbank0_hw->io[pin];
+	uint32_t oe = sio_hw->gpio_oe & mask;
+	uint32_t out = sio_hw->gpio_out & mask;
+	sio_hw->gpio_set = mask;  													// Idle high before taking the pin
+	sio_hw->gpio_oe_set = mask;
+	padsbank0_hw->io[pin] = (pad & ~(PADS_BANK0_GPIO0_OD_BITS | PADS_BANK0_GPIO0_DRIVE_BITS))
+								| PADS_BANK0_GPIO0_IE_BITS;  					// Output on, 2 mA
+	iobank0_hw->io[pin].ctrl = GPIO_FUNC_SIO;
+	for (const char *c = head;*c != '\0';c++) DBGSoftPutc(mask,(uint8_t)*c);
+	uint8_t tens = 0,units = pin;
+	while (units >= 10) { units -= 10;tens++; }
+	DBGSoftPutc(mask,'0' + tens);DBGSoftPutc(mask,'0' + units);
+	DBGSoftPutc(mask,'\r');DBGSoftPutc(mask,'\n');
+	iobank0_hw->io[pin].ctrl = ctrl;  											// Give it back
+	padsbank0_hw->io[pin] = pad;
+	if (out) sio_hw->gpio_set = mask; else sio_hw->gpio_clr = mask;
+	if (oe) sio_hw->gpio_oe_set = mask; else sio_hw->gpio_oe_clr = mask;
 }
 
 //		Returns true while scanning, so DSPSync knows the normal port is not in charge yet.
 
-bool DBGScanTick(void) {
+bool __not_in_flash_func(DBGScanTick)(void) {
 	static uint16_t ticks = 0;
 	static uint8_t index = 0;
+	static uint8_t passes = 0;
 	static bool done = false;
 	if (done || !dbgOn) return false;
 	if (++ticks < 95) return true;  											// One pin per second
 	ticks = 0;
 	DBGScanSay(scanPins[index]);
-	gpio_set_function(scanPins[index],GPIO_FUNC_SIO);  							// Release this one
-	gpio_set_dir(scanPins[index],GPIO_IN);
-	index++;
-	if (index >= SCAN_COUNT) {
+	if (++index >= SCAN_COUNT) {
 		index = 0;
-		static uint8_t passes = 0;
 		if (++passes >= 4) {  													// 4 passes, then back to normal
 			done = true;
-			gpio_set_function(DBG_TX_PIN,GPIO_FUNC_UART);
-			gpio_set_function(DBG_RX_PIN,GPIO_FUNC_UART);
 			DBGWrite("\r\n-- fin du balayage, port sur GPIO 28/29 --\r\n");
 			return false;
 		}
 	}
-	gpio_set_function(scanPins[index],GPIO_FUNC_UART);  						// Talk on the next one
 	return true;
 }
