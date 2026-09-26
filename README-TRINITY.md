@@ -48,7 +48,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   et Échap semblait mort. Désormais, **si Échap a été pressé**, les deux sorties sans menu s'annoncent —
   `Boot : pas de boot/ -> NeoDOS` ou `Boot : boot/ vide -> NeoDOS` — et consomment cet Échap comme le chemin
   `auto.txt`, pour que le 6502 ne le voie pas. Sans Échap, rien ne change à l'écran. `make test-api` 16/16,
-  `make test-toolbox` OK (le message n'est pas couvert : `neo` n'injecte de touches qu'après le boot). À valider carte.
+  `make test-toolbox` OK (le message n'est pas couvert : `neo` n'injecte de touches qu'après le boot). **Validé carte le 2026-09-26** : Échap pendant les
+  logos, clé sans `boot/` → `Boot : pas de boot/ -> NeoDOS` s'affiche.
 
 - **0.16.35** (2026-09-25) — **T-77 : la cause première est trouvée et supprimée — les spinlocks étaient partagés.**
   Les files de picodvi utilisaient `next_striped_spin_lock_num()`, qui distribue les verrous 16 à 23 **en
