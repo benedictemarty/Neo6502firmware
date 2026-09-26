@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.39** (2026-09-27) — **T-80 : le synthétiseur joue des carrés.** Depuis le passage à 4 canaux de l'amont
+  (`3651bc1`), un canal ne contribuait qu'à l'échantillon de sa bascule : un train d'impulsions à 2,8 % de la puissance
+  d'un carré. Chaque canal garde maintenant son niveau entre deux bascules ; les sons sont plus forts et changent de
+  timbre. Nouveau test PC `make test-snd`. `make test-toolbox` 10/10, `make test-api` et `test-snd` OK ; **tests
+  instables** : `evtimer` et `latin1` ont chacun échoué une fois sur plusieurs passes complètes, **aussi sans le
+  correctif** (`latin1` : 1 échec sur 3 passes sur la 0.16.38), et réussissent seuls à chaque fois — même famille que
+  `locks` en 0.16.38, cause non établie. À valider carte à l'oreille.
+
 - **0.16.38** (2026-09-26) — **le balayage des broches UEXT est retiré (T-75, T-78).** Il avait répondu à sa
   question sur la carte (broche 3 du UEXT = GPIO 28, le port de debug fonctionne), et la 0.16.37 faisait pire que
   rien : elle pilotait aussi la **GPIO 26, qui est RESB du 6502** (`wdc65C02cpu.h`), si bien que chaque passage

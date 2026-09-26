@@ -119,6 +119,12 @@ test-toolbox:
 test-api:
 	for t in tests/api/*.asm; do TESTDIR=tests/api tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
 
+# Synthétiseur compilé sur PC (T-80) : sndcreator.cpp contre un common.h minimal
+test-snd:
+	@mkdir -p build
+	g++ -O2 -Wall -Itests/snd -Ifirmware/common/include tests/snd/test_sndcreator.cpp firmware/common/sources/interface/sndcreator.cpp -o build/test_sndcreator
+	build/test_sndcreator
+
 # Outils carte (tests/api/outils/*.asm) : assemblés puis emballés en .NEO dans ~/neo-carte/cle-usb.
 # Une cible, parce que la 0.10.5 a corrigé late.asm sans pouvoir le reconstruire (routine cr retirée
 # par erreur, assemblage cassé) et que la clé a gardé des mois un binaire périmé.
