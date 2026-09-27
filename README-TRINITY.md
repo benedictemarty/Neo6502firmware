@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.43** (2026-09-27) — **T-79 : son en flux (PCM) mélangé au synthétiseur.** Fonctions 8,11 Stream Start,
+  8,12 Stream Stop, 8,13 Stream Status, 8,14 Stream Filled : le 6502 remplit deux moitiés d'un tampon dans sa RAM
+  (8 bits non signés, $80 = silence), le firmware les joue à la cadence déclarée (11 025, 22 050 Hz…) quel que soit
+  l'horloge de la carte, et rend chaque moitié jouée ; une moitié non remplie à temps n'est pas rejouée. Le flux
+  compte comme un canal de plus. Toute l'interruption PWM est maintenant en RAM (table de bruit comprise) ;
+  `RAM_LIMIT` passe à 236 548 après mesure du tas sur carte (pic 15 380 o, inchangé en modes 1/0, `sdbench` et
+  NeoDune2000). RAM : 236 132 o. Outil `PCM.NEO` pour l'oreille. `make test-snd` étendu, nouveau test
+  `tests/api/stream`.
+
 - **0.16.42** (2026-09-27) — **T-83 : 35,9 Set Menu Bar Bounds.** La barre de menus de la toolbox peut être bornée
   à une zone de l'écran (gauche, droite ; droite 0 = pleine largeur, le défaut) : titres, zones de clic et menus
   déroulants restent dedans. Demande NeoLegacy, dont l'écran Mac 512 × 342 est centré (104-616 en mode 1).

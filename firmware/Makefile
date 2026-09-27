@@ -104,7 +104,13 @@ build: prelim always
 #				en RAM — obligatoire là encore, puisqu'ils partent de DBGPoll, donc de DSPSync.
 #				Ils ne laissaient que 228 o de marge, trop peu pour la suite. Marge vérifiée :
 #				28,9 Ko de tas restants.
-RAM_LIMIT ?= 234500
+#
+#				2026-09-27 (T-79) : 234500 -> 236548. Le flux PCM exige que toute l'interruption PWM
+#				(~31 kHz, core 0) soit en RAM : SNDGetNextSample (408 o), le gestionnaire (44 o) et la
+#				table de bruit (1 024 o). Décision bmarty : mesurer le tas d'abord. Mesure SWD sur carte
+#				(démarrage, MODE 1 puis 0, sdbench, NeoDune2000) : pic __malloc_max_sbrked_mem = 15 380 o
+#				dans tous les cas. Marge vérifiée : 26 Ko de tas restants, dont 10,6 Ko jamais atteints.
+RAM_LIMIT ?= 236548
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

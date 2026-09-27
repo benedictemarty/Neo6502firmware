@@ -22,6 +22,7 @@ static SOUND_CHANNEL channel[SOUND_CHANNELS_MAX];
 // ***************************************************************************************
 
 void SNDResetAll(void) {
+	SNDStreamStop();  															// T-79 : 8,1 stops the stream too
 	for (int i = 0;i < SNDGetChannelCount();i++) {
 		SNDResetChannel(i);
 	}

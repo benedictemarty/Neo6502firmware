@@ -63,6 +63,11 @@ uint8_t SNDPlay(int channelID,SOUND_UPDATE *u);
 uint8_t SNDSetChannelVolume(int channelID,int volume,int timeCS);  				// F-12 : volume 0-127 of the playing note, ramped over timeCS
 int SNDGetChannelVolume(int channelID);  											// F-12 : current volume 0-127, -1 if bad channel
 void SNDSetCreatorVolume(uint8_t channel,int volume);  								// F-12 : change the output level without restarting the wave
+uint8_t SNDStreamStart(uint16_t address,uint16_t half,uint16_t rate,int volume);  	// T-79 : 8,11
+void SNDStreamStop(void);  														// T-79 : 8,12
+uint8_t SNDStreamStatus(uint16_t *underruns);  										// T-79 : 8,13
+uint8_t SNDStreamFilled(uint8_t half);  											// T-79 : 8,14
+void SNDStreamClockChanged(void);  												// T-79 : output rate changed
 void SNDStartup(void);
 int SNDGetNoteCount(int channelID);
 

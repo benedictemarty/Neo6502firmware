@@ -41,6 +41,7 @@ int SNDGetSampleFrequency(void) {
 //
 void SNDClockChanged(void) {
     sampleFrequency = -1;
+    SNDStreamClockChanged();  													// T-79 : the stream step follows
 }
 
 // ***************************************************************************************
@@ -49,7 +50,7 @@ void SNDClockChanged(void) {
 //
 // ***************************************************************************************
 
-void pwm_interrupt_handler() {
+void __not_in_flash_func(pwm_interrupt_handler)() {  							// T-79 : in RAM, ~31 kHz on core 0
     pwm_clear_irq(pwm_gpio_to_slice_num(AUDIO_PIN));    
     pwm_set_gpio_level(AUDIO_PIN,SNDGetNextSample()+128);
 }

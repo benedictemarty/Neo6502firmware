@@ -41,6 +41,7 @@
 #include <stdbool.h>
 #include <hardware.h>
 #define __time_critical_func(x) x  												// Pico SDK RAM placement : no-op on PC (keyboard.cpp, amont c792b77).
+#define __not_in_flash(group)  													// Same for data (T-79 : sound tables read by the PWM interrupt)
 #endif
 //
 //		Neo6502 Includes

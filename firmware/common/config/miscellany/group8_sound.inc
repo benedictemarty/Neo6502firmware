@@ -93,3 +93,38 @@ GROUP 8 Sound
         Returns in Parameter:1 the current volume (0-100) of the channel in Parameter:0, 0 when silent (Trinity T-22, F-12 of the fork).
         Sets the error flag if the channel does not exist.
 
+
+    FUNCTION 11 Stream Start
+        *DERROR = (DPARAMS[6] > 100) ? 1 : SNDStreamStart(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DPARAMS[6] * 127 / 100);
+    DOCUMENTATION
+        Starts playing a stream of 8 bit unsigned PCM samples ($80 = silence) mixed with the four channels (Trinity T-79).
+        The buffer is in 6502 RAM at Parameters:0,1 and made of two halves of Parameters:2,3 bytes each, one after the
+        other ; Parameters:4,5 is the rate of the samples in Hz (11025 or 22050 for instance, the firmware follows it
+        whatever the output rate of the board) and Parameter:6 the volume (0-100, as Function 8,9). Fill both halves
+        before the call : they are taken as full. The firmware plays half 0 then half 1 then half 0 again..., handing
+        each half back when it has played it (Function 8,13) ; the program refills it and marks it full (Function 8,14).
+        A half not refilled in time is not replayed : the stream is silent until it is marked full, and the underrun is
+        counted. The stream counts as one more channel for the volume scaling. Sets the error flag if a size or the rate
+        is 0, the volume above 100, or the buffer does not end below $FF00. Function 8,1 stops the stream as well.
+
+    FUNCTION 12 Stream Stop
+        SNDStreamStop();
+    DOCUMENTATION
+        Stops the stream at once (Trinity T-79). The buffer is no longer read and may be reused.
+
+    FUNCTION 13 Stream Status
+        {
+            uint16_t u = 0;
+            DPARAMS[0] = SNDStreamStatus(&u);
+            DSPSetInt16(DPARAMS,1,u);
+        }
+    DOCUMENTATION
+        Returns in Parameter:0 the state of the stream (Trinity T-79) : bit 7 set while it plays, bit 0 set when half 0
+        has been played and waits to be refilled, bit 1 the same for half 1 ; 0 when stopped. Parameters:1,2 count the
+        underruns since the start (a half reached before it was marked full, 65535 at most).
+
+    FUNCTION 14 Stream Filled
+        *DERROR = SNDStreamFilled(DPARAMS[0]);
+    DOCUMENTATION
+        Marks half Parameter:0 (0 or 1) of the stream as refilled (Trinity T-79), after the program has written its
+        samples. Sets the error flag if the half is not 0 or 1 or the stream is stopped.

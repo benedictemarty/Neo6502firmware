@@ -13,6 +13,7 @@ static int fails = 0;
 #define CHECK(c,msg) do { if (!(c)) { printf("ECHEC : %s\n",msg); fails++; } } while (0)
 
 int SNDGetSampleFrequency(void) { return 252000000/32/255; }                   // 30 882 Hz, comme sound.cpp à 252 MHz
+uint8_t cpuMemory[65536];                                                       // T-79 : RAM du 6502 (tampon du flux)
 
 static void note(int ch,int freq,int vol,int type) {
     SOUND_CHANNEL c = {};
@@ -56,6 +57,53 @@ int main(void) {
     SOUND_CHANNEL off = {}; SNDUpdateSoundChannel(0,&off); SNDUpdateSoundChannel(1,&off);
     SNDGetNextSample();
     CHECK(SNDGetNextSample() == 0,"silence : sortie non nulle");
+
+    // ---- T-79 : flux PCM ----
+    SNDMuteAllChannels();
+    uint16_t u;
+    CHECK(SNDStreamStart(0x1000,0,22050,127) == 1,"flux : moitie de taille 0 refusee");
+    CHECK(SNDStreamStart(0x1000,100,0,127) == 1,"flux : cadence 0 refusee");
+    CHECK(SNDStreamStart(0x1000,100,22050,128) == 1,"flux : volume 128 refuse");
+    CHECK(SNDStreamStart(0xFE00,0x81,22050,127) == 1,"flux : tampon au-dela de $FF00 refuse");
+    CHECK(SNDStreamStatus(&u) == 0,"flux : arrete tant que rien n'est lance");
+    CHECK(SNDStreamFilled(0) == 1,"flux : 8,14 refuse flux arrete");
+
+    // Cadence = sortie : un échantillon d'entrée par échantillon de sortie, moitiés de 100
+    for (int i = 0;i < 100;i++) { cpuMemory[0x1000+i] = 0x80 + 64;cpuMemory[0x1064+i] = 0x80 - 64; }
+    CHECK(SNDStreamStart(0x1000,100,fe,127) == 0,"flux : demarrage");
+    SNDGetNextSample();                                                             // la CAG suit d'un echantillon
+    int ok = 1;
+    for (int i = 1;i < 100;i++) if (SNDGetNextSample() != 64*127/128) ok = 0;
+    CHECK(ok,"flux : moitie 0 jouee a +63");
+    CHECK(SNDStreamStatus(&u) == 0x81,"flux : moitie 0 rendue apres 100 echantillons");
+    ok = 1;
+    for (int i = 0;i < 100;i++) if (SNDGetNextSample() != -64*127/128) ok = 0;
+    CHECK(ok,"flux : moitie 1 jouee a -63");
+    CHECK(SNDStreamStatus(&u) == 0x83 && u == 1,"flux : les deux moitiés rendues, un retard compte");
+    ok = 1;
+    for (int i = 0;i < 50;i++) if (SNDGetNextSample() != 0) ok = 0;
+    CHECK(ok,"flux : silence tant que rien n'est rempli (pas de rejeu)");
+    CHECK(SNDStreamFilled(2) == 1,"flux : moitie 2 refusee");
+    CHECK(SNDStreamFilled(0) == 0,"flux : moitie 0 marquee pleine");
+    CHECK(SNDGetNextSample() == 64*127/128 && SNDStreamStatus(&u) == 0x82,"flux : reprise sur la moitie 0");
+
+    // Cadence moitié de la sortie : chaque échantillon d'entrée dure deux échantillons de sortie
+    SNDStreamStop();
+    CHECK(SNDStreamStatus(&u) == 0,"flux : 8,12 arrete");
+    CHECK(SNDStreamStart(0x1000,100,fe/2,127) == 0,"flux : demarrage a fe/2");
+    for (int i = 0;i < 199;i++) SNDGetNextSample();
+    CHECK(SNDStreamStatus(&u) == 0x80,"flux fe/2 : moitie 0 pas finie apres 199 echantillons");
+    SNDGetNextSample();SNDGetNextSample();
+    CHECK(SNDStreamStatus(&u) == 0x81,"flux fe/2 : moitie 0 finie apres 201 echantillons");
+
+    // Mélange : un carré à 100 + le flux à +63, CAG 3/4 : (100+63)*3/4 = 122 ou (-100+63)*3/4 = -27
+    SNDStreamStop();
+    CHECK(SNDStreamStart(0x1000,100,fe,127) == 0,"flux : demarrage pour le melange");
+    note(0,440,100,SOUNDTYPE_SQUARE);
+    SNDGetNextSample();
+    int m = SNDGetNextSample();
+    CHECK(m == (100+63)*3/4 || m == (-100+63)*3/4,"flux + canal : somme puis CAG 3/4");
+    SNDStreamStop();SNDMuteAllChannels();
 
     printf(fails ? "test-snd : %d echec(s)\n" : "test-snd : OK\n",fails);
     return fails ? 1 : 0;
