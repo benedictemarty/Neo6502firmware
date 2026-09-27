@@ -16,6 +16,8 @@
 #include <memory>
 #include <functional>
 
+extern volatile uint32_t stoFileCalls,stoFileUs;  								// T-82 : debugport.cpp
+
 static constexpr int COPY_BUFFER_SIZE = 1024;
 
 static FIL fileHandles[FIO_NUM_FILES];
@@ -415,7 +417,9 @@ uint8_t FISSeekFileHandle(uint8_t fileno, uint32_t offset) {
 	if (!f)
 		return 1;
 
+	uint32_t t0 = time_us_32();  												// T-82
 	FRESULT result = f_lseek(f, offset);
+	stoFileUs += time_us_32() - t0;stoFileCalls = stoFileCalls + 1;
 	return convertError(result);
 }
 
@@ -442,11 +446,13 @@ uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	// CONWriteString("FISReadFileHandle(%d, @0x%04x, 0x%04x) -> ", fileno, address, *size);
 	UINT read;
 	FRESULT result;
+	uint32_t t0 = time_us_32();  												// T-82
 	if (address != 0xFFFF) {
 		result = f_read(f, cpuMemory+address, toread, &read);
 	} else {
 		result = f_read(f, gfxObjectMemory, toread, &read);	
 	}
+	stoFileUs += time_us_32() - t0;stoFileCalls = stoFileCalls + 1;
 	*size = read;
 	// CONWriteString("%d, 0x%04x\r", result, read);
 
@@ -462,7 +468,9 @@ uint8_t FISReadFileHandleBuffer(uint8_t fileno, uint8_t* dest, uint16_t* size) {
 		return FIOERROR_INVALID_PARAMETER;
 
 	UINT read;
+	uint32_t t0 = time_us_32();  												// T-82
 	FRESULT result = f_read(f, dest, *size, &read);
+	stoFileUs += time_us_32() - t0;stoFileCalls = stoFileCalls + 1;
 	*size = read;
 
 	if ((result == FR_OK) && (read == 0))

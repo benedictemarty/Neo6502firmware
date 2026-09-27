@@ -174,6 +174,7 @@ bool __not_in_flash_func(STODebugBusy)(int slot) {
 }
 
 extern volatile uint32_t stoSectorCount;  										// T-73 : defined in debugport.cpp
+extern volatile uint32_t stoDiskReads,stoDiskWaitUs;  							// T-82 : idem
 
 DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const dev_addr = deviceOf(pdrv);
@@ -184,7 +185,9 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     msc_volume_busy[slot] = true;                                               // Busy flag by device : the completion
     stoSectorCount += count;  													// T-73
     tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);   // callback only knows dev_addr (T-24)
+    uint32_t t0 = time_us_32();  												// T-82 : time with the transfer in flight
     wait_for_disk_io(dev_addr);
+    stoDiskWaitUs += time_us_32() - t0;stoDiskReads = stoDiskReads + 1;
     return RES_OK;
 }
 

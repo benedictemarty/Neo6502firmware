@@ -41,6 +41,8 @@ static char ring[DBG_RING];
 static volatile uint16_t head = 0,tail = 0;  									// head = write, tail = read
 static bool dbgOn = false;
 volatile uint32_t stoSectorCount = 0;  											// T-73 : sectors moved (storage drivers add to it)
+volatile uint32_t stoFileCalls = 0,stoFileUs = 0;  								// T-82 : file reads and seeks (3,6 3,8 3,27), time inside them
+volatile uint32_t stoDiskReads = 0,stoDiskWaitUs = 0;  							// T-82 : disk_read calls, time spent waiting for the USB transfer
 
 //		Started once, in P0. If the 6502 later reprograms the port (group 10) the trace
 //		follows its baud rate and becomes unreadable — that is the accepted price of
@@ -282,6 +284,16 @@ static void __not_in_flash_func(DBGReportStorage)(void) {
 	DBGPair("occupe0",STODebugBusy(0) ? 1 : 0);
 	DBGPair("secteurs",stoSectorCount);
 	DBGWrite("\r\n");
+	//		T-82 : where a file read goes. fichier_us is the time inside the read/seek calls,
+	//		attente_us the part of it spent in wait_for_disk_io (USB transfer in flight, tuh_task
+	//		polled) ; the difference is core 0 work (FatFs, copies). Only the wait could be
+	//		overlapped with serving the 6502 bus. !z clears them.
+	DBGWrite("lecture : ");
+	DBGPair("appels",stoFileCalls);
+	DBGPair("fichier_us",stoFileUs);
+	DBGPair("disk_read",stoDiskReads);
+	DBGPair("attente_us",stoDiskWaitUs);
+	DBGWrite("\r\n");
 }
 
 static void __not_in_flash_func(DBGCommand)(uint8_t c) {
@@ -295,7 +307,8 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 		case 'f': DBGReportStorage();break;
 		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
 				  DBGReportUSB();DBGReportStorage();DBGReportMemory();DBGReportPlacement();break;
-		case 'z': HWBusStallsReset();DBGWrite("\r\ncompteurs de bus remis a zero\r\n");break;
+		case 'z': HWBusStallsReset();stoFileCalls = 0;stoFileUs = 0;stoDiskReads = 0;stoDiskWaitUs = 0;
+				  DBGWrite("\r\ncompteurs de bus et de lecture remis a zero\r\n");break;
 
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502
 		default:

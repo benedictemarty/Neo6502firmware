@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.41** (2026-09-27) — **T-82, première étape : mesurer où part le temps d'une lecture.** Le rapport `!f` du
+  port de debug ajoute `appels` et `fichier_us` (temps passé dans 3,6, 3,8 et 3,27) et `disk_read` et `attente_us`
+  (temps passé à attendre le transfert USB, la seule part qu'une lecture en tâche de fond pourrait rendre au 6502) ;
+  `!z` les remet à zéro. La documentation de 3,27 ne promet plus l'écriture dans les pages de banques $A0-$BF, que le
+  code refuse depuis T-17. RAM : 234 468 o (+144, le rapport vit en RAM ; 32 o sous `RAM_LIMIT`). `make test-api`
+  17/17, `make test-toolbox` 10/10, `test-snd` OK.
+
 - **0.16.40** (2026-09-27) — **T-81 : 1,26 Bank Checksum.** Le firmware calcule la somme de Fletcher 16 bits d'une
   banque de flash (s1 = Σ octets, s2 = Σ des s1, mod 65 536, dans P0-P3), sans la copier dans la RAM du 6502 : c'est
   la somme que NeoDune2000 et Wolf3D calculaient en 6502, environ 50 ms par banque sur la carte. Erreur si la banque
