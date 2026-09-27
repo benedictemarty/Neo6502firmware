@@ -19,6 +19,11 @@ static struct Menu menus[MN_MAX_MENUS];
 static uint8_t openMenu = 0;                                                    // Pulled down menu (0 none)
 static uint8_t openItem = 0;                                                    // Highlighted item (0 none)
 static struct QDRect openRect;                                                  // Pull-down rectangle
+static int16_t barLeft = 0,barRight = 0;                                        // T-83 : bar bounds (35,9), right 0 = full width
+
+static int16_t _MNRight(void) {                                                 // Right edge of the bar in the current mode
+    return (barRight == 0 || barRight > gMode.xGSize) ? (int16_t)gMode.xGSize : barRight;
+}
 
 // ***************************************************************************************
 //
@@ -58,7 +63,7 @@ static int _MNWidest(const struct Menu *m) {
 }
 
 static void _MNLayout(void) {                                                   // Title positions in the bar
-    int x = 4;
+    int x = barLeft + 4;
     for (int i = 0;i < MN_MAX_MENUS;i++) {
         if (!menus[i].used) continue;
         uint8_t len;_MNTitle(&menus[i],&len);
@@ -82,7 +87,7 @@ static void _MNDrawTitle(const struct Menu *m,bool hilite) {
 
 void MNDrawBar(void) {
     struct QDRect save;QDGetClipRaw(&save);
-    struct QDRect bar = { 0,0,(int16_t)gMode.xGSize,MN_BAR_HEIGHT };
+    struct QDRect bar = { barLeft,0,_MNRight(),MN_BAR_HEIGHT };
     QDSetClipRaw(&bar);
     QDFillRaw(&bar,MN_COL_BAR);
     for (int i = 0;i < MN_MAX_MENUS;i++) if (menus[i].used) _MNDrawTitle(&menus[i],openMenu == i+1);
@@ -113,7 +118,7 @@ static void _MNOpen(uint8_t id) {
     int w = _MNWidest(m) * 6 + 16;
     openRect.left = m->x - 4;openRect.top = MN_BAR_HEIGHT;
     openRect.right = openRect.left + w;openRect.bottom = openRect.top + n * MN_ITEM_HEIGHT + 2;
-    if (openRect.right > gMode.xGSize) { openRect.right = gMode.xGSize;openRect.left = openRect.right - w; }
+    if (openRect.right > _MNRight()) { openRect.right = _MNRight();openRect.left = openRect.right - w; }   // T-83 : inside the bar
     struct QDRect save;QDGetClipRaw(&save);
     struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
     QDSetClipRaw(&screen);
@@ -146,6 +151,18 @@ static void _MNClose(void) {
 void MNReset(void) {
     for (int i = 0;i < MN_MAX_MENUS;i++) menus[i].used = false;
     openMenu = 0;openItem = 0;
+    barLeft = barRight = 0;
+}
+
+// 35,9 (T-83) : titles, hit areas and pull-downs stay between left and right (right 0 = full width).
+// The bar is laid out and redrawn at its new place ; what it covered before is left to the program.
+uint8_t MNSetBarBounds(int16_t left,int16_t right) {
+    if (left < 0 || (right != 0 && right <= left)) return 1;
+    if (openMenu != 0) _MNClose();
+    barLeft = left;barRight = right;
+    _MNLayout();
+    MNDrawBar();
+    return 0;
 }
 
 uint8_t MNNewMenu(uint16_t descAddr,uint8_t *id) {
@@ -170,7 +187,7 @@ uint8_t MNDisposeMenu(uint8_t id) {
 }
 
 static uint8_t _MNTitleAt(int16_t x,int16_t y) {
-    if (y < 0 || y >= MN_BAR_HEIGHT) return 0;
+    if (y < 0 || y >= MN_BAR_HEIGHT || x < barLeft || x >= _MNRight()) return 0;
     for (int i = 0;i < MN_MAX_MENUS;i++) {
         if (menus[i].used && x >= menus[i].x - 4 && x < menus[i].x + menus[i].width + 4) return i + 1;
     }

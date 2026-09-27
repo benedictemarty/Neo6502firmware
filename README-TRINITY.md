@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.42** (2026-09-27) — **T-83 : 35,9 Set Menu Bar Bounds.** La barre de menus de la toolbox peut être bornée
+  à une zone de l'écran (gauche, droite ; droite 0 = pleine largeur, le défaut) : titres, zones de clic et menus
+  déroulants restent dedans. Demande NeoLegacy, dont l'écran Mac 512 × 342 est centré (104-616 en mode 1).
+  Nouveau test `tests/toolbox/menubar`. RAM : 234 472 o (+4). `make test-api` 17/17, `test-snd` OK, les 11 tests de
+  la toolbox passent un par un ; `events` a encore échoué une fois en passe complète (instabilité connue, 0.16.40).
+
 - **0.16.41** (2026-09-27) — **T-82, première étape : mesurer où part le temps d'une lecture.** Le rapport `!f` du
   port de debug ajoute `appels` et `fichier_us` (temps passé dans 3,6, 3,8 et 3,27) et `disk_read` et `attente_us`
   (temps passé à attendre le transfert USB, la seule part qu'une lecture en tâche de fond pourrait rendre au 6502) ;

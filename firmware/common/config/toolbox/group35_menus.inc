@@ -72,3 +72,13 @@ GROUP 35 Menu Manager
     DOCUMENTATION
         Returns the flags of item Parameter:1 of menu Parameter:0 in Parameter:2.
 
+    FUNCTION 9 Set Menu Bar Bounds
+        *DERROR = MNSetBarBounds((int16_t)DSPGetInt16(DPARAMS,0),(int16_t)DSPGetInt16(DPARAMS,2));
+    DOCUMENTATION
+        Keeps the menu bar between X = Parameters:0,1 (left) and X = Parameters:2,3 (right, excluded) instead of the
+        whole width of the screen (Trinity T-83) : the first title starts at left + 4, clicks outside the bar hit
+        nothing, and a pull-down never goes past the right edge. Right = 0 gives back the full width, which is also
+        the state after a reset ; a right edge past the screen is taken as the screen edge. A pulled down menu is
+        closed, then the bar is redrawn at its new place ; what it covered before is left as it is (the program
+        repaints it). Sets the error flag if left is negative or right is not greater than left.
+
