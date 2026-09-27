@@ -25,6 +25,7 @@ struct GraphicsMode *graphMode;
 // ***************************************************************************************
 
 uint8_t userDefinedFont[64*8];
+static uint8_t userGlyphChanged[64/8];  											// T-85 : $C0-$FF redefined by 2,5 (keep their drawing in mode 1)
 
 // ***************************************************************************************
 //
@@ -37,6 +38,7 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 	for (int i = 0;i < 7;i++) {
 		userDefinedFont[(data[0] & 0x3F)*8 + i] = data[i+1];
 	}
+	userGlyphChanged[(data[0] & 0x3F) >> 3] |= 1 << (data[0] & 7);
 	return 0;
 }	
 
@@ -49,8 +51,9 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 //
 //		Packed modes (1/4 bpp) go through GFXWritePixelRaw. Colours beyond the mode depth
 //		are masked by GFXWritePixelRaw (1 bpp keeps bit 0 : any non black colour is "on").
-//		Cells of 14 lines (Hercules 9x14) use the 8x14 font for $20-$7F ; the 8 line
-//		glyphs ($80-$BF symbols, $C0-$FF UDG) are centred vertically. The 9th column is
+//		Cells of 14 lines (Hercules 9x14) use the 8x14 font for $20-$7F and, since T-85, the
+//		MDA style 8x14 Latin-1 glyphs for $A0-$FF ; a $C0-$FF character redefined by 2,5 keeps its
+//		8 line drawing, centred vertically. The 9th column is
 //		always background (no MDA style replication for $C0-$DF, the Neo charset differs).
 //
 //		Monochrome (Hercules) attributes : the colour nibbles form the IBM MDA attribute
@@ -66,6 +69,7 @@ uint8_t CONUpdateUserFont(uint8_t *data) {
 #define MDA_ATTR_INVERSE 	(0x10)
 #define MDA_INK 			(7)  													// Default monochrome ink : normal text.
 static void CONPaintCharacter(uint16_t x,uint16_t y);
+#include "interface/font_latin1_8x14.h"  									// T-85 : Latin-1 $A0-$FF in 8x14 for the 9x14 cells (MDA style)
 #include "data/latin1font.h"  													// T-20 (F-17 of the fork) : Latin-1 symbols $A0-$BF, default letters $C0-$FF
 static const uint8_t blankGlyph[8] = {0,0,0,0,0,0,0,0};
 static const uint8_t *consoleFont = font_5x7;  									// 2,21 (F-95) : 8 line glyphs $20-$7F (built in or 6502 RAM)
@@ -83,6 +87,7 @@ const uint8_t *CONGlyph(uint8_t ch) {
 
 void CONResetUserFont(void) {  													// Reset : Latin-1 letters in $C0-$FF
 	memcpy(userDefinedFont,font_latin1_letters,sizeof(userDefinedFont));
+	memset(userGlyphChanged,0,sizeof(userGlyphChanged));
 }
 
 // 2,21 : font for $20-$7F. addr = 0 restores the built in font ; otherwise 96 x 8 bytes in 6502 RAM (MSB = left),
@@ -142,6 +147,9 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 		uint16_t b = 0;
 		if (cHeight == 14 && ch < 128) {
 			b = consoleFont14[(ch-32)*14 + y1];  										// 2,21 : user 8x14 font or built in.
+		} else if (cHeight == 14 && ch >= 0xA0 &&  									// T-85 : Latin-1 in 8x14, unless 2,5 redefined it
+				   (ch < 0xC0 || !(userGlyphChanged[(ch & 0x3F) >> 3] & (1 << (ch & 7))))) {
+			b = font_latin1_8x14[(ch-0xA0)*14 + y1];
 		} else if (y1 >= yPad && y1 < yPad + 8) {
 			b = CONGlyph(ch)[y1 - yPad];  												// Console font, Latin-1 or UDG
 		}

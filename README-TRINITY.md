@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.48** (2026-09-28) — **T-85 : les lettres accentuées de la console du mode 1 à la taille des lettres MDA.**
+  Les codes $A0-$FF ont maintenant des glyphes 8 × 14 dans le style du générateur MDA d'IBM : 54 repris du MDA,
+  34 composés comme le MDA compose les siens (À Ã Õ Ý ã õ ý…), 7 sans modèle restés en 8 lignes (¤ ¦ © ® ³ ¹ ¾).
+  « Français » ne s'affiche plus « Franç ais ». Un caractère $C0-$FF redéfini par 2,5 garde son dessin. Nouveau
+  test `tests/api/latin14`. RAM : 236 736 o (+8). `make test-api` 21/21, toolbox 11/11, `test-snd` OK. Contient la
+  lecture de fond de la 0.16.47, pas encore essayée sur carte.
+
 - **0.16.47** (2026-09-27) — **T-82 : 3,28 File Read Background, le 6502 tourne pendant la lecture** (ADR-0002).
   Comme 3,27, plus l'adresse de 3 octets d'état dans la RAM du 6502 ; l'appel revient aussitôt, le 6502 sonde son
   octet (`$01` en cours, `$80|erreur` à la fin, puis le nombre d'octets lus). Sur la carte, le firmware sert le bus
