@@ -380,6 +380,20 @@ GROUP 3 File I/O
         not (no wrap-around, no crossing from $80 to $81 : use two calls). A full 320x240 frame
         is read with 65536 bytes into page $80 then 11264 bytes into page $81.
 
+    FUNCTION 28 File Read Background
+        *DERROR = FIOReadFileHandleBackground(DPARAMS[0],DPARAMS[1],DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DSPGetInt16(DPARAMS,6));
+    DOCUMENTATION
+        Function 3,27 without stopping the 65C02 (Trinity T-82, ADR-0002) : Parameters:0 to 5 as Function 3,27 (channel,
+        page, address, size), Parameters:6,7 the address of 3 bytes of 6502 RAM that report the read. The call returns
+        at once with the first byte at $01 ; the program runs on while the firmware reads, and when the read is over the
+        first byte becomes $80 plus the error code ($80 = success, $82 = end of file...) and the next two bytes hold the
+        number of bytes read. Poll the first byte in RAM ; do not touch it, nor the destination, before its bit 7 is
+        set. Any API call made meanwhile is accepted but waits until the read is over. The error flag is set only
+        when the state bytes are inside the destination or past $FF00 (nothing is read then) ; every other outcome,
+        bad parameters included, is reported by the state byte alone, the same on the board and in the emulators. On the
+        board the 65C02 runs while the USB key transfers (about 90% of the time of a read, measured) ; the emulators
+        perform the read at once.
+
     FUNCTION 32 List Filtered
         FIODirectory(DSPGetString(DCOMMAND,4));
     DOCUMENTATION

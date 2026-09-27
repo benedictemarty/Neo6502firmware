@@ -184,6 +184,7 @@ void DBGClockChanged(void) {}
 bool DBGOwnsGPIO(int gpio) { (void)gpio;return false; }
 uint32_t HWBusStalls(uint8_t which) { (void)which;return 0; }
 void HWBusStallsReset(void) {}
+void HWBackgroundServe(bool on) { (void)on; }  									// T-82 : the read is done at once here
 uint32_t HWBusTiming(uint8_t which) { (void)which;return 0; }  					// T-50
 void HWClockSet(const CLOCK_TIME *t) { (void)t; }                                 // T-18 (F-14) : no RTC to program here
 

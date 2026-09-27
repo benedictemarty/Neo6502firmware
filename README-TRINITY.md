@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.47** (2026-09-27) — **T-82 : 3,28 File Read Background, le 6502 tourne pendant la lecture** (ADR-0002).
+  Comme 3,27, plus l'adresse de 3 octets d'état dans la RAM du 6502 ; l'appel revient aussitôt, le 6502 sonde son
+  octet (`$01` en cours, `$80|erreur` à la fin, puis le nombre d'octets lus). Sur la carte, le firmware sert le bus
+  du 6502 pendant l'attente des transferts USB (plus de 90 % d'une lecture, mesuré) ; un appel d'API fait pendant
+  la lecture attend sa fin. Les lectures existantes ne changent pas. Le corps de la boucle du bus est partagé par
+  une macro (`bus_serve.h`) dont l'introduction laissait le binaire identique octet pour octet. Outil `BG.NEO` pour
+  mesurer le temps rendu. RAM : 236 728 o, `RAM_LIMIT` 237 060. `make test-api` 20/20, toolbox 11/11, `test-snd` OK.
+  **Non encore essayé sur carte.**
+
 - **0.16.46** (2026-09-27) — **T-86 : les touches multimédia règlent le son.** Muet (`0xE2`) coupe et rétablit,
   Volume − (`0xEA`) et Volume + (`0xE9`) changent un volume général de 0 à 16 par pas de 2 (codes relevés sur la carte
   par SWD) ; il s'applique aux 4 canaux et au flux. Nouvelles fonctions 8,15 Get / 8,16 Set Master Volume ; les

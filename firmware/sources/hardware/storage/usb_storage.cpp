@@ -137,11 +137,15 @@ void tuh_msc_umount_cb(uint8_t dev_addr) {
 //
 // ***************************************************************************************
 
+bool HWBusServeInWait(void);  													// T-82 : processor_pio.cpp
+void HWBusServeBurst(void);
+
 static void wait_for_disk_io(uint8_t dev_addr) {                                // By device, slot = address - 1 (T-24, T-54)
     int slot = mscSlot(dev_addr);
     if (slot < 0) return;
     while (msc_volume_busy[slot]) {
         tuh_task();
+        if (HWBusServeInWait()) HWBusServeBurst();  							// T-82 : the 65C02 runs meanwhile (3,28)
     }
 }
 

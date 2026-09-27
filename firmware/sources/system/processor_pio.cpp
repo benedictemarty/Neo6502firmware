@@ -73,6 +73,32 @@ void __not_in_flash_func(HWBusProbe)(void) {
 //		one, and RAM is down to a few hundred spare bytes (T-13).
 static uint32_t syncMaxUs = 0,cmdMaxUs = 0;
 
+//		T-82 (ADR-0002) : a background read (3,28) serves the bus from wait_for_disk_io. A write
+//		of the control port seen there cannot be handled at once (we are inside FatFs and
+//		TinyUSB) : it is noted, the 65C02 keeps waiting on it, and the main loop runs it when
+//		the read is over — in a loop, not recursively, so chained reads cannot pile up.
+static volatile bool busServeInWait = false;
+static volatile bool busPendingCommand = false;
+static uint8_t burstWrites = 0;
+
+void HWBackgroundServe(bool on) {
+	busServeInWait = on;
+}
+
+bool __not_in_flash_func(HWBusServeInWait)(void) {
+	return busServeInWait;
+}
+
+void __time_critical_func(HWBusServeBurst)(void) {  								// Called between two tuh_task()
+	union u32 value;
+	uint8_t consecutive_writes = burstWrites;
+	const uint16_t cp = CONTROLPORT;
+	for (int i = 0;i < 64;i++) {
+		BUS_SERVE_ONE({ busPendingCommand = true; })
+	}
+	burstWrites = consecutive_writes;
+}
+
 uint32_t HWBusTiming(uint8_t which) {
 	return (which == 0) ? syncMaxUs : cmdMaxUs;
 }
@@ -122,6 +148,10 @@ void __time_critical_func(CPUExecute)(void) {
         BUS_SERVE_ONE({
                     uint32_t t0 = timer_hw->timerawl;                           // T-50 : how long one API command
                     DSPHandler(cpuMemory + controlPort, cpuMemory);             // keeps us away from the bus
+                    while (busPendingCommand) {                                 // T-82 : posted during a background read
+                        busPendingCommand = false;
+                        DSPHandler(cpuMemory + controlPort, cpuMemory);
+                    }
                     t0 = timer_hw->timerawl - t0;
                     if (t0 > cmdMaxUs) cmdMaxUs = t0;
         })

@@ -110,7 +110,12 @@ build: prelim always
 #				table de bruit (1 024 o). Décision bmarty : mesurer le tas d'abord. Mesure SWD sur carte
 #				(démarrage, MODE 1 puis 0, sdbench, NeoDune2000) : pic __malloc_max_sbrked_mem = 15 380 o
 #				dans tous les cas. Marge vérifiée : 26 Ko de tas restants, dont 10,6 Ko jamais atteints.
-RAM_LIMIT ?= 236548
+#
+#				2026-09-27 (T-82) : 236548 -> 237060. La lecture de fond (ADR-0002) sert le bus depuis
+#				l'attente USB : HWBusServeBurst (256 o) et la reprise des commandes mises de côté dans
+#				CPUExecute (+64 o) sont en RAM, comme tout ce qui sert le bus. Marge vérifiée : 25,4 Ko de
+#				tas restants pour un pic mesuré de 15 380 o (T-79).
+RAM_LIMIT ?= 237060
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

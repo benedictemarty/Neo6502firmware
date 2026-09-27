@@ -387,6 +387,25 @@ uint8_t FIOReadFileHandlePaged(uint8_t fileno, uint8_t page, uint16_t address, u
 	return FISReadFileHandleBuffer(fileno, dest, size);
 }
 
+// T-82 (ADR-0002) : 3,27 with the 65C02 running. The state is 3 bytes of 6502 RAM at 'status' :
+// $01 while reading, then $80 | error code ; then the byte count read. The state byte is written
+// last, so a 6502 that sees bit 7 finds the count and the data in place. Only bad state bytes are
+// returned as an error : on the board the 65C02 is released at the first USB wait, before the
+// outcome is known, so every other error goes to the state byte alone — the same on every host.
+uint8_t FIOReadFileHandleBackground(uint8_t fileno, uint8_t page, uint16_t address, uint16_t size, uint16_t status) {
+	if (status > 0xFF00 - 3) return FIOERROR_INVALID_PARAMETER;
+	if (page == 0 && size != 0 && (uint32_t)status + 3 > address && status < (uint32_t)address + size)
+		return FIOERROR_INVALID_PARAMETER;  										// State inside the destination
+	cpuMemory[status] = 0x01;cpuMemory[status+1] = cpuMemory[status+2] = 0;
+	HWBackgroundServe(true);  													// From the first USB wait on, the 65C02 runs
+	uint16_t got = size;
+	uint8_t r = FIOReadFileHandlePaged(fileno, page, address, &got);
+	HWBackgroundServe(false);
+	cpuMemory[status+1] = got & 0xFF;cpuMemory[status+2] = got >> 8;
+	cpuMemory[status] = 0x80 | r;
+	return FIOERROR_OK;
+}
+
 uint8_t FIOWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	if (address == 0xFFFF) return 1;
 	return FISWriteFileHandle(fileno, address, size);
