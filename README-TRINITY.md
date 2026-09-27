@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.44** (2026-09-27) — **T-79 : le flux est interpolé.** Retour carte : « son pur non, mais pas de
+  grésillements », sans aucun retard. Mesuré sur PC : tenir chaque échantillon 1 ou 2 fois pour passer de 22 050 à
+  30 882 Hz créait deux raies à -34 dB vers 9 kHz. L'interpolation linéaire entre voisins les ramène à -43,5 dB,
+  le niveau propre au 8 bits. RAM : 236 212 o (+80). `make test-snd` (contrôle d'interpolation ajouté),
+  `make test-api` 18/18, toolbox 11/11.
+
 - **0.16.43** (2026-09-27) — **T-79 : son en flux (PCM) mélangé au synthétiseur.** Fonctions 8,11 Stream Start,
   8,12 Stream Stop, 8,13 Stream Status, 8,14 Stream Filled : le 6502 remplit deux moitiés d'un tampon dans sa RAM
   (8 bits non signés, $80 = silence), le firmware les joue à la cadence déclarée (11 025, 22 050 Hz…) quel que soit

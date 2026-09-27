@@ -96,8 +96,17 @@ int main(void) {
     SNDGetNextSample();SNDGetNextSample();
     CHECK(SNDStreamStatus(&u) == 0x81,"flux fe/2 : moitie 0 finie apres 201 echantillons");
 
+    // Interpolation (T-79) : à fe/2, l'échantillon intermédiaire est la moyenne des deux voisins
+    SNDStreamStop();
+    for (int i = 0;i < 200;i++) cpuMemory[0x1000+i] = (i & 1) ? 0x80 + 100 : 0x80;
+    CHECK(SNDStreamStart(0x1000,100,fe/2,127) == 0,"flux : demarrage pour l'interpolation");
+    SNDGetNextSample();SNDGetNextSample();                                         // echantillon 0 (0) puis milieu 0-1
+    int i2 = SNDGetNextSample(),i3 = SNDGetNextSample();                           // echantillon 1 (100), milieu 1-2 (50)
+    CHECK(i2 == 100*127/128 && abs(i3 - 50*127/128) <= 1,"flux : interpolation lineaire entre voisins");
+
     // Mélange : un carré à 100 + le flux à +63, CAG 3/4 : (100+63)*3/4 = 122 ou (-100+63)*3/4 = -27
     SNDStreamStop();
+    for (int i = 0;i < 200;i++) cpuMemory[0x1000+i] = 0x80 + 64;                   // tampon constant (l'essai precedent l'a change)
     CHECK(SNDStreamStart(0x1000,100,fe,127) == 0,"flux : demarrage pour le melange");
     note(0,440,100,SOUNDTYPE_SQUARE);
     SNDGetNextSample();

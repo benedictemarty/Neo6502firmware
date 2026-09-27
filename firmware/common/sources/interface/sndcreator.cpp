@@ -101,7 +101,13 @@ int16_t __time_critical_func(SNDGetNextSample)(void) {                      // T
     if (stream.on) {                                                            // T-79 : the stream counts as one more channel
         activeCount++;
         if (stream.full[stream.cur]) {
-            level += ((int)cpuMemory[stream.base + stream.cur * stream.half + stream.pos] - 128) * stream.volume / 128;
+            uint16_t at = stream.base + stream.cur * stream.half + stream.pos;
+            int a = cpuMemory[at],b = a;                                        // Linear interpolation to the next sample :
+            if (stream.pos + 1 < stream.half) b = cpuMemory[at + 1];            // holding each one (1 or 2 outputs at 22050
+            else if (stream.full[stream.cur ^ 1])                               // -> 30882 Hz) put images at -34 dB around
+                b = cpuMemory[stream.base + (stream.cur ^ 1) * stream.half];    // 9 kHz, bmarty heard them (T-79)
+            int v = a + (((b - a) * (int)(stream.phase >> 8)) >> 8);
+            level += (v - 128) * stream.volume / 128;
             stream.phase += stream.step;
             while (stream.phase >= 0x10000) {
                 stream.phase -= 0x10000;
