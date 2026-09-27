@@ -68,6 +68,9 @@ void SNDStreamStop(void);  														// T-79 : 8,12
 uint8_t SNDStreamStatus(uint16_t *underruns);  										// T-79 : 8,13
 uint8_t SNDStreamFilled(uint8_t half);  											// T-79 : 8,14
 void SNDStreamClockChanged(void);  												// T-79 : output rate changed
+void SNDGetMasterVolume(uint8_t *volume,bool *mute);  								// T-86 : 8,15
+uint8_t SNDSetMasterVolume(uint8_t volume,bool mute);  							// T-86 : 8,16
+void SNDMasterKey(uint16_t usage);  												// T-86 : media key press (consumer usage)
 void SNDStartup(void);
 int SNDGetNoteCount(int channelID);
 

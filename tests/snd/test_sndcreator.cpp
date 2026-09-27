@@ -114,6 +114,30 @@ int main(void) {
     CHECK(m == (100+63)*3/4 || m == (-100+63)*3/4,"flux + canal : somme puis CAG 3/4");
     SNDStreamStop();SNDMuteAllChannels();
 
+    // ---- T-86 : volume général et touches multimédia ----
+    SNDMuteAllChannels();note(0,440,100,SOUNDTYPE_SQUARE);
+    SNDGetNextSample();
+    int full = abs(SNDGetNextSample());
+    uint8_t mv;bool mm;
+    SNDGetMasterVolume(&mv,&mm);
+    CHECK(mv == 16 && !mm && full == 100,"volume general : 16 et son normal au depart");
+    CHECK(SNDSetMasterVolume(17,false) == 1,"volume general : 17 refuse");
+    SNDSetMasterVolume(8,false);
+    CHECK(abs(SNDGetNextSample()) == 50,"volume general 8 : moitie");
+    SNDMasterKey(0xE2);
+    CHECK(SNDGetNextSample() == 0,"touche Muet : silence");
+    SNDMasterKey(0xE9);SNDGetMasterVolume(&mv,&mm);
+    CHECK(mv == 10 && !mm && abs(SNDGetNextSample()) == 62,"Volume + : +2 et son retabli");
+    for (int k = 0;k < 10;k++) SNDMasterKey(0xEA);
+    SNDGetMasterVolume(&mv,&mm);
+    CHECK(mv == 0 && SNDGetNextSample() == 0,"Volume - : bute a 0");
+    for (int k = 0;k < 10;k++) SNDMasterKey(0xE9);
+    SNDGetMasterVolume(&mv,&mm);
+    CHECK(mv == 16,"Volume + : bute a 16");
+    SNDMasterKey(0xCD);SNDGetMasterVolume(&mv,&mm);
+    CHECK(mv == 16 && !mm,"autre touche multimedia : sans effet");
+    SNDMuteAllChannels();
+
     printf(fails ? "test-snd : %d echec(s)\n" : "test-snd : OK\n",fails);
     return fails ? 1 : 0;
 }

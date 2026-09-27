@@ -473,7 +473,7 @@ bool KBDMediaReport(uint8_t dev_addr,uint8_t instance,const uint8_t *report,uint
 	if (!mine || len < 2) return mine;
 	if (report[0] == 1 && len >= 3) {  											// Consumer : keep the press, ignore the release
 		uint16_t usage = report[1] | (report[2] << 8);
-		if (usage != 0) lastMediaKey = usage;
+		if (usage != 0) { lastMediaKey = usage;SNDMasterKey(usage); }  		// T-86 : Mute / Volume - / + act on the sound
 	} else if (report[0] == 2) {
 		if (report[1] != 0) lastSystemKey = report[1];
 	}

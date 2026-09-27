@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.46** (2026-09-27) — **T-86 : les touches multimédia règlent le son.** Muet (`0xE2`) coupe et rétablit,
+  Volume − (`0xEA`) et Volume + (`0xE9`) changent un volume général de 0 à 16 par pas de 2 (codes relevés sur la carte
+  par SWD) ; il s'applique aux 4 canaux et au flux. Nouvelles fonctions 8,15 Get / 8,16 Set Master Volume ; les
+  touches restent lisibles par 2,22. RAM : 236 340 o (+128). `make test-api` 19/19, `test-snd` OK, toolbox 11/11
+  un par un (`events` a échoué une fois en série, puis 3 fois OK : instabilité connue).
+
 - **0.16.45** (2026-09-27, demande bmarty « prends la 0.24.1 neodos ») — **NeoDOS 0.24.1 embarqué** (tag `v0.24.1`,
   `7fa7ea7`, `neodos.bin` recompilé à l'identique, md5 `4f9b72fb…`) : la redirection d'un programme lancé depuis un
   `.BAT` est refermée à son retour, et NeoDOS préserve sa page zéro (`bptr`, `blen`, `redir`, `caps`) pendant

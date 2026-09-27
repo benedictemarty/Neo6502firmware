@@ -128,3 +128,21 @@ GROUP 8 Sound
     DOCUMENTATION
         Marks half Parameter:0 (0 or 1) of the stream as refilled (Trinity T-79), after the program has written its
         samples. Sets the error flag if the half is not 0 or 1 or the stream is stopped.
+
+    FUNCTION 15 Get Master Volume
+        {
+            uint8_t v;bool m;
+            SNDGetMasterVolume(&v,&m);
+            DPARAMS[0] = v;DPARAMS[1] = m ? 1 : 0;
+        }
+    DOCUMENTATION
+        Returns the master volume (0-16, 16 at reset) in Parameter:0 and 1 in Parameter:1 if the sound is muted (Trinity
+        T-86). The master volume scales everything the sound system outputs, the four channels and the stream. The Mute,
+        Volume - and Volume + media keys of a USB keyboard change it : Mute toggles, each Volume key moves the volume by 2
+        and unmutes. The keys are still returned by Function 2,22.
+
+    FUNCTION 16 Set Master Volume
+        *DERROR = SNDSetMasterVolume(DPARAMS[0],DPARAMS[1] != 0);
+    DOCUMENTATION
+        Sets the master volume to Parameter:0 (0-16) and mutes the sound if Parameter:1 is not zero (Trinity T-86). Sets
+        the error flag if the volume is above 16.

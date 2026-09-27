@@ -42,6 +42,14 @@ static struct {
     volatile uint16_t underruns;                                                // Times a half was reached before being filled
 } stream;
 
+//
+//      T-86 : master volume (0-16, 16 = as before) and mute, applied to everything that goes out ;
+//      set by the Mute / Volume - / Volume + media keys (T-39) and by 8,15 / 8,16.
+//
+#define MASTER_MAX  (16)
+static uint8_t masterVolume = MASTER_MAX;
+static bool masterMute = false;
+
 // ***************************************************************************************
 //
 //            Return number of channels supported by this implementation
@@ -124,6 +132,7 @@ int16_t __time_critical_func(SNDGetNextSample)(void) {                      // T
     if (channelsActive > 1) {                                                       // If >= 2 channels scale output by 75% to reduce clipping.
         level = level * 3 / 4;  
     }
+    level = masterMute ? 0 : level * masterVolume / MASTER_MAX;                     // T-86 : master volume
     if (level < -127) level = -127;                                                 // Clip into range
     if (level > 127) level = 127;
   	return level;
@@ -198,6 +207,31 @@ uint8_t SNDStreamFilled(uint8_t half) {                                         
     if (half > 1 || !stream.on) return 1;
     stream.full[half] = 1;
     return 0;
+}
+
+// ***************************************************************************************
+//
+//      T-86 : master volume (8,15 / 8,16, media keys)
+//
+// ***************************************************************************************
+
+void SNDGetMasterVolume(uint8_t *volume,bool *mute) {
+    *volume = masterVolume;*mute = masterMute;
+}
+
+uint8_t SNDSetMasterVolume(uint8_t volume,bool mute) {
+    if (volume > MASTER_MAX) return 1;
+    masterVolume = volume;masterMute = mute;
+    return 0;
+}
+
+// Consumer usage of a media key press : Mute toggles, Volume - / + move by 2 and unmute.
+void SNDMasterKey(uint16_t usage) {
+    switch (usage) {
+        case 0xE2: masterMute = !masterMute;break;
+        case 0xEA: masterVolume = (masterVolume > 2) ? masterVolume - 2 : 0;masterMute = false;break;
+        case 0xE9: masterVolume = (masterVolume < MASTER_MAX - 2) ? masterVolume + 2 : MASTER_MAX;masterMute = false;break;
+    }
 }
 
 void SNDStreamClockChanged(void) {                                              // The output rate moved (252 <-> 270 MHz)
