@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.45** (2026-09-27, demande bmarty « prends la 0.24.1 neodos ») — **NeoDOS 0.24.1 embarqué** (tag `v0.24.1`,
+  `7fa7ea7`, `neodos.bin` recompilé à l'identique, md5 `4f9b72fb…`) : la redirection d'un programme lancé depuis un
+  `.BAT` est refermée à son retour, et NeoDOS préserve sa page zéro (`bptr`, `blen`, `redir`, `caps`) pendant
+  l'exécution d'un programme (défauts trouvés par Neo6502Zap). Vérifié dans les UF2 : de la 0.16.40 à la 0.16.44,
+  tous embarquaient encore la 0.24.0. Aucun changement du firmware lui-même ; contient le flux interpolé de la
+  0.16.44, jamais flashé. Constat : les échecs de construction de `neo` « au premier essai » venaient de
+  `cp: ../bin/neo: Fichier texte occupé` (une autre session exécutait `bin/neo`) ; installation faite par
+  renommage. `make test-api` 18/18, toolbox 11/11, `test-snd` OK.
+
 - **0.16.44** (2026-09-27) — **T-79 : le flux est interpolé.** Retour carte : « son pur non, mais pas de
   grésillements », sans aucun retard. Mesuré sur PC : tenir chaque échantillon 1 ou 2 fois pour passer de 22 050 à
   30 882 Hz créait deux raies à -34 dB vers 9 kHz. L'interpolation linéaire entre voisins les ramène à -43,5 dB,
