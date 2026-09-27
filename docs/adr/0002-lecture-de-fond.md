@@ -72,3 +72,9 @@ l'émulateur `neo`.
   échoue.
 - **Toutes les lectures en tâche de fond** : casserait le contrat des programmes existants, qui supposent que la
   destination est remplie au retour de 3,8 / 3,27.
+
+## Résultat (2026-09-28, carte, Trinity 0.16.48)
+
+`BG.NEO` sur `sdbench.dat` (256 Ko par tranches de 4 Ko) : 3,27 = 28 cs, 3,28 = 29 cs ; pendant 3,28 le 6502 a
+tourné ≈ 70 % du temps (101 193 tours de boucle pour 143 434 possibles) ; aucune erreur, aucun décrochage du bus
+(RXUNDER/TXOVER = 0). Étape 1 : binaire identique octet pour octet. Décision : garder.
