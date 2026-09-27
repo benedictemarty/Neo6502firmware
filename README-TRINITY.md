@@ -48,6 +48,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   « Français » ne s'affiche plus « Franç ais ». Un caractère $C0-$FF redéfini par 2,5 garde son dessin. Nouveau
   test `tests/api/latin14`. RAM : 236 736 o (+8). `make test-api` 21/21, toolbox 11/11, `test-snd` OK. Contient la
   lecture de fond de la 0.16.47, pas encore essayée sur carte.
+  **Correction (2026-09-28)** : la 0.16.47 et la 0.16.48 embarquent **NeoDOS 0.25.0** (tag `v0.25.0`, `f6bb480`,
+  `neodos.bin` md5 `e192aed2…`, vérifié dans les UF2), publiée le 2026-09-27 à 23:15 et prise sans le voir par le
+  build, qui relit `../Neo6502Msdos/build/neodos.bin` à chaque compilation. 0.25.0 : un Tab répété ne relit plus
+  le disque (B16, piste (c) de T-31). Désormais, chaque livraison vérifie la version de NeoDOS dans l'UF2.
 
 - **0.16.47** (2026-09-27) — **T-82 : 3,28 File Read Background, le 6502 tourne pendant la lecture** (ADR-0002).
   Comme 3,27, plus l'adresse de 3 octets d'état dans la RAM du 6502 ; l'appel revient aussitôt, le 6502 sonde son
