@@ -14,6 +14,7 @@
 // ***************************************************************************************
 
 #include "common.h"
+#include "bus_serve.h"
 
 #define PICO_NEO6502
 #define CHIPS_IMPL
@@ -111,68 +112,20 @@ void __time_critical_func(CPUExecute)(void) {
     initPio();
     wdc65C02cpu_reset();
 
-    union u32
-    {
-        uint32_t value;
-        struct {
-            uint16_t address;
-            uint8_t flags;
-        } data;
-    } value;
+    union u32 value;                                                            // bus_serve.h (ADR-0002)
     
     uint16_t count = 0;
     uint8_t consecutive_writes = 0;
     const uint16_t cp = CONTROLPORT;
     
     while (1) {
-        // Ensures synchronization with the PIO during W65C02 interrupts
-        if(consecutive_writes < 3) {
-            value.value = pio_sm_get(pio1, 0);
-        } else {
-            consecutive_writes = 0;
-            value.value = pio_sm_get_blocking(pio1, 0);
-        }
-      
-        if (value.data.flags & 0x8) { // 65C02 Read
-            pio_sm_put(pio1, 0, cpuMemory[value.data.address]);
-            
-            consecutive_writes = 0;
-
-            // F-60 : vector fetch ($FFFF) of an interrupt sequence releases IRQB (bmarty).
-            // Cost ~3 cycles on every read : the nop padding below was 14, now 11 (R9 in F-60 notes).
-            if (value.data.address == 0xFFFF && irqAsserted) {
-                irqAsserted = false;
-                wdc65C02cpu_set_irq(false);
-            }
-            
-            __asm volatile (
-              "nop; nop; nop; nop\n\t"
-              "nop; nop; nop; nop\n\t"
-              "nop; nop; nop\n\t"
-              ::: "memory"
-            );
-          
-        } else { // 65C02 Write
-            consecutive_writes++;
-            
-            // Safe to do without blocking since the PIO state machine always finishes first
-            cpuMemory[value.data.address] = pio_sm_get(pio1, 0);
-            
-            if ((uint8_t)value.value == 0x00) {
-                if (value.data.address == cp) {
+        BUS_SERVE_ONE({
                     uint32_t t0 = timer_hw->timerawl;                           // T-50 : how long one API command
                     DSPHandler(cpuMemory + controlPort, cpuMemory);             // keeps us away from the bus
                     t0 = timer_hw->timerawl - t0;
                     if (t0 > cmdMaxUs) cmdMaxUs = t0;
-                }
-            }
-            
-            __asm volatile (
-              "nop\n"
-              ::: "memory"
-            );
-        }
-        
+        })
+
         if (!count++) {
             uint32_t t0 = timer_hw->timerawl;                                   // T-50 : and how long the periodic
             DSPSync();                                                          // work does (keyboard, USB, blink)

@@ -1,6 +1,6 @@
 # ADR-0002 — Lecture de fichier en tâche de fond (T-82)
 
-Statut : **proposée** le 2026-09-27 (bmarty : « téléchargement direct mémoire pour USB ou SD », précisé : « le 6502
+Statut : **acceptée** le 2026-09-27 (bmarty : « go »), proposée le même jour (bmarty : « téléchargement direct mémoire pour USB ou SD », précisé : « le 6502
 lance la lecture et continue à tourner »).
 Portée : `firmware/sources/system/processor_pio.cpp` (boucle du bus), `firmware/sources/hardware/storage/usb_storage.cpp`
 (`wait_for_disk_io`), `firmware/common/config/system/group3_fileio.inc` (nouvelle fonction), `fileinterface.cpp`,
