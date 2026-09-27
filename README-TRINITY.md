@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.49** (2026-09-28) — **T-88 : 32,19 Toolbox Reset.** La toolbox (fenêtres, menus, contrôles, dialogues,
+  événements) gardait son état d'un programme à l'autre : après `legdiag`, NeoLegacy héritait d'un menu orphelin
+  dont le descripteur pointait sur ses propres données (écran relu par SWD). La nouvelle fonction remet tout à l'état
+  du démarrage, sans rien dessiner ; NeoDOS devra l'appeler au retour de chaque programme (demandé). Test
+  `tests/toolbox/tbreset`. NeoDOS embarqué : **0.25.0** (lu dans l'UF2). `make test-api` 21/21, toolbox 12/12 un par
+  un (`events` : instabilité connue en série), `test-snd` OK.
+
 - **0.16.48** (2026-09-28) — **T-85 : les lettres accentuées de la console du mode 1 à la taille des lettres MDA.**
   Les codes $A0-$FF ont maintenant des glyphes 8 × 14 dans le style du générateur MDA d'IBM : 54 repris du MDA,
   34 composés comme le MDA compose les siens (À Ã Õ Ý ã õ ý…), 7 sans modèle restés en 8 lignes (¤ ¦ © ® ³ ¹ ¾).

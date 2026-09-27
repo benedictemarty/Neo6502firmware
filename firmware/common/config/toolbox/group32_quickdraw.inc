@@ -135,3 +135,12 @@ GROUP 32 QuickDraw
         Returns the height of the current font in Parameter:0, its first character in Parameter:1 and its character
         count in Parameter:2.
 
+
+    FUNCTION 19 Toolbox Reset
+        QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();
+    DOCUMENTATION
+        Puts the whole toolbox back in its start up state (Trinity T-88) : no window, no menu (and the menu bar back to the
+        full width, Function 35,9), no control, no dialog, event manager off, no resource file, QuickDraw as after 32,1.
+        Nothing is drawn or erased. The toolbox otherwise keeps its state from one program to the next : NeoDOS is to call
+        this when a program returns to it (T-88, asked of NeoDOS), so the next program does not inherit its menus or windows. A program may call
+        it first thing as well. Unlike 32,1, which a program may call again while its windows exist.
