@@ -129,3 +129,7 @@ $ make
 ### Uploading Firmware
 
 At the time of writing, to use openocd to upload with CMSIS-DAP v2 (which is Pico based programmers) requires it to be built from source, which often has libusb1 as a dependency (without this it will build).
+
+## Avertissement
+
+⚠️ Avertissement : ce programme est un programme généré par Claude Code sous la supervision d'un être humain : il a été utilisé pour améliorer, développer, rendre compatible ou traduire ce logiciel.
