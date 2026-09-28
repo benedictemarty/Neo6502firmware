@@ -42,6 +42,7 @@ static volatile uint16_t head = 0,tail = 0;  									// head = write, tail = re
 static bool dbgOn = false;
 volatile uint32_t stoSectorCount = 0;  											// T-73 : sectors moved (storage drivers add to it)
 volatile uint32_t stoFileCalls = 0,stoFileUs = 0;  								// T-82 : file reads and seeks (3,6 3,8 3,27), time inside them
+volatile uint32_t stoDiskWaitMaxUs = 0,stoDiskTimeouts = 0;  						// T-34 : longest USB wait, waits cut short
 volatile uint32_t stoDiskReads = 0,stoDiskWaitUs = 0;  							// T-82 : disk_read calls, time spent waiting for the USB transfer
 
 //		Started once, in P0. If the 6502 later reprograms the port (group 10) the trace
@@ -293,6 +294,8 @@ static void __not_in_flash_func(DBGReportStorage)(void) {
 	DBGPair("fichier_us",stoFileUs);
 	DBGPair("disk_read",stoDiskReads);
 	DBGPair("attente_us",stoDiskWaitUs);
+	DBGPair("pire_us",stoDiskWaitMaxUs);  										// T-34
+	DBGPair("delais",stoDiskTimeouts);
 	DBGWrite("\r\n");
 }
 
@@ -307,7 +310,7 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 		case 'f': DBGReportStorage();break;
 		case 'a': DBGReportStarvation();DBGReportVideo();DBGReportKeyboard();
 				  DBGReportUSB();DBGReportStorage();DBGReportMemory();DBGReportPlacement();break;
-		case 'z': HWBusStallsReset();stoFileCalls = 0;stoFileUs = 0;stoDiskReads = 0;stoDiskWaitUs = 0;
+		case 'z': HWBusStallsReset();stoFileCalls = 0;stoFileUs = 0;stoDiskReads = 0;stoDiskWaitUs = 0;stoDiskWaitMaxUs = 0;
 				  DBGWrite("\r\ncompteurs de bus et de lecture remis a zero\r\n");break;
 
 		case '!': KBDInsertQueue('!');break;  									// !! : a real '!' for the 6502

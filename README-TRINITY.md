@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.51** (2026-09-28) — **T-34 : une clé qui ne répond plus ne fige plus la machine.** L'attente d'un transfert
+  USB était sans limite ; elle s'arrête maintenant si la clé est retirée, ou au bout de 2 s, avec une erreur disque
+  (2 s et non les 500 ms de l'ADR-0001 : le pire temps d'une écriture n'est pas encore mesuré). Corrigé au passage :
+  un transfert que TinyUSB refusait de lancer donnait une attente infinie, et une lecture refusée par la clé était
+  rapportée réussie. `!f` affiche la plus longue attente (`pire_us`) et les attentes coupées (`delais`). **NeoDOS
+  0.26.0 épinglé** (la 0.27.0 est parue dans `~/Neo6502Msdos` mais n'est pas embarquée sans décision ; image
+  reconstruite depuis le tag, md5 `f5a961c8…`, version lue dans l'UF2). RAM : 236 800 o. `make test-api` 21/21,
+  toolbox 12/12, `test-snd` OK.
+
 - **0.16.50** (2026-09-28) — **NeoDOS 0.26.0 embarqué (T-88)** : NeoDOS appelle 32,19 Toolbox Reset au retour de
   chaque programme, si bien qu'un programme n'hérite plus des menus ni des fenêtres du précédent (tag `v0.26.0`,
   `c9f060d`, `neodos.bin` md5 `f5a961c8…`, version lue dans l'UF2). Aucun changement du firmware lui-même.

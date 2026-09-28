@@ -27,6 +27,7 @@
 //		graphicsMemory (colour 1 of the default palette is 255,0,77).
 static FATFS msc_fatfs_volumes[CFG_TUH_DEVICE_MAX];
 static volatile bool msc_volume_busy[CFG_TUH_DEVICE_MAX];
+static volatile bool msc_volume_failed[CFG_TUH_DEVICE_MAX];  					// T-34 : SCSI status of the last transfer
 
 static inline int mscSlot(uint8_t dev_addr) {  									// USB address -> array slot, or -1
 	int slot = (int)dev_addr - 1;
@@ -129,6 +130,8 @@ void tuh_msc_umount_cb(uint8_t dev_addr) {
     drive_path[0] += drive;
     f_unmount(drive_path);
     driveDevice[drive] = 0;
+    int slot = mscSlot(dev_addr);  												// T-34 : a transfer in flight will never complete ;
+    if (slot >= 0) { msc_volume_failed[slot] = true;msc_volume_busy[slot] = false; }	// failed first, so a wait ended here is an error
 }
 
 // ***************************************************************************************
@@ -140,19 +143,44 @@ void tuh_msc_umount_cb(uint8_t dev_addr) {
 bool HWBusServeInWait(void);  													// T-82 : processor_pio.cpp
 void HWBusServeBurst(void);
 
-static void wait_for_disk_io(uint8_t dev_addr) {                                // By device, slot = address - 1 (T-24, T-54)
+//		T-34 (ADR-0001 § 5) : this waited for ever. A key pulled out, or one that stops
+//		answering, froze the whole machine : the 65C02 is stalled for the length of the API
+//		call. Now the wait ends when the key is gone (RES_NOTRDY) or after DISK_IO_TIMEOUT_US
+//		(RES_ERROR, FatFs reports a disk error). ADR-0001 says 500 ms ; 2 s is used because the
+//		worst case of a WRITE on a real key has not been measured yet, and a write cut short can
+//		damage the file system : stoDiskWaitMaxUs records the longest wait so the limit can be
+//		set from a measurement. A transfer still pending after a timeout keeps its slot busy :
+//		the next accesses to that key are refused at once instead of piling up.
+#define DISK_IO_TIMEOUT_US  (2000000)
+extern volatile uint32_t stoDiskWaitMaxUs,stoDiskTimeouts;  					// debugport.cpp
+
+static DRESULT wait_for_disk_io(uint8_t dev_addr) {                             // By device, slot = address - 1 (T-24, T-54)
     int slot = mscSlot(dev_addr);
-    if (slot < 0) return;
+    if (slot < 0) return RES_PARERR;
+    uint32_t t0 = time_us_32();
     while (msc_volume_busy[slot]) {
         tuh_task();
         if (HWBusServeInWait()) HWBusServeBurst();  							// T-82 : the 65C02 runs meanwhile (3,28)
+        if (!tuh_msc_mounted(dev_addr)) {  										// Key gone : its transfer is gone too
+            msc_volume_busy[slot] = false;
+            return RES_NOTRDY;
+        }
+        if (time_us_32() - t0 > DISK_IO_TIMEOUT_US) {
+            stoDiskTimeouts = stoDiskTimeouts + 1;
+            return RES_ERROR;
+        }
     }
+    uint32_t d = time_us_32() - t0;
+    if (d > stoDiskWaitMaxUs) stoDiskWaitMaxUs = d;
+    return msc_volume_failed[slot] ? RES_ERROR : RES_OK;
 }
 
 static bool disk_io_complete(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_data) {
-    (void)cb_data;
     int slot = mscSlot(dev_addr);
-    if (slot >= 0) msc_volume_busy[slot] = false;
+    if (slot >= 0) {
+        msc_volume_failed[slot] = (cb_data->csw->status != 0);  					// T-34 : a refused command is an error
+        msc_volume_busy[slot] = false;
+    }
     return true;
 }
 
@@ -186,13 +214,18 @@ DRESULT disk_read(BYTE pdrv, BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const lun = 0;
     int slot = mscSlot(dev_addr);
     if (slot < 0) return RES_PARERR;
+    if (msc_volume_busy[slot]) return RES_NOTRDY;  								// T-34 : a timed out transfer still pending
     msc_volume_busy[slot] = true;                                               // Busy flag by device : the completion
+    msc_volume_failed[slot] = false;
     stoSectorCount += count;  													// T-73
-    tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);   // callback only knows dev_addr (T-24)
+    if (!tuh_msc_read10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0)) {   // callback only knows dev_addr (T-24)
+        msc_volume_busy[slot] = false;  										// T-34 : not queued, nothing will complete
+        return RES_ERROR;
+    }
     uint32_t t0 = time_us_32();  												// T-82 : time with the transfer in flight
-    wait_for_disk_io(dev_addr);
+    DRESULT r = wait_for_disk_io(dev_addr);
     stoDiskWaitUs += time_us_32() - t0;stoDiskReads = stoDiskReads + 1;
-    return RES_OK;
+    return r;
 }
 
 DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
@@ -202,10 +235,14 @@ DRESULT disk_write(BYTE pdrv, const BYTE *buff, LBA_t sector, UINT count) {
     uint8_t const lun = 0;
     int slot = mscSlot(dev_addr);
     if (slot < 0) return RES_PARERR;
+    if (msc_volume_busy[slot]) return RES_NOTRDY;  								// T-34
     msc_volume_busy[slot] = true;
-    tuh_msc_write10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0);
-    wait_for_disk_io(dev_addr);
-    return RES_OK;
+    msc_volume_failed[slot] = false;
+    if (!tuh_msc_write10(dev_addr, lun, buff, sector, (uint16_t)count, disk_io_complete, 0)) {
+        msc_volume_busy[slot] = false;
+        return RES_ERROR;
+    }
+    return wait_for_disk_io(dev_addr);
 }
 
 DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buff) {
