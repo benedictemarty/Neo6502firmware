@@ -42,6 +42,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.50** (2026-09-28) — **NeoDOS 0.26.0 embarqué (T-88)** : NeoDOS appelle 32,19 Toolbox Reset au retour de
+  chaque programme, si bien qu'un programme n'hérite plus des menus ni des fenêtres du précédent (tag `v0.26.0`,
+  `c9f060d`, `neodos.bin` md5 `f5a961c8…`, version lue dans l'UF2). Aucun changement du firmware lui-même.
+  `make test-api` 21/21, toolbox 12/12, `test-snd` OK.
+
 - **0.16.49** (2026-09-28) — **T-88 : 32,19 Toolbox Reset.** La toolbox (fenêtres, menus, contrôles, dialogues,
   événements) gardait son état d'un programme à l'autre : après `legdiag`, NeoLegacy héritait d'un menu orphelin
   dont le descripteur pointait sur ses propres données (écran relu par SWD). La nouvelle fonction remet tout à l'état
