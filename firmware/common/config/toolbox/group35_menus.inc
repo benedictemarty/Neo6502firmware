@@ -82,3 +82,18 @@ GROUP 35 Menu Manager
         closed, then the bar is redrawn at its new place ; what it covered before is left as it is (the program
         repaints it). Sets the error flag if left is negative or right is not greater than left.
 
+
+    FUNCTION 10 Menu Key
+        {
+            uint8_t m,i;
+            uint8_t r = MNKey(DPARAMS[0],&m,&i);
+            DPARAMS[0] = r;DPARAMS[1] = m;DPARAMS[2] = i;
+        }
+    DOCUMENTATION
+        The menus from the keyboard (Trinity T-89). Pass the key code (message2 of a key down or auto key event, group
+        33) in Parameter:0. With the bar closed, F10 pulls the first menu down with its first enabled item highlighted.
+        With a menu down : Left and Right pull the previous or next menu down, Up and Down move to the previous or next
+        enabled item (separators and disabled items are skipped ; both wrap), Enter chooses, Escape or F10 closes. On
+        return Parameter:0 is 0 if the key was not used (bar closed and not F10 : the program handles the key), 1 if it
+        was used and a menu is down, 2 if an item was chosen (menu in Parameter:1, item in Parameter:2, as Function
+        35,5), 3 if the menu was closed without a choice. The mouse (35,3 to 35,5) keeps working.

@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.53** (2026-09-28) — **T-89 : les menus de la toolbox au clavier.** Nouvelle fonction 35,10 Menu Key, à qui
+  le programme passe ses touches : F10 ouvre la barre, les flèches changent de menu et d'option (options grisées et
+  séparateurs sautés), Entrée choisit, Échap ou F10 referme. La souris reste inchangée. Nouveau test
+  `tests/toolbox/menukey`. NeoDOS 0.27.0 épinglé (lu dans l'UF2). `make test-api` 21/21, toolbox 13/13 un par un
+  (`events` : instabilité connue en série), `test-snd` OK.
+
 - **0.16.52** (2026-09-28, demande bmarty) — **NeoDOS 0.27.0 embarqué** : `COPY a+b[+c…] destination` concatène
   des fichiers (commande externe `BIN\CONCAT.NEO`, qui doit se trouver sur la clé). Image reconstruite depuis le tag
   `v0.27.0` (`68fb068`, md5 `94b9687b…`) avec `make … NEODOSDIR=` : le dépôt NeoDOS contenait une 0.27.1 non

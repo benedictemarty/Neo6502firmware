@@ -12,6 +12,7 @@
 // ***************************************************************************************
 
 #include "common.h"
+#include "interface/kbdcodes.h"  												// T-89 : KEY_* codes for 35,10
 
 struct Menu { bool used;uint16_t desc;int16_t x,width; };                       // Descriptor address, title position in the bar
 
@@ -228,6 +229,86 @@ void MNTrackEnd(uint8_t *menu,uint8_t *item) {
         if (a != 0 && !(cpuMemory[a] & (MN_ITEM_DISABLED | MN_ITEM_SEP))) { *menu = openMenu;*item = openItem; }
     }
     _MNClose();
+}
+
+// ***************************************************************************************
+//
+//      35,10 (T-89) : the menus from the keyboard. The program passes each key down / auto
+//      key event, as it passes the mouse to 35,3-35,5. F10 opens the first menu ; with a
+//      menu open, Left / Right go to the next menu, Up / Down to the next enabled item
+//      (separators and disabled items skipped, both wrap), Enter chooses, Escape or F10
+//      closes. Returns 0 key not used (bar closed, not F10 : the program handles it),
+//      1 used (a menu is open), 2 item chosen (menu, item as 35,5), 3 closed without choice.
+//
+// ***************************************************************************************
+
+static bool _MNItemActive(uint8_t menu,uint8_t n) {
+    uint16_t a = _MNItem(&menus[menu-1],n);
+    return a != 0 && !(cpuMemory[a] & (MN_ITEM_DISABLED | MN_ITEM_SEP));
+}
+
+static uint8_t _MNNextItem(uint8_t from,int dir) {                              // Next enabled item after 'from' (0 = none)
+    int n = _MNItemCount(&menus[openMenu-1]),i = from;
+    for (int k = 0;k < n;k++) {
+        i += dir;
+        if (i < 1) i = n;
+        if (i > n) i = 1;
+        if (_MNItemActive(openMenu,i)) return i;
+    }
+    return 0;
+}
+
+static uint8_t _MNNextMenu(uint8_t from,int dir) {                              // Next menu in use after 'from' (0 = none)
+    int i = from;
+    for (int k = 0;k < MN_MAX_MENUS;k++) {
+        i += dir;
+        if (i < 1) i = MN_MAX_MENUS;
+        if (i > MN_MAX_MENUS) i = 1;
+        if (menus[i-1].used) return i;
+    }
+    return 0;
+}
+
+static void _MNHilite(uint8_t item) {                                           // Move the highlight of the open menu
+    struct QDRect save;QDGetClipRaw(&save);
+    struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
+    QDSetClipRaw(&screen);
+    if (openItem != 0) _MNDrawItem(&menus[openMenu-1],openItem,false);
+    openItem = item;
+    if (openItem != 0) _MNDrawItem(&menus[openMenu-1],openItem,true);
+    QDSetClipRaw(&save);
+}
+
+static void _MNOpenByKey(uint8_t id) {
+    if (openMenu != 0) _MNClose();
+    _MNOpen(id);
+    _MNHilite(_MNNextItem(0,1));
+}
+
+uint8_t MNKey(uint8_t keyCode,uint8_t *menu,uint8_t *item) {
+    *menu = 0;*item = 0;
+    if (openMenu == 0) {
+        if (keyCode != KEY_F1 + 9) return 0;                                    // F10
+        uint8_t id = _MNNextMenu(0,1);
+        if (id == 0) return 0;
+        _MNOpenByKey(id);
+        return 1;
+    }
+    switch (keyCode) {
+        case KEY_LEFT:  _MNOpenByKey(_MNNextMenu(openMenu,-1));return 1;
+        case KEY_RIGHT: _MNOpenByKey(_MNNextMenu(openMenu,1));return 1;
+        case KEY_UP:    _MNHilite(_MNNextItem(openItem,-1));return 1;
+        case KEY_DOWN:  _MNHilite(_MNNextItem(openItem,1));return 1;
+        case KEY_ENTER:
+        case KEY_KPENTER:
+            MNTrackEnd(menu,item);
+            return (*menu != 0) ? 2 : 3;
+        case KEY_ESC:
+        case KEY_F1 + 9:
+            _MNClose();
+            return 3;
+    }
+    return 1;                                                                   // Menu open : other keys are swallowed
 }
 
 uint8_t MNSetItemFlags(uint8_t menu,uint8_t item,uint8_t flags) {

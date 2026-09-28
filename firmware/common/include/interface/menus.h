@@ -39,3 +39,4 @@ uint8_t MNSetItemFlags(uint8_t menu,uint8_t item,uint8_t flags);                
 uint8_t MNDisposeMenu(uint8_t id);                                              // 35,7
 uint8_t MNGetItemFlags(uint8_t menu,uint8_t item,uint8_t *flags);               // 35,8
 uint8_t MNSetBarBounds(int16_t left,int16_t right);                             // 35,9 (T-83)
+uint8_t MNKey(uint8_t keyCode,uint8_t *menu,uint8_t *item);                     // 35,10 (T-89)
