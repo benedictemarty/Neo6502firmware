@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.52** (2026-09-28, demande bmarty) — **NeoDOS 0.27.0 embarqué** : `COPY a+b[+c…] destination` concatène
+  des fichiers (commande externe `BIN\CONCAT.NEO`, qui doit se trouver sur la clé). Image reconstruite depuis le tag
+  `v0.27.0` (`68fb068`, md5 `94b9687b…`) avec `make … NEODOSDIR=` : le dépôt NeoDOS contenait une 0.27.1 non
+  publiée, que le build aurait prise d'office. Version lue dans l'UF2. Aucun changement du firmware lui-même ;
+  contient T-34 (0.16.51). `make test-api` 21/21, toolbox 12/12, `test-snd` OK.
+
 - **0.16.51** (2026-09-28) — **T-34 : une clé qui ne répond plus ne fige plus la machine.** L'attente d'un transfert
   USB était sans limite ; elle s'arrête maintenant si la clé est retirée, ou au bout de 2 s, avec une erreur disque
   (2 s et non les 500 ms de l'ADR-0001 : le pire temps d'une écriture n'est pas encore mesuré). Corrigé au passage :
