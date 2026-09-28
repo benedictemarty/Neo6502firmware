@@ -120,13 +120,24 @@ static void _MNOpen(uint8_t id) {
     openRect.left = m->x - 4;openRect.top = MN_BAR_HEIGHT;
     openRect.right = openRect.left + w;openRect.bottom = openRect.top + n * MN_ITEM_HEIGHT + 2;
     if (openRect.right > _MNRight()) { openRect.right = _MNRight();openRect.left = openRect.right - w; }   // T-83 : inside the bar
+    MNRedrawOpen();
+}
+
+//		T-89 : the pulled down menu, drawn again as it stands (title, frame, items, highlight).
+//		From the keyboard the program keeps handling its events while a menu is down, so it
+//		redraws the windows the previous menu covered (update events) over the new one ;
+//		WMEndUpdate (34,11) calls this afterwards so the menu stays on top.
+void MNRedrawOpen(void) {
+    if (openMenu == 0) return;
+    struct Menu *m = &menus[openMenu-1];
     struct QDRect save;QDGetClipRaw(&save);
     struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
     QDSetClipRaw(&screen);
     _MNDrawTitle(m,true);
     QDFillRaw(&openRect,MN_COL_BAR);
     QDFrameRaw(&openRect,MN_COL_TEXT);
-    for (int i = 1;i <= n;i++) _MNDrawItem(m,i,false);
+    int n = _MNItemCount(m);
+    for (int i = 1;i <= n;i++) _MNDrawItem(m,i,i == openItem);
     QDSetClipRaw(&save);
 }
 

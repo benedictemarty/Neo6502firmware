@@ -295,6 +295,7 @@ uint8_t WMEndUpdate(uint8_t id) {
         if (above->visible && _WMIntersects(&above->frame,&w->frame)) _WMDrawFrame(above,zOrder[i] == front);
     }
     QDSetClipRaw(&save);
+    MNRedrawOpen();  															// T-89 : a pulled down menu stays over the windows
     return 0;
 }
 

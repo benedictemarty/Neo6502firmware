@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.54** (2026-09-28) — **T-89 : un menu ouvert au clavier reste affiché.** Retour carte : dans NeoLegacy, le
+  cadre et les options grisées n'apparaissaient pas. En changeant de menu au clavier, le programme redessinait ses
+  fenêtres (mises à jour) par-dessus le menu ouvert ; le firmware redessine maintenant le menu après chaque 34,11
+  End Update. Nouveau test `tests/toolbox/menuupd` (échoue sans le correctif). NeoDOS 0.27.0 épinglé (lu dans
+  l'UF2). `make test-api` 21/21, toolbox 14/14, `test-snd` OK.
+
 - **0.16.53** (2026-09-28) — **T-89 : les menus de la toolbox au clavier.** Nouvelle fonction 35,10 Menu Key, à qui
   le programme passe ses touches : F10 ouvre la barre, les flèches changent de menu et d'option (options grisées et
   séparateurs sautés), Entrée choisit, Échap ou F10 referme. La souris reste inchangée. Nouveau test
