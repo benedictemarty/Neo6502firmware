@@ -81,6 +81,12 @@ static volatile bool busServeInWait = false;
 static volatile bool busPendingCommand = false;
 static uint8_t burstWrites = 0;
 
+//		T-93 : IRQB low (as wdc65C02cpu_set_irq(true), which lives in flash), for the display
+//		callback of core 1 : nothing it runs may come from the flash (T-44).
+void __not_in_flash_func(HWIRQAssertRAM)(void) {
+	gpio_put(_IRQ_PIN,0);
+}
+
 void HWBackgroundServe(bool on) {
 	busServeInWait = on;
 }
