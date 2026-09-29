@@ -147,6 +147,25 @@ static void DSPResetP2(void) {  												// P2 : policy (no hardware init her
 	BOOTSelect();                                                               // Boot menu from boot/
 }
 
+//		T-36 (ADR-0001 § 7) : 1,0 is a SOFT reset. It used to run the whole boot again (DSPReset) :
+//		TinyUSB restarted with devices mounted, the logo, the sound hardware, the debug port. Now
+//		it puts the API states back : console, graphics (mode 0, palette, sprites, fonts), toolbox,
+//		memory bank, sound, interrupts. The 6502 memory, the USB and the display are left alone
+//		(back to mode 0 restarts the display only if another mode was on). The mouse stays known
+//		(MSEInitialise would forget it until the next USB mount) : its cursor is hidden.
+void DSPSoftReset(void) {
+	CURInitialise();
+	MSESetVisible(false);
+	CONSetFont(0,0);  															// Built in 8 and 14 line fonts (2,21)
+	CONResetUserFont();  														// Latin-1 letters in $C0-$FF (T-20)
+	GFXSetMode(0);  															// Mode 0, palette, console cleared
+	SPRReset();
+	QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();  // Toolbox (T-88)
+	BNKReset();  																// No bank mapped (T-17)
+	IRQSetTick(0);IRQSetFrame(0);  												// No interrupt tick, no frame IRQ (T-14)
+	SNDResetAll();  															// Channels, queues, stream (T-79)
+}
+
 void DSPReset(void) {
 	DSPResetP0();
 	DSPResetP1();

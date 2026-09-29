@@ -69,7 +69,8 @@ void MEMInitialiseMemory(void) {
 // started this way, as boot/neobasic.bin (image for $800).
 
 void MEMLoadBasic(void) {
-	if (BOOTLoadChoice()) return;  												// Trinity boot menu : chosen program (first 1,3 only)
+	//		T-36 : the boot menu choice used to be applied here, at the first call only (hidden state) ;
+	//		it is Function 1,27 now, called by the kernel at reset. 1,3 always loads NeoDOS.
 	loadROM(neodos_bin,NEODOS_LOAD,NEODOS_SIZE);  								// The embedded NeoDOS image
 	cpuMemory[0x0] = NEODOS_LOAD & 0xFF;  										// Start with jmp (0)
 	cpuMemory[0x1] = NEODOS_LOAD >> 8;

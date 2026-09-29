@@ -47,17 +47,19 @@ void BOOTSelect(void) {
     {
         uint8_t exists = 0;
         if (FIOExistsFile(BOOT_DIR "/" BOOT_AUTO,&exists) == 0 && exists) {
-            uint8_t *buf = cpuMemory + 0xFE00;                                  // Scratch below the kernel, before the 6502 runs
-            memset(buf,0,BOOT_NAME_MAX + 2);
+            //  T-96 : this used $FE00 of the 6502 memory as scratch, "below the kernel" — but the
+            //  kernel runs from $FC00 to $FEFF, and $FE00 holds KTaskInit : with a boot/auto.txt on
+            //  the key, the scheduler was destroyed before the 6502 even started. A local buffer.
+            uint8_t buf[BOOT_NAME_MAX + 2];
+            memset(buf,0,sizeof(buf));
             if (FISOpenFileHandle(0,BOOT_DIR "/" BOOT_AUTO,FIOMODE_RDONLY) == 0) {
                 uint16_t n = BOOT_NAME_MAX + 1;
-                FISReadFileHandle(0,0xFE00,&n);
+                FISReadFileHandleBuffer(0,buf,&n);
                 FISCloseFileHandle(0);
                 buf[BOOT_NAME_MAX + 1] = 0;
                 for (uint8_t *q = buf;*q;q++) if (*q == '\r' || *q == '\n' || *q == ' ') { *q = 0;break; }
                 for (int i = 0;i < bootCount;i++) if (strcasecmp((char *)buf,bootNames[i]) == 0) autoChoice = i;
             }
-            memset(buf,0,BOOT_NAME_MAX + 2);
         }
     }
     if (autoChoice >= 0) {                                                      // Auto : start it unless Escape within 1 s

@@ -18,9 +18,12 @@
 
 GROUP 1 System
     FUNCTION 0 DSP Reset
-        DSPReset();
+        DSPSoftReset();
     DOCUMENTATION
-        Resets the messaging system and component systems. Normally, should not be used.
+        Soft reset (Trinity T-36, ADR-0001) : puts the API states back as after power on — console cleared, mode 0,
+        palette, sprites, fonts (2,21 built in, Latin-1 letters), toolbox (as 32,19), no memory bank mapped, sound
+        channels and stream stopped, interrupt tick and frame interrupt off. The 6502 memory is kept, the USB devices
+        stay mounted and the display is not restarted (unless another mode was on). No logo, no beep.
 
     FUNCTION 1 Timer
         *((uint32_t *)DPARAMS) = TMRRead(); // (assumes littleendian)
@@ -39,7 +42,9 @@ GROUP 1 System
     FUNCTION 3 Basic
         MEMLoadBasic();
     DOCUMENTATION
-        Loads and allows the execution of BASIC via a indirect jump through address zero.
+        Loads the resident environment (NeoDOS on Trinity) and sets the indirect jump through address zero to start it.
+        Since T-36 it always loads NeoDOS : the boot menu choice is applied by Function 1,27, which the kernel calls
+        once at reset.
 
     FUNCTION 4 Credits
         CONWriteString((char *)whoList);
@@ -129,6 +134,14 @@ GROUP 1 System
         a written bank survives resets and reflashing of the firmware (it lives in the top 256k of the flash). The
         emulators keep the banks in the file "banks.flash" of the storage directory. Sets the error flag if the bank or
         the address is invalid or the verification fails (Trinity T-17). Flash wears : write banks once, not in loops.
+
+    FUNCTION 27 Apply Boot Choice
+        DPARAMS[0] = BOOTLoadChoice() ? 1 : 0;
+    DOCUMENTATION
+        Applies the choice made in the boot menu or by boot/auto.txt (Trinity T-36, ADR-0001) : loads the chosen program
+        and sets the jump through address zero, then returns 1 in Parameter:0 ; returns 0 when NeoDOS was chosen or the
+        program could not be started (a message says so). The choice is forgotten once applied. The kernel calls it at
+        reset, then Function 1,3 if it returned 0.
 
     FUNCTION 26 Bank Checksum
         {

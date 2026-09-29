@@ -10,6 +10,8 @@ OUT=$HERE/build/tests/boot; mkdir -p "$OUT"
 MKNEO=${MKNEO:-$HOME/Neo6502Msdos/tools/mkneo.py}
 64tass --mw65c02 --nostart -q -o "$OUT/good.bin" "$HERE/tests/boot/good.asm" || exit 2
 python3 "$MKNEO" "$OUT/good.bin" "$OUT/good.neo" 800 800 good >/dev/null || { echo "mkneo introuvable : $MKNEO"; exit 2; }
+64tass --mw65c02 --nostart -q -o "$OUT/rtos.bin" "$HERE/tests/api/rtos.asm" || exit 2           # T-96 : la démo multitâche (3 tâches)
+python3 "$MKNEO" "$OUT/rtos.bin" "$OUT/rtos.neo" 800 800 rtos >/dev/null || exit 2
 PROMPT='A:\\>'
 fails=0
 
@@ -44,8 +46,9 @@ prep_menu_sans_auto() { mkdir -p storage/boot; cp "$OUT/good.neo" storage/boot/g
 prep_auto_invalide()  { prep_menu_sans_auto; printf 'nope.neo\n' > storage/boot/auto.txt; }
 prep_auto_corrompue() { mkdir -p storage/boot; head -c 300 /dev/urandom > storage/boot/bad.neo; printf 'bad.neo\n' > storage/boot/auto.txt; }
 prep_auto_valide()    { prep_menu_sans_auto; printf 'good.neo\n' > storage/boot/auto.txt; }
+prep_auto_rtos()      { mkdir -p storage/boot; cp "$OUT/rtos.neo" storage/boot/rtos.neo; printf 'rtos.neo\n' > storage/boot/auto.txt; }   # T-96 : auto.txt écrasait le noyau en $FE00
 
-ALL="cle_vide sans_cle boot_sans_image menu_sans_auto auto_invalide auto_corrompue auto_valide"
+ALL="cle_vide sans_cle boot_sans_image menu_sans_auto auto_invalide auto_corrompue auto_valide auto_rtos"
 for s in ${@:-$ALL}; do
 	case $s in
 	cle_vide)        scenario $s "$PROMPT" "Trinity Firmware|Stored in 'storage'|NeoDOS version|$PROMPT" "^Boot :|no key" ;;
@@ -55,6 +58,7 @@ for s in ${@:-$ALL}; do
 	auto_invalide)   scenario $s "$PROMPT" "^Boot : 1 NeoDOS  2 good\\.neo|^-> NeoDOS|NeoDOS version|$PROMPT" "Boot : auto|BOOT OK" ;;
 	auto_corrompue)  scenario $s "$PROMPT" "^Boot : auto bad\\.neo|^-> bad\\.neo|bad\\.neo not started|NeoDOS version|$PROMPT" "BOOT OK" ;;
 	auto_valide)     scenario $s "BOOT OK" "^Boot : auto good\\.neo|^-> good\\.neo|BOOT OK" "NeoDOS version|not started" ;;
+	auto_rtos)       scenario $s "T=0064" "^Boot : auto rtos\\.neo|^-> rtos\\.neo|B.*T=0064" "not started" ;;
 	*) echo "scénario inconnu : $s"; fails=$((fails+1)) ;;
 	esac
 done

@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.60** (2026-09-29) — **T-36 : 1,0 est un reset logiciel, 1,27 applique le choix de démarrage ; T-96 : un
+  `auto.txt` ne détruit plus le noyau.** 1,0 remet les états de l'API à zéro (console, mode 0, palette, sprites, polices,
+  toolbox, son, interruptions) sans relancer l'USB ni l'affichage, et garde la RAM du 6502. Le choix de `boot/` passe
+  par la nouvelle fonction 1,27, appelée par le noyau au démarrage ; 1,3 charge toujours NeoDOS. Le noyau place cette
+  séquence en `$FF80` (il n'avait plus que 5 octets avant la page `$FF00`). T-96 : avec un `boot/auto.txt`, la lecture
+  de ce fichier effaçait 26 octets du noyau en `$FE00` (fin de `KTaskInit`, début de `KTaskCreate`) : le multitâche
+  ne pouvait pas marcher ; il est lu dans un tampon du firmware. Tests : `softreset`, `boot/auto_rtos`. NeoDOS 0.32.0.
+  `make test-api` 26/26, toolbox 14/14, `test-boot` 8/8, `test-snd` OK.
+
 - **Outillage, après la 0.16.59** (2026-09-29, pas de nouvelle version du firmware) — **T-37 : tests de démarrage.**
   `make test-boot` rejoue 7 démarrages dans `neo` (clé vide, sans clé, `boot/` sans image, menu, `auto.txt` invalide,
   image corrompue, image valide) et vérifie les messages de la console dans l'ordre. `neo` ne plante plus quand son

@@ -21,6 +21,7 @@
 
 void DSPHandler(uint8_t *cBlock,uint8_t *memory);
 void DSPSync(void);
+void DSPSoftReset(void);  													// T-36 : 1,0
 void DSPReset(void);
 char *DSPGetString(uint8_t *command,uint8_t paramOffset);
 std::string DSPGetStdString(uint8_t *command,uint8_t paramOffset);
