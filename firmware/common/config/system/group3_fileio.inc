@@ -394,6 +394,18 @@ GROUP 3 File I/O
         board the 65C02 runs while the USB key transfers (about 90% of the time of a read, measured) ; the emulators
         perform the read at once.
 
+    FUNCTION 29 Last Entry Date Time
+        {
+            uint16_t d = 0,t = 0;
+            *DERROR = FISGetLastEntryTime(&d,&t);
+            DSPSetInt16(DPARAMS,0,d);DSPSetInt16(DPARAMS,2,t);
+        }
+    DOCUMENTATION
+        Returns the date and time of the last entry read by Function 3,16 File Stat or 3,18 Read Directory, in the FAT
+        format (Trinity T-91) : Parameters:0,1 the date (bits 15-9 year - 1980, 8-5 month, 4-0 day), Parameters:2,3 the
+        time (bits 15-11 hour, 10-5 minutes, 4-0 seconds / 2) ; both 0 when the date is unknown. Sets the error flag if
+        no entry has been read yet. On the emulators the date is the host file's modification time, in local time.
+
     FUNCTION 32 List Filtered
         FIODirectory(DSPGetString(DCOMMAND,4));
     DOCUMENTATION

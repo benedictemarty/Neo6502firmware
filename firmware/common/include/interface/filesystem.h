@@ -129,6 +129,7 @@ uint8_t FIOSeekFileHandle(uint8_t fileno, uint32_t offset);
 uint8_t FIOTellFileHandle(uint8_t fileno, uint32_t* offset);
 uint8_t FIOReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
 uint8_t FIOReadFileHandlePaged(uint8_t fileno, uint8_t page, uint16_t address, uint16_t* size);	// F-16 : 3,27
+uint8_t FISGetLastEntryTime(uint16_t *fdate, uint16_t *ftime);	// T-91 : 3,29 (date/time of the last entry read by 3,16 / 3,18)
 uint8_t FIOReadFileHandleBackground(uint8_t fileno, uint8_t page, uint16_t address, uint16_t size, uint16_t status);	// T-82 : 3,28
 void HWBackgroundServe(bool on);  																// T-82 : serve the 6502 bus while USB transfers run (board)
 uint8_t FIOWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);

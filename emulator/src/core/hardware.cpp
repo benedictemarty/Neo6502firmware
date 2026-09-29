@@ -444,6 +444,27 @@ uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
 //
 // ***************************************************************************************
 
+//		T-91 : the FAT date and time of the last entry read (3,16 / 3,18), from the host's mtime in
+//		local time, for 3,29. Before 1980 (no FAT date) : 0/0.
+static uint16_t lastEntryDate = 0,lastEntryTime = 0;
+static bool lastEntrySet = false;
+
+static void noteEntryTime(const std::string& path) {
+	struct stat st;
+	lastEntryDate = lastEntryTime = 0;lastEntrySet = true;
+	if (stat(path.c_str(), &st) != 0) return;
+	time_t t = st.st_mtime;
+	struct tm *lt = localtime(&t);
+	if (lt == NULL || lt->tm_year < 80) return;
+	lastEntryDate = (uint16_t)(((lt->tm_year - 80) << 9) | ((lt->tm_mon + 1) << 5) | lt->tm_mday);
+	lastEntryTime = (uint16_t)((lt->tm_hour << 11) | (lt->tm_min << 5) | (lt->tm_sec / 2));
+}
+
+uint8_t FISGetLastEntryTime(uint16_t *fdate, uint16_t *ftime) {
+	*fdate = lastEntryDate;*ftime = lastEntryTime;
+	return lastEntrySet ? FIOERROR_OK : FIOERROR_UNKNOWN;
+}
+
 uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attribs) {
 	std::string abspath = getAbspath(filename);
 	printf("FISStatFile('%s') -> ", abspath.c_str());
@@ -453,6 +474,7 @@ uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attr
 			*length = std::filesystem::file_size(abspath);
 		}
 		*attribs = getAttributes(abspath);
+		noteEntryTime(abspath);  												// T-91
 		printf("OK; length=0x%04x; permissions=0x%02x\n", *length, *attribs);
 		return FIOERROR_OK;
 	} catch (const std::filesystem::filesystem_error& e) {
@@ -515,6 +537,7 @@ uint8_t FISReadDir(std::string& filename, uint32_t* size, uint8_t* attribs) {
 		filename = de.path().filename().string();
 		*size = de.is_regular_file() ? de.file_size() : 0;
 		*attribs = getAttributes(de.path().string());
+		noteEntryTime(de.path().string());  										// T-91
 		printf("OK: '%s', length=0x%04x, attribus=0x%02x\n", filename.c_str(), *size, *attribs);
 		return FIOERROR_OK;
 	} else {

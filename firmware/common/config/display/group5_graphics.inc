@@ -82,7 +82,8 @@ GROUP 5 Graphics
         *DERROR = GFXSetDrawPage(DPARAMS[0]);
     DOCUMENTATION
         Select the page (Parameter:0) that console and graphics commands draw into (F-55).
-        Mode 0 has one page, modes 1 and 2 have two (0 and 1). Sets the error flag if the page does not exist.
+        Mode 0 has one page, mode 1 has two (0 and 1) ; mode 2 was removed from Trinity (2026-09-19). Sets the error
+        flag if the page does not exist.
 
     FUNCTION 12 Set Display Page
         *DERROR = GFXSetDisplayPage(DPARAMS[0]);

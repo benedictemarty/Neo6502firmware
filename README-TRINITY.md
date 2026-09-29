@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.55** (2026-09-29) — **T-91 : 3,29 Last Entry Date Time.** Rend la date et l'heure FAT de la dernière
+  entrée lue par 3,16 File Stat ou 3,18 Read Directory (qui n'avait plus de place pour elles), pour que `DIR` de
+  NeoDOS les affiche ; dans les émulateurs, date de modification du fichier hôte en heure locale. Documentation de
+  5,11 corrigée (elle citait l'ancien mode 2). Nouveau test `tests/api/fdate`. NeoDOS 0.27.0 épinglé. RAM : 236 852 o.
+  `make test-api` 22/22, toolbox 14/14, `test-snd` OK.
+
 - **0.16.54** (2026-09-28) — **T-89 : un menu ouvert au clavier reste affiché.** Retour carte : dans NeoLegacy, le
   cadre et les options grisées n'apparaissaient pas. En changeant de menu au clavier, le programme redessinait ses
   fenêtres (mises à jour) par-dessus le menu ouvert ; le firmware redessine maintenant le menu après chaque 34,11

@@ -267,6 +267,16 @@ uint8_t FISGetCurrentVolume(uint8_t* volume) {
 //
 // ***************************************************************************************
 
+//		T-91 : date and time (FAT format) of the last entry read by File Stat (3,16) or Read Directory
+//		(3,18), returned by 3,29 — 3,18 has no room left for them in its parameters.
+static uint16_t lastEntryDate = 0,lastEntryTime = 0;
+static bool lastEntrySet = false;
+
+uint8_t FISGetLastEntryTime(uint16_t *fdate, uint16_t *ftime) {
+	*fdate = lastEntryDate;*ftime = lastEntryTime;
+	return lastEntrySet ? FIOERROR_OK : FIOERROR_UNKNOWN;
+}
+
 uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attribs) {
 	STOInitialise();
 
@@ -275,6 +285,7 @@ uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attr
 
 	*length = fno.fsize;
 	*attribs = getAttributes(&fno);
+	if (result == FR_OK) { lastEntryDate = fno.fdate;lastEntryTime = fno.ftime;lastEntrySet = true; }  	// T-91
 
 	return convertError(result);
 }
@@ -337,6 +348,7 @@ uint8_t FISReadDir(std::string& filename, uint32_t* size, uint8_t* attribs) {
 		filename = fno.fname;
 		*attribs = getAttributes(&fno);
 		*size = fno.fsize;
+		lastEntryDate = fno.fdate;lastEntryTime = fno.ftime;lastEntrySet = true;  		// T-91
 		// CONWriteString("'%s'\r", fno.fname);
 		return FIOERROR_OK;
 	} else {
