@@ -92,6 +92,32 @@ def run(short, name, wait):
     return ok, "" if ok else "attendu %s\n    obtenu  %s" % (exp, lines)
 
 
+def same_firmware():
+    """The ELF must be the firmware of the board, or every address is wrong (incident of 2026-09-30 :
+    an ELF rebuilt in the tree sent a command into PicoDVI's dma_irq_privdata). Compares the
+    banner string, in .rodata, and 256 bytes of FISDebugUploadPoll, both read from the board's flash."""
+    import shutil
+    tmp = tempfile.mkdtemp()
+    subprocess.run(["arm-none-eabi-objcopy", "-O", "binary", "--only-section=.rodata", ELF, tmp + "/ro.bin"], check=True)
+    subprocess.run(["arm-none-eabi-objcopy", "-O", "binary", "--only-section=.text", ELF, tmp + "/tx.bin"], check=True)
+    head = subprocess.run(["arm-none-eabi-objdump", "-h", ELF], capture_output=True, text=True).stdout.split()
+    ro = int(head[head.index(".rodata") + 2], 16)
+    tx = int(head[head.index(".text") + 2], 16)
+    rodata, text = open(tmp + "/ro.bin", "rb").read(), open(tmp + "/tx.bin", "rb").read()
+    k = rodata.find(b"Trinity Firmware: v")
+    out = subprocess.run(["arm-none-eabi-nm", ELF], capture_output=True, text=True).stdout
+    fn = [int(l.split()[0], 16) for l in out.splitlines() if l.endswith(" _Z18FISDebugUploadPollv")][0] & ~1
+    want = [(ro + k, rodata[k:k + 32]), (fn, text[fn - tx:fn - tx + 256])]
+    tcl = "\n".join("dump_image %s/b%d.bin 0x%08x %d" % (tmp, i, a, len(b)) for i, (a, b) in enumerate(want))
+    openocd(tcl)
+    ok = all(os.path.exists("%s/b%d.bin" % (tmp, i)) and open("%s/b%d.bin" % (tmp, i), "rb").read() == b
+             for i, (a, b) in enumerate(want))
+    shutil.rmtree(tmp)
+    if not ok:
+        sys.exit("neotests : %s n'est pas le firmware de la carte (bannière %s) — rien n'est écrit"
+                 % (ELF, rodata[k:k + 30].split(b"\r")[0].decode()))
+
+
 def up_tcl():
     """Tcl helpers for the T-98 commands : cmd N waits for the firmware, fails on a FatFs error."""
     return "\n".join([
@@ -141,6 +167,7 @@ def deposer():
 
 def main():
     args = sys.argv[1:]
+    same_firmware()
     if args[:1] == ["deposer"]:
         deposer()
     cd = "--cd" in args
