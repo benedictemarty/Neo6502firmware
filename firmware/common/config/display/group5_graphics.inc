@@ -61,13 +61,18 @@ GROUP 5 Graphics
         *DERROR = TMPDrawTileMap(DCOMMAND);
     DOCUMENTATION
         Draw the current tilemap at the screen coordinates specified in Parameters:0,1,Parameters:2,3 (top-left X,Y) and Parameters:4,5,Parameters:6,7 (bottom-right X,Y) using current graphics settings.
+        The window is |x2-x1| pixels wide and |y2-y1| high : the right and bottom edges are excluded. The tilemap starts
+        with 3 bytes : type, width, height (in tiles), then one byte per tile ($F0 transparent, $F1-$FF solid colour).
+        Type bit 7 set ($81 rather than 1, Trinity T-92) : a pixel of colour 0 in a tile leaves the screen as it is, and so
+        does the part of the window beyond the map, so that maps can be drawn over each other (parallax layers).
 
     FUNCTION 9 Set Graphics Mode
         *DERROR = GFXSetMode(DPARAMS[0]);
     DOCUMENTATION
         Select the display mode in Parameter:0 and reinitialise the screen, palette and console (F5 / ADR-02).
         0 is the standard 320x240 256 colour mode. 1 is the Hercules mode (720x350 monochrome, 80x25 text in 9x14 cells).
-        2 is 320x256 in 16 colours (40x32 text in 8x8 cells). Sprites, tilemaps and images are only available in mode 0.
+        Mode 2 (320x256 in 16 colours) was removed from Trinity on 2026-09-19. Tilemaps are drawn in mode 1 too (packed
+        path of 5,8).
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
     FUNCTION 10 Get Graphics Mode

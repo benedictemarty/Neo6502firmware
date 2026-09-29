@@ -22,6 +22,12 @@ static uint8_t *tilePixels; 												// Tile pixel data.
 static uint16_t yTile; 														// Tracking tile draw position.
 static uint8_t tileSize;  													// Tile Size = 16 or 32
 static uint8_t tileShift;  													// Tile shift to divide (4 or 5)
+static bool zeroClear;  														// T-92 : map byte 0 bit 7 : pixel 0 leaves the screen as it is
+
+static inline void TMPut(uint8_t px) {  										// One pixel into the low nibble (background)
+	if (px != 0 || !zeroClear) *gDraw = (*gDraw & 0xF0) | px;
+	gDraw++;
+}
 
 static void TMRRenderTileLine(uint8_t count);
 static void TMRenderTileLineStart(uint8_t count);	
@@ -61,6 +67,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	}
 
 	if (mapData == NULL) return 1;  										// No map specified.
+	zeroClear = (mapData[0] & 0x80) != 0;  									// T-92 : layered maps (parallax)
 	if (xPos < 0 ||  yPos < 0 ||  											// Invalid draw position.
 				xPos >= width * tileSize || yPos >= height * tileSize) return 1;
 
@@ -130,7 +137,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 		gDraw = gStart + gMode.xGSize;  									// Down on screen
 		yTile++; 															// Next tile position
 	}
-	while (lineCount-- > 0) {  												// Blank the bottom unused area to sprites only.
+	while (!zeroClear && lineCount-- > 0) {  								// Blank the bottom unused area to sprites only (T-92 : not in a layer).
 		if (packed) {
 			for (uint16_t i = 0;i < wWindow;i++) GFXWritePixelRaw(x+i,y,0);
 			y++;
@@ -145,6 +152,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 }
 
 static void TMROutputBackground(uint16_t n) {
+	if (zeroClear) { gDraw += n;return; }  										// T-92 : a layer leaves what lies beyond the map
 	while (n-- > 0) *gDraw++ &= 0xF0;
 }
 // ***************************************************************************************
@@ -207,32 +215,24 @@ static void TMRRenderTileLine(uint8_t count) {
 	if (tileSize == 16) {  												// 16x16 tiles. Done this long winded way to help optimisation
 		while (i-- > 0) {
 			uint8_t bData = *tilePixels++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-			gDraw++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-			gDraw++;		
+			TMPut(bData >> 4);
+			TMPut(bData & 0x0F);
 		}
 	} else {  															// 32x32 scaled tiles
 		i = i >> 1;
 		while (i-- > 0) {
 			uint8_t bData = *tilePixels++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-			gDraw++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-			gDraw++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-			gDraw++;
-			*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-			gDraw++;
+			TMPut(bData >> 4);
+			TMPut(bData >> 4);
+			TMPut(bData & 0x0F);
+			TMPut(bData & 0x0F);
 		}
 	}
 	if (count & 1) {  													// Unpack one.twi extra as there are two pixels/byte
 		uint8_t bData = *tilePixels++;
-		*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-		gDraw++;		
+		TMPut(bData >> 4);
 		if (tileSize == 32) {
-			*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-			gDraw++;					
+			TMPut(bData >> 4);
 		}
 	}
 	tilePtr++;
@@ -265,26 +265,20 @@ static void TMRenderTileLineStart(uint8_t count) {
 	tilePixels += (16-count) >> 1;  									// Position in tile line
 	if (count & 1) {  													// Is there the odd half-byte ?
 		uint8_t bData = *tilePixels++;
-		*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-		gDraw++;
+		TMPut(bData & 0x0F);
 		if (tileSize == 32) {  											// Handle for scaled tiles.
-			*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-			gDraw++;			
+			TMPut(bData & 0x0F);
 		}
 	}
 	while (i-- > 0) {  													// Do all the remaining bytes
 		uint8_t bData = *tilePixels++;
-		*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-		gDraw++;
+		TMPut(bData >> 4);
 		if (tileSize == 32) {
-			*gDraw = ((*gDraw) & 0xF0) | (bData >> 4);
-			gDraw++;
+			TMPut(bData >> 4);
 		}
-		*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-		gDraw++;
+		TMPut(bData & 0x0F);
 		if (tileSize == 32) {
-			*gDraw = ((*gDraw) & 0xF0) | (bData & 0x0F);
-			gDraw++;	
+			TMPut(bData & 0x0F);
 		}
 	}
 	tilePtr++;  														// Next entry in tile map

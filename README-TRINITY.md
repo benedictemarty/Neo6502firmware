@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.57** (2026-09-29) — **T-92 : tilemaps superposables.** Une tilemap de type $81 (bit 7 de son octet d'en-tête)
+  laisse l'écran intact là où ses pixels valent 0, et au-delà de la carte : deux couches se superposent (parallaxe,
+  demande Neo6502Wonderboy). Les tilemaps de type 1 ne changent pas. Documentation de 5,8 (en-tête, largeur de fenêtre
+  |x2-x1|) et de 5,9 (ancien mode 2) corrigées. Nouveau test `tests/api/tilezero`. NeoDOS 0.32.0 épinglé (lu dans
+  l'UF2). `make test-api` 23/23, toolbox 14/14, `test-snd` OK.
+
 - **0.16.56** (2026-09-29, demande bmarty) — **NeoDOS 0.32.0 embarqué** : `DIR` affiche la date et l'heure des
   fichiers (3,29, T-91). Relu de 0.28 à 0.32 : rien d'autre ne touche le firmware ; `HELP`, `CHOICE`, `HEAD`, `TAIL`,
   `WC` et `CONCAT` sont des commandes externes (`BIN\*.NEO`, à avoir sur la clé). Image reconstruite depuis le tag
