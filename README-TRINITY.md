@@ -42,6 +42,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.59** (2026-09-29) — **T-95 : les notes sont justes.** Le synthétiseur comptait des demi-ondes en nombre
+  entier d'échantillons, plus un : un la 440 sortait à 428,5 Hz et 3 000 Hz à 2 573 Hz. Un accumulateur de phase rend
+  la fréquence exacte en moyenne (contrôle ajouté à `test-snd`). Contient T-94 (tests fiables). NeoDOS 0.32.0. RAM :
+  236 932 o. `make test-api` 25/25, `make test-toolbox` 14/14 d'une traite, `test-snd` OK.
+
 - **Outillage, après la 0.16.58** (2026-09-29, pas de nouvelle version du firmware) — **T-94 : les tests instables
   étaient pollués par la souris et le clavier du PC.** `neo` les lisait même pendant un test ; `run_neo.sh` positionne
   maintenant `NEO_NO_HOST_INPUT`, qui les fait ignorer. `events` et `evtimer` : 20 réussites sur 20 (9/12 et 10/12

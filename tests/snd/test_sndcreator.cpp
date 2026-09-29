@@ -38,6 +38,18 @@ int main(void) {
     CHECK(power == (long)fe*100*100,"carre : puissance differente d'un carre plein");
     CHECK(changes > 800 && changes < 900,"carre : nombre de bascules par seconde (~2 x 440)");
 
+    // Justesse (accumulateur de phase) : 2 x f bascules par seconde, a 1 pres
+    {
+        const int freqs[3] = { 440,1000,3000 };
+        for (int k = 0;k < 3;k++) {
+            SNDMuteAllChannels(); note(0,freqs[k],100,SOUNDTYPE_SQUARE);
+            int prev2 = SNDGetNextSample(),toggles = 0;
+            for (int i = 1;i < fe;i++) { int v = SNDGetNextSample(); if (v != prev2) toggles++; prev2 = v; }
+            char msg[80];snprintf(msg,sizeof(msg),"justesse %d Hz : %d bascules (attendu %d)",freqs[k],toggles,2*freqs[k]);
+            CHECK(abs(toggles - 2*freqs[k]) <= 1,msg);
+        }
+    }
+
     // Bruit : le niveau tenu entre deux bascules, jamais un zéro forcé
     SNDMuteAllChannels(); note(0,1000,100,SOUNDTYPE_NOISE);
     int held = 0, first = SNDGetNextSample();

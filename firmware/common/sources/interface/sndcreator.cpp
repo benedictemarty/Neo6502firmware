@@ -16,8 +16,8 @@
 #define CHANNEL_COUNT   (4)
 
 struct _ChannelStatus {
-    int limit;
-    int wrapper;
+    uint32_t step;                                                                  // Pitch : half periods per sample, 16.16
+    uint32_t phase;                                                                 // A toggle each time it passes 1.0
     int state;
     int soundType;
     int volume;
@@ -69,7 +69,7 @@ int SNDGetChannelCount(void) {
 void SNDMuteAllChannels(void) {    
     for (int i = 0;i < CHANNEL_COUNT;i++) {
         struct _ChannelStatus *cs = &audio[i];
-        cs->limit = cs->wrapper = cs->state = cs->soundType = cs->volume = cs->output = 0;
+        cs->step = cs->phase = 0;cs->state = cs->soundType = cs->volume = cs->output = 0;
     }
 }
 
@@ -91,8 +91,9 @@ int16_t __time_critical_func(SNDGetNextSample)(void) {                      // T
         struct _ChannelStatus *cs = &audio[i];                                          
         if (cs->volume != 0) {                                                      // Channel on.
             activeCount++;                                                          // Bump active count
-            if (cs->wrapper-- == 0) {                                               // Time to change the output level.
-                cs->wrapper = cs->limit;                                            // Fix up the new limit.
+            cs->phase += cs->step;                                                  // Pitch in 16.16 : the note is exact on
+            if (cs->phase >= 0x10000) {                                             // average, not rounded to whole samples.
+                cs->phase -= 0x10000;
                 cs->state ^= 0xFF;
                 switch (cs->soundType) {
                     case SOUNDTYPE_NOISE:   
@@ -146,8 +147,15 @@ int16_t __time_critical_func(SNDGetNextSample)(void) {                      // T
 
 void SNDUpdateSoundChannel(uint8_t channel,SOUND_CHANNEL *c) {
     if (c->isPlayingNote && c->currentFrequency != 0) {  
-        audio[channel].limit = SNDGetSampleFrequency()/c->currentFrequency/2;
-        audio[channel].wrapper = 0;
+        //      Pitch : the square toggles every half period, freq * 2 times a second. It used to be
+        //      a whole number of samples (limit), plus one by the way the counter ran : 440 Hz came
+        //      out at 428.9 Hz. A 16.16 phase step keeps it exact on average ; one toggle per sample
+        //      at most (above half the sample rate the note cannot be made anyway).
+        uint32_t step = (uint32_t)(((uint64_t)c->currentFrequency << 17) / (uint32_t)SNDGetSampleFrequency());
+        if (step > 0x10000) step = 0x10000;
+        if (step == 0) step = 1;
+        audio[channel].step = step;
+        audio[channel].phase = 0x10000 - step;                                     // First toggle on the next sample, as before
         audio[channel].soundType = c->currentType;
         audio[channel].volume = c->currentVolume;
         audio[channel].samplePos = 0;
