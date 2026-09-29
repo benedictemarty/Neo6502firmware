@@ -27,7 +27,7 @@
 //
 #define GFX_MODE_320x240x256	(0)
 #define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
-#define GFX_MODE_COUNT 			(2)												// Trinity : mode 2 (320x256x16) removed on 2026-09-19 (decision bmarty)
+#define GFX_MODE_COUNT 			(3)												// T-90 : mode 2 = 320x240x16, two pages (trial) ; the fork's 320x256x16 was removed on 2026-09-19
 
 struct GraphicsModeDescriptor {
 	uint16_t xGSize,yGSize;														// Pixels
@@ -77,6 +77,7 @@ void RNDDisplayWatchdog(void);  										// T-71 : core 0 restarts the mode if 
 uint32_t RNDDisplayRestarts(void);
 uint32_t RNDIrqGapMax(void);
 uint32_t RNDIrqGapLong(void);
+void RNDTimingReset(void);  												// T-90
 uint32_t RNDCallbackMax(void);  										// T-77 : duree max du callback de ligne (us)  											// T-77 : lignes retardees de plus de deux lignes  											// T-77 : pire retard d'entree dans l'IRQ de ligne (us)
 uint32_t RNDCtrlOverrun(void);  										// T-77 : canal de controle parti seul dans la liste
 uint32_t RNDCtrlOverrunMax(void);  										// T-77 : pire ecart, en octets (16 = un bloc)

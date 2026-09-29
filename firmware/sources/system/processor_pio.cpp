@@ -100,7 +100,14 @@ void __time_critical_func(HWBusServeBurst)(void) {  								// Called between tw
 }
 
 uint32_t HWBusTiming(uint8_t which) {
-	return (which == 0) ? syncMaxUs : cmdMaxUs;
+	switch (which) {
+		case 0: return syncMaxUs;
+		case 1: return cmdMaxUs;
+		case 2: return RNDCallbackMax();  										// T-90 : display timings of core 1 (T-77)
+		case 3: return RNDIrqGapMax();
+		case 4: return RNDIrqGapLong();
+	}
+	return 0;
 }
 
 uint32_t HWBusStalls(uint8_t which) {  										// 0 TXSTALL, 1 RXSTALL, 2 RXUNDER, 3 TXOVER
@@ -116,6 +123,7 @@ uint32_t HWBusStalls(uint8_t which) {  										// 0 TXSTALL, 1 RXSTALL, 2 RXUN
 void HWBusStallsReset(void) {
 	busStallTx = busStallRx = busUnder = busOver = 0;
 	syncMaxUs = cmdMaxUs = 0;
+	RNDTimingReset();  															// T-90
 	pio1->fdebug = BUS_FDEBUG_ALL;
 }
 

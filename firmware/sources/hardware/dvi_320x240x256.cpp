@@ -78,6 +78,7 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	//		baisser le debordement des canaux. Ni la polarite verticale, ni l'horloge, ni la
 	//		tension, ni le contenu n'expliquent l'ecart : quelque chose est calibre pour CE timing.
 	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
+	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 2 (T-90 trial) : as mode 0, 4 bpp lines
 };
 
 // ***************************************************************************************
@@ -208,6 +209,7 @@ static volatile uint32_t cbEntry = 0, cbDurMax = 0;
 uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
 uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
 uint32_t __not_in_flash_func(RNDCallbackMax)(void) { return cbDurMax; }
+void RNDTimingReset(void) { cbDurMax = 0;irqGapMax = 0;irqGapLong = 0; }  		// T-90 : 5,41 $FF clears them too
 
 #define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; } while (0)
 
@@ -309,11 +311,19 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		}
 		scan += pixels;screenPos += pixels;
 	} else {  																		// 4 bpp : two pixels per byte, high nibble first.
-		for (int i = 0;i < currentMode->stride;i++) {
-			uint8_t p = *screenPos++;
-			*scan++ = palette[p >> 4];
-			*scan++ = palette[p & 0x0F];
+		//		T-90 : one word read = 8 pixels (as T-58 does for 8 bpp) : 40 reads and 160 writes
+		//		per 320 pixel line instead of 160 and 320 byte by byte. Byte k of the little endian
+		//		word holds pixels 2k (high nibble) and 2k+1 (low). The stride (160) is a multiple of 4.
+		const uint32_t *src32 = (const uint32_t *)screenPos;
+		uint32_t *dst32 = (uint32_t *)scan;
+		for (int i = currentMode->stride >> 2;i > 0;i--) {
+			uint32_t w = *src32++;
+			*dst32++ = (uint32_t)palette[(w >> 4) & 15]  | ((uint32_t)palette[w & 15] << 16);
+			*dst32++ = (uint32_t)palette[(w >> 12) & 15] | ((uint32_t)palette[(w >> 8) & 15] << 16);
+			*dst32++ = (uint32_t)palette[(w >> 20) & 15] | ((uint32_t)palette[(w >> 16) & 15] << 16);
+			*dst32++ = (uint32_t)palette[w >> 28]        | ((uint32_t)palette[(w >> 24) & 15] << 16);
 		}
+		scan += currentMode->xGSize;screenPos += currentMode->stride;
 	}
 	if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) { 					// Cursor drawing on this line.
 		const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // T-42 : clipped by RNDCursorUpdate

@@ -722,6 +722,9 @@ uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget) {
 
 uint8_t BLTImage(uint8_t action, uint16_t sourceArea, int16_t x, int16_t y, uint8_t destFmt)
 {
+	//		T-90 : the target address below assumes mode 0 (FRAME_WIDTH bytes a line, one byte a
+	//		pixel). In the packed modes (1 and 2) it would write at the wrong place : refused.
+	if (GFXIsPackedMode()) return 1;
 	struct BlitterArea src;
 	_BLTLoadBlitterAreaObject(sourceArea, &src);
 

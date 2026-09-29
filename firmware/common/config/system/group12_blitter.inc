@@ -89,6 +89,9 @@ GROUP 12 Blitter
 
     DOCUMENTATION
         Blits an image from memory onto the screen. The image will be clipped, so it's safe to blit partly (or fully) offscreen-images.
+        Mode 0 only : in the packed modes (1 and 2) the error flag is set and nothing is drawn (Trinity T-90). Functions 12,2
+        and 12,3 copy raw bytes into video RAM in every mode ; in the packed modes a byte holds 2 (mode 2) or 8 (mode 1)
+        pixels, and pages $80/$81 address the video RAM from its start, not the draw page of 5,11.
 
             Parameter  (0) is the blit action (see function 3, Complex Blit):
 

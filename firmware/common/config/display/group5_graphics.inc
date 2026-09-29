@@ -71,8 +71,10 @@ GROUP 5 Graphics
     DOCUMENTATION
         Select the display mode in Parameter:0 and reinitialise the screen, palette and console (F5 / ADR-02).
         0 is the standard 320x240 256 colour mode. 1 is the Hercules mode (720x350 monochrome, 80x25 text in 9x14 cells).
-        Mode 2 (320x256 in 16 colours) was removed from Trinity on 2026-09-19. Tilemaps are drawn in mode 1 too (packed
-        path of 5,8).
+        2 is a TRIAL mode (Trinity T-90, study) : 320x240 in 16 colours, 4 bits per pixel, two pixels per byte, left pixel in
+        the high nibble, two pages (5,11 / 5,12), palette entries 0-15, same display timing as mode 0 ; no sprite layer
+        (sprites are drawn in XOR as in mode 1), console 53x30. It may change or go. (The fork's 320x256x16 mode 2 was
+        removed on 2026-09-19.) Tilemaps are drawn in modes 1 and 2 too (packed path of 5,8).
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
     FUNCTION 10 Get Graphics Mode
@@ -87,7 +89,7 @@ GROUP 5 Graphics
         *DERROR = GFXSetDrawPage(DPARAMS[0]);
     DOCUMENTATION
         Select the page (Parameter:0) that console and graphics commands draw into (F-55).
-        Mode 0 has one page, mode 1 has two (0 and 1) ; mode 2 was removed from Trinity (2026-09-19). Sets the error
+        Mode 0 has one page, modes 1 and 2 have two (0 and 1) ; mode 2 is the 16 colour trial of T-90. Sets the error
         flag if the page does not exist.
 
     FUNCTION 12 Set Display Page
@@ -174,7 +176,9 @@ GROUP 5 Graphics
     DOCUMENTATION
         Returns in Parameters:0-3 a bus timing measure of Trinity T-50, chosen by Parameter:0 on entry : 0 the
         longest DSPSync ever seen in microseconds (keyboard, USB task, blink), 1 the longest API command
-        (DSPHandler). Both are the time the firmware spends away from the 6502 bus : while it is there the PIO
+        (DSPHandler) ; Trinity T-90 adds the display side, core 1 : 2 the longest scanline callback (conversion of one
+        line into the scan buffer), 3 the longest gap between two active scanlines (32 nominal), 4 the number of
+        scanlines late by more than two lines. 0 and 1 are the time the firmware spends away from the 6502 bus : while it is there the PIO
         stalls and the processor clock stops, which is normal for an API call and pathological when it lasts.
         Counts of stalls alone (Function 5,41) cannot tell the two apart, hence these. Reset with 5,41 and $FF.
         0 in the emulators.

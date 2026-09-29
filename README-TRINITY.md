@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.58** (2026-09-29) — **T-90 (étude) : mode 2 d'essai, 320×240 en 16 couleurs, deux pages.** Même cadencement
+  et même encodeur que le mode 0 ; 4 bits par pixel, pixel gauche dans le quartet haut ; bascule de page à la trame
+  (5,11 / 5,12). Conversion de ligne réécrite huit pixels à la fois. Console, primitives, tilemaps, images, sprites
+  (XOR) et QuickDraw vérifiés dans `neo` (`tests/api/mode2`, `mode2all`) ; **12,4 refusé** dans les modes compacts
+  (il écrivait au mauvais endroit) ; 12,2/12,3 copient des octets bruts. 5,42 donne aussi les durées d'affichage du
+  cœur 1 ; outil `RENDU.NEO` pour les mesurer sur carte. **Mode d'essai : peut changer ou disparaître.** T-93 ouvert
+  (le rappel de ligne appelle `memcpy` et `wdc65C02cpu_set_irq` en flash). RAM : 236 964 o. NeoDOS 0.32.0. `make
+  test-api` 25/25, toolbox 14/14 un par un (`evtimer` : instabilité connue), `test-snd` OK.
+
 - **0.16.57** (2026-09-29) — **T-92 : tilemaps superposables.** Une tilemap de type $81 (bit 7 de son octet d'en-tête)
   laisse l'écran intact là où ses pixels valent 0, et au-delà de la carte : deux couches se superposent (parallaxe,
   demande Neo6502Wonderboy). Les tilemaps de type 1 ne changent pas. Documentation de 5,8 (en-tête, largeur de fenêtre
