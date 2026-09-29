@@ -119,6 +119,10 @@ test-toolbox:
 test-api:
 	for t in tests/api/*.asm; do TESTDIR=tests/api tests/toolbox/run_neo.sh $$(basename $$t .asm) || exit 1; done
 
+# Tests de démarrage dans neo (T-37, ADR-0001 f) : tests/boot/run_boot.sh
+test-boot:
+	tests/boot/run_boot.sh
+
 # Synthétiseur compilé sur PC (T-80) : sndcreator.cpp contre un common.h minimal
 test-snd:
 	@mkdir -p build

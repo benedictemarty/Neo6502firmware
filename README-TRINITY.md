@@ -42,6 +42,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **Outillage, après la 0.16.59** (2026-09-29, pas de nouvelle version du firmware) — **T-37 : tests de démarrage.**
+  `make test-boot` rejoue 7 démarrages dans `neo` (clé vide, sans clé, `boot/` sans image, menu, `auto.txt` invalide,
+  image corrompue, image valide) et vérifie les messages de la console dans l'ordre. `neo` ne plante plus quand son
+  stockage ne peut pas être créé, et annonce alors « USB Storage (no key) » comme la carte.
+
 - **0.16.59** (2026-09-29) — **T-95 : les notes sont justes.** Le synthétiseur comptait des demi-ondes en nombre
   entier d'échantillons, plus un : un la 440 sortait à 428,5 Hz et 3 000 Hz à 2 573 Hz. Un accumulateur de phase rend
   la fréquence exacte en moyenne (contrôle ajouté à `test-snd`). Contient T-94 (tests fiables). NeoDOS 0.32.0. RAM :

@@ -161,7 +161,10 @@ static uint8_t convertError(int e) {
 // *******************************************************************************************************************************
 
 void HWReset(void) {
-	std::filesystem::create_directories(currentPath);
+	//		T-37 : this threw (uncaught filesystem_error) when the directory could not be created,
+	//		killing neo. Now the machine goes on without storage, as the board does without a key.
+	std::error_code ec;
+	std::filesystem::create_directories(currentPath,ec);
 	MSEEnableMouse();
 }
 
@@ -731,8 +734,14 @@ uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size) {
 void STOInitialise(void) {
 }
 
+//		T-37 : called during the firmware boot (DSPReset), before neo reads its arguments : the
+//		storage is the default one here. If it cannot exist (a FILE named storage, say), the
+//		machine has no key, and says so with the board's words.
 void STOSynchronise(void) {
-	CONWriteString("Stored in 'storage' directory\r");
+	std::error_code ec;
+	std::filesystem::create_directories(storagePath,ec);
+	if (!std::filesystem::is_directory(storagePath,ec)) CONWriteString("USB Storage (no key)\r");
+	else CONWriteString("Stored in 'storage' directory\r");
 }
 
 // ***************************************************************************************
