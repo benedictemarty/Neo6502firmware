@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "system/dvi_video.h"
+void HWIRQAssertRAM(void);  														// T-93 : processor_pio.cpp, in RAM
 #include "system/wdc65C02cpu.h"  											// wdc65C02cpu_set_irq (T-14, F-10 of the fork)
 
 #include "pico/multicore.h"
@@ -262,7 +263,9 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		frameCounter++;
 		lineCounter = 0;
 		if (pendingDisplayMemory != NULL) screenMemory = pendingDisplayMemory;	// Page flip at frame start (F-55)
-		if (frameIrqOn) { irqAsserted = true;wdc65C02cpu_set_irq(true); }  		// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
+		//		T-93 : gpio_put inline, as wdc65C02cpu_set_irq(true) does (IRQB active low) : that
+		//		function lives in FLASH, and this callback must not run anything from there (T-44).
+		if (frameIrqOn) { irqAsserted = true;HWIRQAssertRAM(); }  				// T-14 : vsync IRQ (gpio_put is core safe, ~10 cycles on core 1)
 		const struct CursorState *c = &cursorSlot[cursorSlotIndex];  			// T-43 : one consistent state, published
 		cursorEnabled = c->on;cursorImage = cursorPixels;  						// as a whole by core 0 ; the image is in
 		xCursor = c->x;yCursor = c->y;wCursor = c->w;hCursor = c->h;  			// RAM (T-44), never read from flash here
@@ -273,7 +276,11 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
 		uint32_t *mono = monoLine[lineCounter & monoLineMask];
-		memcpy(mono,screenMemory + y * currentMode->stride,currentMode->stride);
+		//		T-93 : copied here by halfwords rather than memcpy, which (__wrap_memcpy) runs from
+		//		FLASH — on every line of mode 1. The stride (90) is even, and so is every line start.
+		const uint16_t *src16 = (const uint16_t *)(screenMemory + y * currentMode->stride);
+		uint16_t *dst16 = (uint16_t *)mono;
+		for (int i = currentMode->stride >> 1;i > 0;i--) *dst16++ = *src16++;
 		if (cursorEnabled && y >= yCursor && y < yCursor+hCursor) {   					// Mouse cursor in
 			const uint8_t *cursorData = cursorImage + (y-yCursor+skipYCursor) * 16 + skipXCursor;   // monochrome (T-29) : colour 0 = off,
 			uint8_t *bits = (uint8_t *)mono;  											// any other colour = on, $FF transparent
