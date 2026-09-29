@@ -143,6 +143,23 @@ outils:
 		$(PYTHON) $(MKNEO) $(CLEUSB)/$$n.neo6502 $(CLEUSB)/$$(echo $$n | tr a-z A-Z).NEO 800 800 $$n || exit 1; \
 	done
 
+# Tests API pour la carte (T-98) : tests/api/*.asm assemblés avec NEO = 0 (retour par RTS à NeoDOS, journal
+# laissé en $2000), emballés en .NEO (nom tronqué à 8 lettres), avec leurs attendus et fichiers, dans
+# $(CLEUSB)/TESTS. Sans les tests à crochets neo (.args) ou à modem factice (.modem). Joués par
+# firmware/scripts/neotests.sh (SWD).
+tests-carte:
+	@rm -rf $(CLEUSB)/TESTS && mkdir -p $(CLEUSB)/TESTS/src
+	@for t in tests/api/*.asm; do \
+		n=$$(basename $$t .asm); \
+		[ -e tests/api/$$n.args ] || [ -e tests/api/$$n.modem ] && continue; \
+		N=$$(echo $$n | cut -c1-8 | tr a-z A-Z); \
+		64tass --mw65c02 --nostart -q -o $(CLEUSB)/TESTS/src/$$n.neo6502 $$t || exit 1; \
+		$(PYTHON) $(MKNEO) $(CLEUSB)/TESTS/src/$$n.neo6502 $(CLEUSB)/TESTS/$$N.NEO 800 800 $$n || exit 1; \
+		cp tests/api/$$n.expected* $(CLEUSB)/TESTS/src/; \
+		[ -e tests/api/$$n.bin ] && cp tests/api/$$n.bin $(CLEUSB)/TESTS/; \
+		echo "$$N $$n" >> $(CLEUSB)/TESTS/src/liste.txt; \
+	done; echo "tests-carte : $$(wc -l < $(CLEUSB)/TESTS/src/liste.txt) tests dans $(CLEUSB)/TESTS"
+
 clean:
 	$(MAKE) -B -C kernel clean
 	$(MAKE) -B -C $(BASICDIR) clean

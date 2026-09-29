@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.62** (2026-09-30) — **T-98 : les tests API tournent sur la carte, déposés sur la clé par la sonde SWD.**
+  `make tests-carte` construit 21 tests pour NeoDOS ; `firmware/scripts/neotests.py deposer` les copie sur la clé
+  sans la débrancher (nouvelles commandes `diagUpCmd` du firmware, exécutées par le cœur 0 depuis `DBGPoll`, tampon
+  pris sur le tas pendant le transfert seulement) et `neotests.py --cd` les joue et compare leur journal. Boucle du
+  bus inchangée (désassemblage identique à la 0.16.61). NeoDOS 0.32.0. `make test-api` 27/27, toolbox 14/14,
+  `test-boot` 8/8, `test-snd` OK.
+
 - **0.16.61** (2026-09-29) — **T-97 : 12,3 accepte les images 1 et 4 bits proches de la fin d'une zone.** Le contrôle
   de débordement (T-61) comptait des pixels comme des octets et refusait une image 1 bit placée en fin de banque
   (signalé par Neo6502POP) ; il vérifie maintenant les octets réellement lus et écrits. Nouveau test

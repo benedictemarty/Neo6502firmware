@@ -324,8 +324,12 @@ static void __not_in_flash_func(DBGCommand)(uint8_t c) {
 //		Called from DSPSync. Reads everything waiting rather than one character per tick,
 //		so pasting a line into the terminal does not take a second to arrive.
 
+extern volatile uint32_t diagUpCmd;  											// T-98 : fileimplementation.cpp
+void FISDebugUploadPoll(void);
+
 void __not_in_flash_func(DBGPoll)(void) {
 	static bool escaped = false;
+	if (diagUpCmd) FISDebugUploadPoll();  										// T-98 : set by the probe only ; FatFs (flash) runs then, as for an API file command
 	if (!dbgOn) return;
 	while (uart_is_readable(DBG_UART)) {
 		uint8_t c = (uint8_t)uart_get_hw(DBG_UART)->dr;

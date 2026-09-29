@@ -539,6 +539,80 @@ uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size) {
 
 // ***************************************************************************************
 //
+//		T-98 : files dropped on (and read back from) the key through SWD, for the board
+//		tests (firmware/scripts/neotests.py). The probe writes a command in diagUpCmd ; core
+//		0 runs it from DBGPoll (RAM, it returns at once while diagUpCmd is 0), the 6502
+//		waiting as during an API command, then clears diagUpCmd ; diagUpStatus = FatFs code.
+//		  7 take the buffer (DIAG_UP_CHUNK bytes and a FIL, from the heap) : diagUpBuffer
+//		  1 create the file named at the start of the buffer (ASCIIZ)
+//		  2 write diagUpLen bytes of the buffer          3 close
+//		  4 read up to DIAG_UP_CHUNK bytes of the file named in the buffer, from offset
+//		    diagUpLen ; diagUpLen = bytes read           6 make the directory so named
+//		  5 give the buffer back
+//		Heap and not static : the static RAM has no room left (T-13).
+//
+// ***************************************************************************************
+
+#define DIAG_UP_CHUNK	(8192)
+
+volatile uint32_t diagUpCmd,diagUpLen,diagUpStatus;
+uint8_t * volatile diagUpBuffer;
+static FIL *diagUpFile;
+
+void FISDebugUploadPoll(void) {
+	uint32_t cmd = diagUpCmd;
+	FRESULT r = FR_OK;
+	UINT n = 0;
+	char name[64];
+	if (cmd != 7 && diagUpBuffer == NULL) cmd = 0;								// nothing without the buffer
+	if (cmd == 1 || cmd == 4 || cmd == 6) {
+		memcpy(name,diagUpBuffer,sizeof(name));name[sizeof(name)-1] = '\0';
+		STOInitialise();
+	}
+	switch(cmd) {
+		case 7:
+			if (diagUpBuffer == NULL) diagUpBuffer = (uint8_t *)malloc(DIAG_UP_CHUNK);
+			if (diagUpFile == NULL) diagUpFile = (FIL *)malloc(sizeof(FIL));
+			if (diagUpBuffer == NULL || diagUpFile == NULL) r = FR_NOT_ENOUGH_CORE;
+			break;
+		case 1:
+			r = f_open(diagUpFile,name,FA_WRITE|FA_CREATE_ALWAYS);
+			break;
+		case 2:
+			if (diagUpLen > DIAG_UP_CHUNK) { r = FR_INVALID_PARAMETER;break; }
+			r = f_write(diagUpFile,diagUpBuffer,diagUpLen,&n);
+			if (r == FR_OK && n != diagUpLen) r = FR_DENIED;						// key full
+			break;
+		case 3:
+			r = f_close(diagUpFile);
+			break;
+		case 4:
+			r = f_open(diagUpFile,name,FA_READ);
+			if (r == FR_OK) {
+				r = f_lseek(diagUpFile,diagUpLen);
+				if (r == FR_OK) r = f_read(diagUpFile,diagUpBuffer,DIAG_UP_CHUNK,&n);
+				f_close(diagUpFile);
+			}
+			diagUpLen = n;
+			break;
+		case 6:
+			r = f_mkdir(name);
+			if (r == FR_EXIST) r = FR_OK;
+			break;
+		case 5:
+			free(diagUpBuffer);diagUpBuffer = NULL;
+			free(diagUpFile);diagUpFile = NULL;
+			break;
+		default:
+			r = FR_INVALID_PARAMETER;
+			break;
+	}
+	diagUpStatus = r;
+	diagUpCmd = 0;
+}
+
+// ***************************************************************************************
+//
 //		Date 		Revision
 //		==== 		========
 //
