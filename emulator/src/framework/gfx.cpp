@@ -121,7 +121,16 @@ void GFXStart(void) {
 
 static void _GFXMainLoop(void *arg) {
 	SDL_Event event;
+	//		Tests (tests/toolbox/run_neo.sh sets NEO_NO_HOST_INPUT) : the real keyboard and mouse of
+	//		the PC are ignored. The window opening under the pointer, or taking the keyboard focus,
+	//		mixed real moves and keys with the scripted ones : events, evtimer (a mouse move taken
+	//		for a timer event) and locks failed now and then.
+	static int noHostInput = -1;
+	if (noHostInput < 0) noHostInput = (getenv("NEO_NO_HOST_INPUT") != NULL);
 	while (SDL_PollEvent(&event)) {													// While events in event queue.
+		if (noHostInput && (event.type == SDL_KEYDOWN || event.type == SDL_KEYUP || event.type == SDL_TEXTINPUT ||
+							event.type == SDL_MOUSEMOTION || event.type == SDL_MOUSEBUTTONDOWN ||
+							event.type == SDL_MOUSEBUTTONUP || event.type == SDL_MOUSEWHEEL)) continue;
 		if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_ESCAPE) {		// Exit if ESC pressed.
 			int ctrl = ((SDL_GetModState() & KMOD_LCTRL) != 0);						// If control pressed
 			if (CPUUseDebugKeys() == 0) ctrl = (ctrl == 0);							// Debugger in use, ESC on its own

@@ -42,6 +42,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **Outillage, après la 0.16.58** (2026-09-29, pas de nouvelle version du firmware) — **T-94 : les tests instables
+  étaient pollués par la souris et le clavier du PC.** `neo` les lisait même pendant un test ; `run_neo.sh` positionne
+  maintenant `NEO_NO_HOST_INPUT`, qui les fait ignorer. `events` et `evtimer` : 20 réussites sur 20 (9/12 et 10/12
+  avant) ; `make test-toolbox` passe d'une traite.
+
 - **0.16.58** (2026-09-29) — **T-90 (étude) : mode 2 d'essai, 320×240 en 16 couleurs, deux pages.** Même cadencement
   et même encodeur que le mode 0 ; 4 bits par pixel, pixel gauche dans le quartet haut ; bascule de page à la trame
   (5,11 / 5,12). Conversion de ligne réécrite huit pixels à la fois. Console, primitives, tilemaps, images, sprites
