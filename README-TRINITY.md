@@ -42,6 +42,11 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.61** (2026-09-29) — **T-97 : 12,3 accepte les images 1 et 4 bits proches de la fin d'une zone.** Le contrôle
+  de débordement (T-61) comptait des pixels comme des octets et refusait une image 1 bit placée en fin de banque
+  (signalé par Neo6502POP) ; il vérifie maintenant les octets réellement lus et écrits. Nouveau test
+  `tests/api/blitbank`. NeoDOS 0.32.0. `make test-api` 27/27, toolbox 14/14, `test-boot` 8/8, `test-snd` OK.
+
 - **0.16.60** (2026-09-29) — **T-36 : 1,0 est un reset logiciel, 1,27 applique le choix de démarrage ; T-96 : un
   `auto.txt` ne détruit plus le noyau.** 1,0 remet les états de l'API à zéro (console, mode 0, palette, sprites, polices,
   toolbox, son, interruptions) sans relancer l'USB ni l'affichage, et garde la RAM du 6502. Le choix de `boot/` passe

@@ -623,6 +623,22 @@ static bool _BLTLineFits(const uint8_t *p,const uint8_t *end,uint16_t width) {
 	return p != NULL && end != NULL && p < end && (size_t)(end - p) >= width;
 }
 
+//		T-97 (reported by Neo6502POP) : width counts VALUES (pixels), not bytes, and the line
+//		copies round it down to whole source bytes. The check used width for both areas, so a
+//		1 bit (or 4 bit) image close to the end of an area — a bank, say — was refused while it
+//		fitted. These are the bytes the copies actually read and write.
+static uint16_t _BLTSourceBytes(uint8_t format,uint16_t width) {
+	if (format == BLTFMT_BITS) return width / 8;
+	if (format == BLTFMT_PAIR) return width / 2;
+	return width;
+}
+
+static uint16_t _BLTTargetBytes(uint8_t srcFormat,uint16_t width) {  			// Targets are one byte per value
+	if (srcFormat == BLTFMT_BITS) return (width / 8) * 8;
+	if (srcFormat == BLTFMT_PAIR) return (width / 2) * 2;
+	return width;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
 	const uint8_t *srcEnd = _BLTAreaEnd(source->page);  							// T-61
 	const uint8_t *tgtEnd = _BLTAreaEnd(target->page);
@@ -639,8 +655,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
-					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
-						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
+					if (!_BLTLineFits(src,srcEnd,_BLTSourceBytes(source->format,source->width)) ||  	// T-61 / T-97
+						!_BLTLineFits(tgt,tgtEnd,_BLTTargetBytes(source->format,source->width))) return 1;
 					(*copy)(tgt, src, source->width);
 					src += source->stride;
 					tgt += target->stride;
@@ -658,8 +674,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
-					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
-						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
+					if (!_BLTLineFits(src,srcEnd,_BLTSourceBytes(source->format,source->width)) ||  	// T-61 / T-97
+						!_BLTLineFits(tgt,tgtEnd,_BLTTargetBytes(source->format,source->width))) return 1;
 					(*copyMasked)(tgt, src, source->width, source->transparent);
 					src += source->stride;
 					tgt += target->stride;
@@ -677,8 +693,8 @@ static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *
 				uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
 				if (src == NULL || tgt == NULL) return 1;
 				for (uint8_t l = source->height; l > 0; --l) {
-					if (!_BLTLineFits(src,srcEnd,source->width) ||  				// T-61 : stop at the edge
-						!_BLTLineFits(tgt,tgtEnd,source->width)) return 1;
+					if (!_BLTLineFits(src,srcEnd,_BLTSourceBytes(source->format,source->width)) ||  	// T-61 / T-97
+						!_BLTLineFits(tgt,tgtEnd,_BLTTargetBytes(source->format,source->width))) return 1;
 					(*solidMasked)(tgt, src, source->width, source->transparent, source->solid);
 					src += source->stride;
 					tgt += target->stride;
