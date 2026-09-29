@@ -83,8 +83,8 @@ def run(short, name, wait):
         got = open(dump, "rb").read().decode("latin-1").replace("\x0c", "").replace("\r", "\n")
         os.unlink(dump)
     lines = got.splitlines()
-    if os.path.exists(base + ".expected.re"):
-        exp = open(base + ".expected.re").read().splitlines()
+    if os.path.exists(base + ".carte.expected.re") or os.path.exists(base + ".expected.re"):  # the board's own first
+        exp = open(base + (".carte.expected.re" if os.path.exists(base + ".carte.expected.re") else ".expected.re")).read().splitlines()
         ok = len(exp) == len(lines) and all(re.fullmatch(e, g) for e, g in zip(exp, lines))
     else:
         exp = open(base + ".expected").read().splitlines()

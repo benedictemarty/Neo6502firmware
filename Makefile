@@ -151,11 +151,11 @@ tests-carte:
 	@rm -rf $(CLEUSB)/TESTS && mkdir -p $(CLEUSB)/TESTS/src
 	@for t in tests/api/*.asm; do \
 		n=$$(basename $$t .asm); \
-		[ -e tests/api/$$n.args ] || [ -e tests/api/$$n.modem ] && continue; \
+		[ -e tests/api/$$n.args ] || [ -e tests/api/$$n.modem ] || [ -e tests/api/$$n.nocarte ] && continue; \
 		N=$$(echo $$n | cut -c1-8 | tr a-z A-Z); \
 		64tass --mw65c02 --nostart -q -o $(CLEUSB)/TESTS/src/$$n.neo6502 $$t || exit 1; \
 		$(PYTHON) $(MKNEO) $(CLEUSB)/TESTS/src/$$n.neo6502 $(CLEUSB)/TESTS/$$N.NEO 800 800 $$n || exit 1; \
-		cp tests/api/$$n.expected* $(CLEUSB)/TESTS/src/; \
+		cp tests/api/$$n.expected* $(CLEUSB)/TESTS/src/; cp tests/api/$$n.carte.expected.re $(CLEUSB)/TESTS/src/ 2>/dev/null; \
 		[ -e tests/api/$$n.bin ] && cp tests/api/$$n.bin $(CLEUSB)/TESTS/; \
 		echo "$$N $$n" >> $(CLEUSB)/TESTS/src/liste.txt; \
 	done; echo "tests-carte : $$(wc -l < $(CLEUSB)/TESTS/src/liste.txt) tests dans $(CLEUSB)/TESTS"
