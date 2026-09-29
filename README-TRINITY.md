@@ -42,6 +42,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.56** (2026-09-29, demande bmarty) — **NeoDOS 0.32.0 embarqué** : `DIR` affiche la date et l'heure des
+  fichiers (3,29, T-91). Relu de 0.28 à 0.32 : rien d'autre ne touche le firmware ; `HELP`, `CHOICE`, `HEAD`, `TAIL`,
+  `WC` et `CONCAT` sont des commandes externes (`BIN\*.NEO`, à avoir sur la clé). Image reconstruite depuis le tag
+  `v0.32.0` (`6860375`, md5 `6c2c4bac…`), version lue dans l'UF2. Aucun changement du firmware lui-même.
+  `make test-api` 22/22, toolbox 14/14 un par un (`events` : instabilité connue), `test-snd` OK.
+
 - **0.16.55** (2026-09-29) — **T-91 : 3,29 Last Entry Date Time.** Rend la date et l'heure FAT de la dernière
   entrée lue par 3,16 File Stat ou 3,18 Read Directory (qui n'avait plus de place pour elles), pour que `DIR` de
   NeoDOS les affiche ; dans les émulateurs, date de modification du fichier hôte en heure locale. Documentation de
