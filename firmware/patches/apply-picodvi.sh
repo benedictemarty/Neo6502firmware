@@ -12,3 +12,5 @@ else
     patch -p1 < "$(dirname "$0")/picodvi-vertical-repeat.diff"
     echo "PicoDVI : correctif vertical_repeat appliqué"
 fi
+# 2026-09-30 : compatibilité pico-sdk 2.x (tcr -> dbg_tcr), sans effet avec le SDK 1.5.1.
+sh "$(dirname "$0")/picodvi-dbg-tcr.sh" "$1"
