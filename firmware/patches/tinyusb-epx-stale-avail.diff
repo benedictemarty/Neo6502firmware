@@ -1,0 +1,25 @@
+diff --git a/src/portable/raspberrypi/rp2040/hcd_rp2040.c b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+index 064834e..07cd2d0 100644
+--- a/src/portable/raspberrypi/rp2040/hcd_rp2040.c
++++ b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+@@ -205,6 +205,7 @@ static void __tusb_irq_path_func(epx_switch_ep)(hw_endpoint_t *ep) {
+     io_rw_32 *buf_reg = &usbh_dpram->epx_buf_ctrl;
+ 
+     epx_ctrl_prepare(ep->transfer_type);
++    *buf_reg = 0; // Trinity T-100 : drop an AVAILABLE left armed by a failed transfer (see hcd_edpt_xfer)
+     rp2usb_buffer_start(ep, ep_reg, buf_reg, is_rx);
+ 
+     usb_hw->dev_addr_ctrl = (uint32_t)(ep->dev_addr | (tu_edpt_number(ep->ep_addr) << USB_ADDR_ENDP_ENDPOINT_LSB));
+@@ -650,6 +651,12 @@ bool hcd_edpt_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr, uint8_t *b
+       epx = ep;
+ 
+       epx_ctrl_prepare(ep->transfer_type);
++      // Trinity T-100 : EPX has no active transfer here, so an AVAILABLE bit still set in its buffer
++      // control is a leftover. A transfer that ends in error (RX timeout : STOP_TRANS then
++      // xfer_complete_isr ; STALL) is marked IDLE but its buffer stays armed ; the next transfer
++      // then hit the "already available" panic in bufctrl_write32 and killed core 0 (USB key pulled
++      // out during a read : the CSW never came). Measured on the Neo6502 board, 2026-09-30.
++      *buf_reg = 0;
+       rp2usb_xfer_start(ep, ep_reg, buf_reg, buffer, NULL, buflen); // prepare bufctrl
+       usb_hw->dev_addr_ctrl = (uint32_t)(ep->dev_addr | (tu_edpt_number(ep->ep_addr) << USB_ADDR_ENDP_ENDPOINT_LSB));
+       sie_start_xfer(false, tu_edpt_dir(ep->ep_addr) == TUSB_DIR_IN, ep->need_pre);

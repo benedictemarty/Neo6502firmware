@@ -22,10 +22,19 @@ else()
         tinyusb
         GIT_REPOSITORY https://github.com/hathach/tinyusb.git
         GIT_TAG        0.21.0   # Trinity : rework of the RP2040 host driver (EPX bulk, hubs) — 0.16 read one sector in 2.5 s behind a hub
+        PATCH_COMMAND  sh ${CMAKE_CURRENT_LIST_DIR}/patches/apply-tinyusb.sh <SOURCE_DIR>
     )
     FetchContent_MakeAvailable(tinyusb)
 endif()
 set(PICO_TINYUSB_PATH ${tinyusb_SOURCE_DIR})
+# T-100 : refuse an unpatched TinyUSB (a USB key pulled out during a read would kill core 0). A PICO_TINYUSB_PATH
+# checkout must be a copy dedicated to Trinity, patched by hand :
+#   sh firmware/patches/apply-tinyusb.sh $PICO_TINYUSB_PATH
+file(READ ${tinyusb_SOURCE_DIR}/src/portable/raspberrypi/rp2040/hcd_rp2040.c _tusb_hcd)
+string(FIND "${_tusb_hcd}" "Trinity T-100" _tusb_t100)
+if(_tusb_t100 EQUAL -1)
+    message(FATAL_ERROR "TinyUSB ${tinyusb_SOURCE_DIR} n'a pas le correctif T-100 : sh firmware/patches/apply-tinyusb.sh <copie dédiée à Trinity>")
+endif()
 
 pico_sdk_init()
 

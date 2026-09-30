@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.65** (2026-09-30) — **T-100 : arracher la clé pendant une lecture ne tue plus le cœur 0 (à valider sur carte).**
+  Mesuré sur carte en 0.16.64 : une lecture en cours quand la clé disparaît finit en échec (délai de réception),
+  TinyUSB marque le point IDLE mais laisse le tampon d'EPx armé ; le transfert suivant trouvait le bit AVAILABLE et
+  appelait `panic` (« buf_ctrl already available ») : cœur 0 mort, 6502 figé, secteur à couper. Correctif local de
+  TinyUSB 0.21.0 (`firmware/patches/tinyusb-epx-stale-avail.diff`, appliqué par `apply-tinyusb.sh` à une copie dédiée,
+  `~/neo-deps/tinyusb-0.21-trinity`) : EPx est désarmé avant chaque nouveau transfert quand il n'en porte aucun
+  (`hcd_edpt_xfer`, `epx_switch_ep`). CMake refuse désormais une TinyUSB sans ce correctif. `CPUExecute` identique à
+  la 0.16.64 (désassemblage comparé), RAM inchangée. `make test-api` 27/27, toolbox 14/14, `test-boot` 8/8, `test-snd` OK.
+
 - **0.16.64** (2026-09-30) — **T-90 : le seuil des lignes en retard (5,42 P0=4) dépend du mode.**
   PicoDVI n'appelle le rappel de ligne qu'une ligne DVI sur deux en modes 0 et 2 (lignes doublées) : l'écart nominal
   y est de 63 µs, pas 32 comme en mode 1. Le seuil fixe de 64 µs comptait en retard des lignes à l'heure (le « 1 ligne

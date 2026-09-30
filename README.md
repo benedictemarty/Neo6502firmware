@@ -38,6 +38,15 @@ $ export PICO_DVI_PATH=/path/to/picodvi_sources
 $ export PICO_FATFS_PATH=/path/to/picofatfs_sources
 ```
 
+Trinity patches both PicoDVI and TinyUSB (0.21.0). Apply the patches to your own copies — for TinyUSB, a copy used by
+Trinity only — before building; the TinyUSB one (T-100 : a USB key pulled out during a read killed core 0) is checked
+by CMake, which refuses an unpatched tree :
+
+```
+$ sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
+$ sh firmware/patches/apply-tinyusb.sh $PICO_TINYUSB_PATH
+```
+
 ### Dependencies
 
 - 'build-essential', 'base-devel', or equivalent (GCC for *nix binaries)
