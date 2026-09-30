@@ -199,6 +199,12 @@ bool cursorEnabled = false;
 static volatile uint32_t irqGapMax = 0;  									// Pire ecart entre deux lignes, en us
 static volatile uint32_t irqGapLast = 0;  									// Dernier ecart
 static volatile uint32_t irqGapLong = 0;  									// Lignes retardees de plus de deux lignes
+//		T-90 : le seuil de retard depend du mode. PicoDVI n'appelle le callback qu'une ligne DVI sur
+//		vertical_repeat (dvi.c) : l'ecart nominal est de 32 us en mode 1 (lignes natives) mais de
+//		63,5 us en modes 0 et 2 (lignes doublees). Le seuil fixe de 64 comptait donc en retard, dans
+//		ces deux modes, des lignes parfaitement a l'heure (P4 = 1 mesure par Neo6502POP en mode 2).
+//		Il vaut maintenant deux intervalles nominaux du mode, calcule par DVIStart.
+static volatile uint32_t irqLateUs = 64;  									// Seuil de retard (us) : deux intervalles nominaux
 //		T-77 (0.16.34) : COMBIEN DE TEMPS le callback lui-meme occupe-t-il core 1 ? La question
 //		vient de bmarty et elle est juste : l'encodage TMDS tourne dans _encode_loop, e.g. en mode
 //		thread, donc un encodage lent ne peut PAS retarder l'interruption -- elle le preempte. Ce
@@ -244,7 +250,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			if (d < 1000) {  											// Au-dela : c'est le blanking vertical
 				irqGapLast = d;
 				if (d > irqGapMax) irqGapMax = d;
-				if (d > 64) irqGapLong = irqGapLong + 1;  				// Plus de deux lignes de retard
+				if (d > irqLateUs) irqGapLong = irqGapLong + 1;  		// Plus de deux intervalles de retard (T-90)
 			}
 		}
 		lastEntry = now;
@@ -476,6 +482,12 @@ void DVIStart(void) {                                                           
 	dvi0.ser_cfg = pico_neo6502_cfg;
 	dvi0.scanline_callback = _scanline_callback;
 	dvi0.vertical_repeat = currentTiming->verticalRepeat;  						// bmarty PicoDVI patch (runtime vertical repeat)
+	{  																			// T-90 : ecart nominal entre deux callbacks, en us
+		const struct dvi_timing *tm = currentTiming->timing;  					// (une ligne = h_total pixels, pixel = bit_clk / 10)
+		uint32_t hTotal = tm->h_front_porch + tm->h_sync_width + tm->h_back_porch + tm->h_active_pixels;
+		uint32_t nominal = (hTotal * 10000u * currentTiming->verticalRepeat + tm->bit_clk_khz / 2) / tm->bit_clk_khz;
+		irqLateUs = 2 * nominal;  												// Mode 1 : 2 x 32 = 64 (inchange) ; modes 0/2 : 2 x 63 = 126
+	}
 
 	//		T-77 (0.16.35) : des spinlocks DEDIES, au lieu des « striped » du SDK.
 	//		`next_striped_spin_lock_num()` distribue les numeros 16 a 23 en round-robin entre

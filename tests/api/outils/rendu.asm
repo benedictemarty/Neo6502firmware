@@ -1,7 +1,8 @@
 ; rendu.asm — T-90 : marge du cœur 1 (affichage) dans les modes 0, 1 et 2, sur la carte, sans sonde.
 ; Pour chaque mode : 5,41 $FF (remise à zéro), 2 s au repos, puis lecture de sdbench.dat (256 Ko par 3,27,
 ; tranches de 4 Ko) ; après chaque phase : 5,42 P0=2 (plus long rappel de ligne, µs), 3 (pire écart entre deux
-; lignes actives, µs, 32 nominal), 4 (lignes en retard de plus de deux lignes), et 5,40 (lignes non encodées à
+; rappels, µs : 32 nominal en mode 1, 63 en modes 0 et 2 où le rappel ne vient qu'une ligne sur deux), 4 (rappels
+; en retard de plus de deux écarts nominaux, seuil par mode depuis la 0.16.64), et 5,40 (lignes non encodées à
 ; temps, cumul depuis le changement de mode). Retour au mode 0 et affichage (hexadécimal, 16 bits bas).
 ; Résultats aussi en $0A00 : par mode et par phase, 4 mots (rappel, écart, longs, retards).
 ; Auteur : bmarty <bmarty@mailo.com>

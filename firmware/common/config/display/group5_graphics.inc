@@ -177,8 +177,9 @@ GROUP 5 Graphics
         Returns in Parameters:0-3 a bus timing measure of Trinity T-50, chosen by Parameter:0 on entry : 0 the
         longest DSPSync ever seen in microseconds (keyboard, USB task, blink), 1 the longest API command
         (DSPHandler) ; Trinity T-90 adds the display side, core 1 : 2 the longest scanline callback (conversion of one
-        line into the scan buffer), 3 the longest gap between two active scanlines (32 nominal), 4 the number of
-        scanlines late by more than two lines. 0 and 1 are the time the firmware spends away from the 6502 bus : while it is there the PIO
+        line into the scan buffer), 3 the longest gap between two scanline callbacks (nominal : 32 in mode 1, whose
+        lines are native, but 63 in modes 0 and 2, whose lines are doubled : the callback runs every other line),
+        4 the number of callbacks late by more than twice that nominal gap. 0 and 1 are the time the firmware spends away from the 6502 bus : while it is there the PIO
         stalls and the processor clock stops, which is normal for an API call and pathological when it lasts.
         Counts of stalls alone (Function 5,41) cannot tell the two apart, hence these. Reset with 5,41 and $FF.
         0 in the emulators.

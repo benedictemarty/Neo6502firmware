@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.64** (2026-09-30) — **T-90 : le seuil des lignes en retard (5,42 P0=4) dépend du mode.**
+  PicoDVI n'appelle le rappel de ligne qu'une ligne DVI sur deux en modes 0 et 2 (lignes doublées) : l'écart nominal
+  y est de 63 µs, pas 32 comme en mode 1. Le seuil fixe de 64 µs comptait en retard des lignes à l'heure (le « 1 ligne
+  en retard » mesuré par Neo6502POP en mode 2). Il vaut maintenant deux écarts nominaux du mode, calculés au
+  démarrage de l'affichage (64 en mode 1, inchangé ; 126 en modes 0 et 2). Documentation de 5,42 et de `RENDU.NEO`
+  corrigée. Rappel de ligne toujours sans appel en flash. `make test-api` 27/27, toolbox 14/14, `test-boot` 8/8,
+  `test-snd` OK. À valider sur carte avec `RENDU.NEO` (zéros du mode 0 encore inexpliqués).
+
 - **0.16.63** (2026-09-30) — **NeoDOS 0.32.1 embarqué ; T-93 : l'affichage n'appelle plus de code en flash.**
   NeoDOS 0.32.1 remet les pages de dessin et d'affichage à 0 au retour d'un programme : un jeu qui quittait le mode 2
   avec les pages séparées (BattleNeo) laissait le texte de NeoDOS sur la page cachée, écran noir. T-93 : en mode 1,
