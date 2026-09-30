@@ -42,6 +42,13 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.63** (2026-09-30) — **NeoDOS 0.32.1 embarqué ; T-93 : l'affichage n'appelle plus de code en flash.**
+  NeoDOS 0.32.1 remet les pages de dessin et d'affichage à 0 au retour d'un programme : un jeu qui quittait le mode 2
+  avec les pages séparées (BattleNeo) laissait le texte de NeoDOS sur la page cachée, écran noir. T-93 : en mode 1,
+  le rappel de ligne du cœur 1 copie la ligne sans `memcpy` (en flash) et lève l'IRQ de trame par une fonction en RAM.
+  Boucle du bus inchangée (désassemblage identique à la 0.16.62). `make test-api` 27/27, toolbox 14/14,
+  `test-boot` 8/8, `test-snd` OK.
+
 - **0.16.62** (2026-09-30) — **T-98 : les tests API tournent sur la carte, déposés sur la clé par la sonde SWD.**
   `make tests-carte` construit 21 tests pour NeoDOS ; `firmware/scripts/neotests.py deposer` les copie sur la clé
   sans la débrancher (nouvelles commandes `diagUpCmd` du firmware, exécutées par le cœur 0 depuis `DBGPoll`, tampon
