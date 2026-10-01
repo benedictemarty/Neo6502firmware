@@ -123,6 +123,19 @@ test-api:
 test-boot:
 	tests/boot/run_boot.sh
 
+# Rien de ce qu'exécute le cœur 1 pendant l'affichage ne vit en flash (T-44, T-93, T-101, T-102 : traits rouges).
+# firmware/scripts/core1_flash.py est repris tel quel de ~/reload-emulator/tools (commit c0530d5, bmarty) ; la règle
+# de Trinity est plus stricte que son code de sortie : aucune fonction ET aucune donnée en flash, et exactement un
+# appel indirect (dvi_dma_irq_handler -> scanline_callback). Un nouvel appel indirect doit être vérifié à la main.
+COEUR1_ELF ?= firmware/firmware.elf
+# Racines de Trinity (C++ : noms décorés, que les racines par défaut de l'outil, en C, ne trouvent pas).
+COEUR1_RACINES = --racine _ZL10core1_mainv --racine _ZL18_scanline_callbackv
+test-coeur1:
+	@[ -f $(COEUR1_ELF) ] || { echo "test-coeur1 : $(COEUR1_ELF) absent (make -C firmware build)"; exit 1; }
+	@r=$$(python3 firmware/scripts/core1_flash.py $(COEUR1_ELF) $(COEUR1_RACINES) --court) || true; echo "test-coeur1 : $$r"; \
+	echo "$$r" | grep -q "^0 fonction(s) en flash, 0 littéral(aux) en flash, 1 appel(s) indirect(s)$$" \
+	|| { python3 firmware/scripts/core1_flash.py $(COEUR1_ELF) $(COEUR1_RACINES); echo "test-coeur1 : ÉCHEC"; exit 1; }; echo "test-coeur1 : OK"
+
 # Synthétiseur compilé sur PC (T-80) : sndcreator.cpp contre un common.h minimal
 test-snd:
 	@mkdir -p build
