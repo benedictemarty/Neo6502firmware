@@ -90,7 +90,10 @@ GROUP 5 Graphics
     DOCUMENTATION
         Select the page (Parameter:0) that console and graphics commands draw into (F-55).
         Mode 0 has one page, modes 1 and 2 have two (0 and 1) ; mode 2 is the 16 colour trial of T-90. Sets the error
-        flag if the page does not exist.
+        flag if the page does not exist. Page n starts at offset n x (bytes per line x lines) of the video RAM, which is
+        what the blitter addresses as pages $80/$81 : in mode 2, page 1 is at $80:9600 (38400 = 160 x 240), so a 12,3
+        into the hidden page targets $80:9600 + y x 160 + x / 2, with target format 5 (even x) or 6 (odd x). In mode 1,
+        page 1 is at $80:7B0C (31500 = 90 x 350).
 
     FUNCTION 12 Set Display Page
         *DERROR = GFXSetDisplayPage(DPARAMS[0]);
