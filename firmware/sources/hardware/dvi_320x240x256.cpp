@@ -130,7 +130,14 @@ static uint16_t scanBuffer[SCAN_BUF_COUNT][SCAN_MAX_PIXELS+32] __attribute__((al
 #define MONO_LINE_COUNT (2)
 static uint32_t monoLine[MONO_LINE_COUNT][MONO_LINE_WORDS/8+4]; 					// 2 x 1 bpp scanline buffers (word aligned copies)
 #define monoLineMask (MONO_LINE_COUNT-1)
-static const uint32_t monoZero[MONO_LINE_WORDS/8+4] = {0};  						// 1 bpp : an all black line (borders)
+//		T-102 : the black line of the mode 1 borders used to be a static const array, e.g. in FLASH, read by
+//		tmds_encode_1bpp on core 1 for every border line (130 a frame) — the same fault as T-101, in data
+//		rather than code (found by reload-emulator's tools/core1_flash.py). There are 28 bytes of RAM left,
+//		so no new array : in mode 1 the colour scan buffers are idle (the callback only fills monoLine), and
+//		the last one is cleared by DVIStart and used as the black line. Buffers 0 and 1 are not : DVIStart
+//		queues them as the two junk lines that kick the display off.
+#define MONO_BLACK ((const uint32_t *)SCANBUF(SCAN_BUF_COUNT-1))  						// 1 bpp : an all black line (borders), in RAM
+static_assert(sizeof(scanBuffer[0]) >= (MONO_LINE_WORDS/8+4) * sizeof(uint32_t), "T-102 : the black line must hold a 1 bpp line and the encoder overshoot");
 
 uint16_t frameCounter = 0,lineCounter = 0;                              		// Tracking line/frame counts.
 static volatile uint32_t lateTotal = 0;  										// T-57 : episodes of late scanlines, cumulative
@@ -380,7 +387,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		uint pixwidth = dvi0.timing->h_active_pixels;
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
 		if (currentMode->bitsPerPixel == 1) {  										// 1 bpp : one encode into channel 0 ; the lanes point to it
-			tmds_encode_1bpp(scanbuf ? (const uint32_t *)scanbuf : monoZero, tmdsbuf, pixwidth);   // (lit) or to the black channel 2 (dark, prefilled)
+			tmds_encode_1bpp(scanbuf ? (const uint32_t *)scanbuf : MONO_BLACK, tmdsbuf, pixwidth);   // (lit) or to the black channel 2 (dark, prefilled)
 		} else if (scanbuf == 0) {  												// Black line : fill the three channels with the
 			uint32_t *p = tmdsbuf;  												// constant pair (stores only, no table : T-13).
 			for (uint n = 3 * words_per_channel;n > 0;n--) *p++ = TMDS_BLACK_WORD;
@@ -503,6 +510,7 @@ void DVIStart(void) {                                                           
 	if (slTmds < 0) { slTmds = spin_lock_claim_unused(true);slColour = spin_lock_claim_unused(true); }
 	dvi_init(&dvi0, slTmds, slColour);  										// Initialise DVI.
 	if (currentMode->bitsPerPixel == 1) {  											// Monochrome : black channel 1 in every TMDS buffer, lanes.
+		memset((void *)MONO_BLACK,0,sizeof(scanBuffer[0]));  					// T-102 : the black border line, in RAM (core 1 parked)
 		uint32_t words = dvi0.timing->h_active_pixels / DVI_SYMBOLS_PER_WORD;
 		uint32_t *bufs[DVI_N_TMDS_BUFFERS];int n = 0;
 		while (n < DVI_N_TMDS_BUFFERS && queue_try_remove_u32(&dvi0.q_tmds_free, &bufs[n])) n++;

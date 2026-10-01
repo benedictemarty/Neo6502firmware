@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.67** (2026-10-01) — **T-102 : la ligne noire des bordures du mode 1 n'est plus lue en flash.**
+  `monoZero` (`static const`, donc en flash) était lue par `tmds_encode_1bpp` sur le cœur 1 pour chaque ligne de
+  bordure du mode 1 (130 par image) : même défaut que T-101, en données. Trouvé par `tools/core1_flash.py` de la
+  session reload-emulator. Sans RAM de plus (28 octets de marge) : en mode 1 le dernier tampon de ligne couleur est
+  inutilisé, `DVIStart` le remet à zéro et il sert de ligne noire. `core1_flash.py` : 0 fonction et 0 table en flash
+  sur tout le chemin du cœur 1. `CPUExecute` identique, RAM inchangée. `make test-api` 27/27, toolbox 14/14,
+  `test-boot` 8/8, `test-snd` OK. À vérifier sur carte : bordures noires en mode 1, `RENDU.NEO` en mode 1.
+
 - **0.16.66** (2026-10-01) — **T-101 : plus de traits au démarrage — l'encodeur TMDS n'appelle plus la flash.**
   `tmds_encode_data_channel_16bpp` (PicoDVI, en RAM, cœur 1) appelait `interp_save` et `interp_restore` du SDK, qui
   sont en flash : six appels par ligne. Pendant le démarrage, le cœur 0 exécute du code froid en flash et le cœur 1
