@@ -14,7 +14,7 @@
 #include <algorithm>
 
 #define CPARAMS 	(cpuMemory+controlPort+4)
-#define EPRINTF 	printf 
+#define EPRINTF 	TRACEF  												// 2026-10-01 : nothing on the board (stdio off), printf on the PC
 
 #define ISDISPLAYABLE(c) ((c) < 0x80 || (c) >= 0xC0)
 

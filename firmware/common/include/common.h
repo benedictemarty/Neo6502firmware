@@ -44,6 +44,16 @@
 #define __not_in_flash(group)  													// Same for data (T-79 : sound tables read by the PWM interrupt)
 #endif
 //
+//		Debug traces (2026-10-01) : printf on the PC (neo, Phosphoneo), nothing at all on the board, where stdio is
+//		disabled (pico_enable_stdio_* 0) and printf used to format every message for nobody — on core 0, with the
+//		6502 stopped, at every 12,2 and every program load. The if (0) keeps the arguments "used" (-Werror).
+//
+#ifdef PICO
+#define TRACEF(...) do { if (0) printf(__VA_ARGS__); } while (0)
+#else
+#define TRACEF(...) printf(__VA_ARGS__)
+#endif
+//
 //		Neo6502 Includes
 //
 #include "interface/keyboard.h"

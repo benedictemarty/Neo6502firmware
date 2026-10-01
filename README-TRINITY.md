@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.69** (2026-10-01) — **T-105 : plus de `printf` de débogage sur la carte.** La sortie standard est désactivée
+  dans le firmware, mais 12,2 (`BLTSimpleCopy`), le chargeur de programmes (`fileinterface.cpp`, une dizaine par
+  chargement), `mos.cpp` et l'éditeur de ligne (`EPRINTF`, 12 traces) mettaient quand même chaque message en forme, sur
+  le cœur 0, 6502 arrêté. Macro `TRACEF` (`common.h`) : rien sur la carte, `printf` dans `neo` (les traces de débogage
+  restent dans l'émulateur). Binaire : 0 appel à `printf` (24 avant) ; RAM −32 o (marge 28 → 60), flash −1 288 o ;
+  `CPUExecute` identique. Gain en temps non mesuré (à relever avec `COPIE.NEO`, 5,42 P1). `make test-api` 28/28,
+  toolbox 14/14, `test-boot` 8/8, `test-snd` OK, `test-coeur1` OK.
+
 - **0.16.68** (2026-10-01) — **T-90 : 12,3 écrit dans les pages 16 couleurs du mode 2 (besoin n° 1 de Neo6502POP).**
   Deux formats de cible : **5** (deux pixels par octet, pixel de gauche dans le quartet haut, premier pixel dans le
   quartet haut du premier octet : x pair) et **6** (premier pixel dans le quartet bas : x impair, sans décalage à faire

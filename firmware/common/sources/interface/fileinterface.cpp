@@ -58,7 +58,7 @@ void FIODirectory(const char *subString) {
 
 uint8_t FIOReadFile(const std::string& fileName,uint16_t loadAddress,uint8_t *commandPtr) {
 	STOInitialise();
-	printf("Trying to read header for %s\n",fileName.c_str());	
+	TRACEF("Trying to read header for %s\n",fileName.c_str());	
 	uint8_t *header = commandPtr+4;  												// Header goes here.
 	header[0] = header[1] = header[2] = header[3] = 0;  							// Zero the space to receive the header.
 	uint8_t error = FISOpenFileHandle(0,fileName.c_str(),FIOMODE_RDONLY);  			// Try to open the file	
@@ -72,9 +72,9 @@ uint8_t FIOReadFile(const std::string& fileName,uint16_t loadAddress,uint8_t *co
 		error = FISCloseFileHandle(0);  											// Close the file.
 		return (error != 0) ? error : FIOReadFileBasic(fileName,loadAddress);	 	// if okay then use the old reader.
 	}
-	printf("Header found.\n");
+	TRACEF("Header found.\n");
 	uint16_t execAddress = header[6] + (header[7] << 8); 							// Get the execute address
-	printf("Execute from $%x\n",execAddress);
+	TRACEF("Execute from $%x\n",execAddress);
 	bool processing = true; 
 	while (processing && error == 0) {
 		error = FIOReadBlock(FIOReadByte,commandPtr,&processing); 					// Read one block.
@@ -98,17 +98,17 @@ static char commentBlock[32];  														// Space for comment text.
 
 uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {
 	uint8_t contByte = (*readfn)(commandPtr);  										// Read the continuation byte
-	printf("Control byte %x\n",contByte);
+	TRACEF("Control byte %x\n",contByte);
 	*pContinue = (contByte & 0x80) != 0;  											// Continue if control continue bit set
 	uint16_t loadAddress,loadSize;  												// Read address and size.
 	loadAddress = (*readfn)(commandPtr);
 	loadAddress |= (*readfn)(commandPtr) << 8;
 	loadSize = (*readfn)(commandPtr);
 	loadSize |= (*readfn)(commandPtr) << 8;
-	printf("Load to %x size %x\n",loadAddress,loadSize);
+	TRACEF("Load to %x size %x\n",loadAddress,loadSize);
 	if (loadAddress == 0xFFFD) {  													// Basic LOAD ?
 		loadAddress = cpuMemory[0x820]+(cpuMemory[0x821] << 8);
-		printf("Load to BASIC at $%x\n",loadAddress);
+		TRACEF("Load to BASIC at $%x\n",loadAddress);
 	}
 	//		T-59 : the guard was inverted — the pointer only started moving PAST the 32nd
 	//		character and then never stopped, so a comment longer than 64 characters wrote
@@ -119,8 +119,8 @@ uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {
 		if (count < sizeof(commentBlock)-1) commentBlock[count++] = c;
 	}
 	commentBlock[count] = '\0';
-	printf("Comment %s\n",commentBlock);
-	printf("Loading bytes.\n");
+	TRACEF("Comment %s\n",commentBlock);
+	TRACEF("Loading bytes.\n");
 	//		T-59 : both destinations were unbounded. loadAddress and loadSize are 16 bit each,
 	//		so loadAddress+i reached 128 Ko — up to 64 Ko PAST the 6502 memory, over whatever
 	//		the linker had put next. Same for the graphics area, which is half the size.
@@ -157,7 +157,7 @@ static uint8_t FIOReadByte(uint8_t *commandPtr) {
 
 uint8_t FIOReadFileBasic(const std::string& fileName,uint16_t loadAddress) {
 	STOInitialise();
-	printf("Reading %s to $%x\n",fileName.c_str(),loadAddress);
+	TRACEF("Reading %s to $%x\n",fileName.c_str(),loadAddress);
 	uint16_t maxRead = (loadAddress == 0xFFFF) ? GFX_MEMORY_SIZE : 0x10000-loadAddress;
 	uint8_t error = FISOpenFileHandle(0,fileName,FIOMODE_RDONLY);
 	if (error == 0) {
@@ -166,7 +166,7 @@ uint8_t FIOReadFileBasic(const std::string& fileName,uint16_t loadAddress) {
 	if (error == 0) {
 		error = FISCloseFileHandle(0);
 	}
-	printf("%d\n",error);
+	TRACEF("%d\n",error);
 	return error;
 }
 

@@ -46,7 +46,7 @@ uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address) {  					// Public : Qu
 // ***************************************************************************************
 
 uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uint16_t addressTo, uint16_t transferSize) {	
-	printf("Blit: %02x:%04x to %02x:%04x bytes %04x\n",pageFrom,addressFrom,pageTo,addressTo,transferSize);
+	TRACEF("Blit: %02x:%04x to %02x:%04x bytes %04x\n",pageFrom,addressFrom,pageTo,addressTo,transferSize);
 	if (transferSize == 0) return 0;
 	uint8_t *src = BLTGetRealAddress(pageFrom,addressFrom);  						// Copy from here
 	uint8_t *dst = BLTGetRealAddress(pageTo,addressTo);  							// To here.
