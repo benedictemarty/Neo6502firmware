@@ -1,7 +1,7 @@
 # Revue du backlog et recette carte — 2026-10-01
 
-Base : Trinity **0.16.67** (`f2556cc`). Ce document **propose** ; rien n'est clos dans `docs/BACKLOG.md` sans la
-décision de bmarty. Chaque proposition cite sa preuve ; « par l'usage » veut dire que la fonction a servi sur la carte
+Base : Trinity **0.16.67** (`f2556cc`). **Décision bmarty 2026-10-01 : « oui »** — les 23 tickets du § 1 sont clos dans
+`docs/BACKLOG.md` (état « Clos 2026-10-01 », ancien état conservé à la suite). Chaque proposition cite sa preuve ; « par l'usage » veut dire que la fonction a servi sur la carte
 depuis, sans défaut signalé, mais sans test dédié.
 
 ## 1. Proposés à clore
