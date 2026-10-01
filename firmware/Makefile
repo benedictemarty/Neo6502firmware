@@ -115,7 +115,10 @@ build: prelim always
 #				l'attente USB : HWBusServeBurst (256 o) et la reprise des commandes mises de côté dans
 #				CPUExecute (+64 o) sont en RAM, comme tout ce qui sert le bus. Marge vérifiée : 25,4 Ko de
 #				tas restants pour un pic mesuré de 15 380 o (T-79).
-RAM_LIMIT ?= 237060
+#				BRANCHE diag-coeur1 SEULEMENT (2026-10-01) : 237060 -> 237400 pour la version de diagnostic du cœur 1
+#				(+296 o : phases du cœur 0, compteurs, mesure de l'encodeur). Tas restant 24 848 o pour un pic mesuré
+#				de 15 380 o (T-79) : ~9,5 Ko de marge. Jamais livrée telle quelle sur trinity.
+RAM_LIMIT ?= 237400
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

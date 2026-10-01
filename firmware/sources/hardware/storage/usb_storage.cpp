@@ -155,6 +155,7 @@ void HWBusServeBurst(void);
 extern volatile uint32_t stoDiskWaitMaxUs,stoDiskTimeouts;  					// debugport.cpp
 
 static DRESULT wait_for_disk_io(uint8_t dev_addr) {                             // By device, slot = address - 1 (T-24, T-54)
+    DiagPhase diag(DIAG_DISK);  												// Diagnostic build
     int slot = mscSlot(dev_addr);
     if (slot < 0) return RES_PARERR;
     uint32_t t0 = time_us_32();

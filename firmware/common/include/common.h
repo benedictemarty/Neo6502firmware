@@ -54,6 +54,26 @@
 #define TRACEF(...) printf(__VA_ARGS__)
 #endif
 //
+//		DIAGNOSTIC BUILD (branch diag-coeur1, 2026-10-01) : what core 0 is doing, read by core 1 when a scanline
+//		starts being late (dvi_320x240x256.cpp, diagLateOnset[phase]). Set with DiagPhase, which restores the
+//		previous phase on the way out (nested calls, early returns).
+//
+#define DIAG_6502 	0  																// Nothing tagged : the 65C02 runs (CPUExecute)
+#define DIAG_API 	1  																// DSPHandler
+#define DIAG_SYNC 	2  																// DSPSync (keyboard, USB task, telemetry)
+#define DIAG_DISK 	3  																// wait_for_disk_io (USB key)
+#define DIAG_P0 	4  																// Boot phases (dispatch.cpp, DSPReset)
+#define DIAG_P1 	5
+#define DIAG_P2 	6
+#define DIAG_P3 	7
+#define DIAG_PHASES 8
+extern volatile uint8_t diagPhase;
+struct DiagPhase {
+	uint8_t previous;
+	inline DiagPhase(uint8_t phase) { previous = diagPhase;diagPhase = phase; }
+	inline ~DiagPhase() { diagPhase = previous; }
+};
+//
 //		Neo6502 Includes
 //
 #include "interface/keyboard.h"

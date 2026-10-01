@@ -112,6 +112,7 @@ uint32_t HWBusTiming(uint8_t which) {
 		case 2: return RNDCallbackMax();  										// T-90 : display timings of core 1 (T-77)
 		case 3: return RNDIrqGapMax();
 		case 4: return RNDIrqGapLong();
+		case 5: return RNDEncodeMax();  											// Diagnostic build : longest line encode (us)
 	}
 	return 0;
 }

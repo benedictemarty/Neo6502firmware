@@ -31,6 +31,8 @@
 
 #include "data/neowho.h"
 
+volatile uint8_t diagPhase = DIAG_6502;  										// Diagnostic build : see common.h
+
 // bmarty R22 / T-12 : the toolbox groups (32.., ADR-01) are dispatched here, in flash. DSPHandler is copied to
 // RAM (time critical) and grew by about 300 bytes of SRAM per group ; the toolbox calls are not time critical.
 static void __attribute__((noinline)) DSPToolbox(uint8_t *cBlock, uint8_t *memory,uint8_t cmd) {
@@ -55,12 +57,14 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 	uint16_t u3;
 	SOUND_UPDATE su;
 	bool b1;
+	const uint8_t diagPrevious = diagPhase;diagPhase = DIAG_API;  				// Diagnostic build (no return in dispatch_code.h)
 	*DERROR = 0;                                                                // Clear error state.
 	cmd = *DCOMMAND; 															// Get the command.
 	*DCOMMAND = 0;					     										// Clear the message indicating completion.
 																				// Sweet 16 needs this to call routines. Doesn't matter because
 																				// it isn't actually synchronous.
 	#include "data/dispatch_code.h"  
+	diagPhase = diagPrevious;  													// Diagnostic build
 }
 
 // ***************************************************************************************
@@ -76,6 +80,7 @@ void TIMECRITICAL(DSPHandler)(uint8_t *cBlock, uint8_t *memory)
 //		changes instead (mouse.cpp, cursor.cpp).
 void TIMECRITICAL(DSPSync)(void) 
 {
+	DiagPhase diag(DIAG_SYNC);  												// Diagnostic build
 	KBDSync();
 	RNDDisplayWatchdog();  													// T-71 : frames frozen = display dead, core 0 restarts the mode
 	HWBusProbe();  																// T-49 : bus stalls (RAM only, see above)
@@ -100,6 +105,7 @@ void TIMECRITICAL(DSPSync)(void)
 // ***************************************************************************************
 
 static void DSPResetP0(void) {  												// P0 : hardware and firmware state only
+	DiagPhase diag(DIAG_P0);  													// Diagnostic build
 	DBGInitialise();  															// T-73 : debug port first, so it can report P0 itself
 	CONSetDebugEcho(2);  														// T-74 : and the console mirrors to it (2,20), Latin-1 included
 	MEMInitialiseMemory();                                                      // Set up memory, load kernel ROM
@@ -128,12 +134,14 @@ static void DSPResetP0(void) {  												// P0 : hardware and firmware state 
 //		and the text only starts in P2 — which is what bmarty asked for : logos, a pause, then
 //		everything else. The pause costs nothing : the barrier was already waiting here.
 static void DSPResetP1(void) {  												// P1 : USB discovery, up to the settle barrier
+	DiagPhase diag(DIAG_P1);  													// Diagnostic build
 	KBDInitialise();                                                            // Start the USB host stack
 	KBDEvent(0,0xFF,0);                                                         // Reset the keyboard manager
 	USBWaitSettled();                                                           // T-32 : quiet bus, or the ceiling
 }
 
 static void DSPResetP2(void) {  												// P2 : policy (no hardware init here)
+	DiagPhase diag(DIAG_P2);  													// Diagnostic build
 	const char bootString[] = PROMPT;
 	CONSetQuiet(false);                                                         // T-66 : the text starts here
 	CONWrite(0x80+3);                                                           // Yellow text
@@ -171,7 +179,7 @@ void DSPReset(void) {
 	DSPResetP1();
 	DSPResetP2();
 	CONWrite(0x80+2);
-	IOInitialise();  															// P3 : UEXT, then the bus loop starts the 6502
+	{ DiagPhase diag(DIAG_P3);IOInitialise(); }  									// P3 : UEXT, then the bus loop starts the 6502 (diag phase)
 }
 
 // ***************************************************************************************

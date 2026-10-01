@@ -223,7 +223,15 @@ static volatile uint32_t cbEntry = 0, cbDurMax = 0;
 uint32_t __not_in_flash_func(RNDIrqGapMax)(void) { return irqGapMax; }
 uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
 uint32_t __not_in_flash_func(RNDCallbackMax)(void) { return cbDurMax; }
-void RNDTimingReset(void) { cbDurMax = 0;irqGapMax = 0;irqGapLong = 0; }  		// T-90 : 5,41 $FF clears them too
+//		DIAGNOSTIC BUILD (branch diag-coeur1) : who makes core 1 late, and how long one line takes to encode.
+//		diagLateOnset[phase] counts the lines where late_scanline_ctr goes from 0 to non zero, by the phase core 0
+//		was in (common.h, DIAG_*) ; never cleared (the boot is what matters). diagEncMax : longest TMDS encode of one
+//		line, in us, cleared by 5,41 $FF with the other timings ; read through 5,42 P0=5 or the probe.
+volatile uint16_t diagLateOnset[DIAG_PHASES] = {0};
+volatile uint32_t diagEncMax = 0;
+static bool diagWasLate = false;
+uint32_t RNDEncodeMax(void) { return diagEncMax; }
+void RNDTimingReset(void) { cbDurMax = 0;irqGapMax = 0;irqGapLong = 0;diagEncMax = 0; }  		// T-90 : 5,41 $FF clears them too
 
 #define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; } while (0)
 
@@ -263,7 +271,11 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		lastEntry = now;
 		cbEntry = now;  												// T-77 : duree du callback, mesuree en sortie
 	}
-	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
+	if (dvi0.late_scanline_ctr) {
+		lateTotal = lateTotal + 1;  													// T-57 : sampled every line, on core 1
+		if (!diagWasLate) diagLateOnset[diagPhase & (DIAG_PHASES-1)] = diagLateOnset[diagPhase & (DIAG_PHASES-1)] + 1;
+		diagWasLate = true;  														// Diagnostic build : onset, by core 0 phase
+	} else diagWasLate = false;
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
 	scanline = (uint32_t)SCANBUF(lineCounter); 									// Which buffer to send ?
 	if (currentMode->bitsPerPixel == 1) scanline = (uint32_t)monoLine[lineCounter & monoLineMask];
@@ -384,6 +396,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		}
 		queue_remove_blocking_u32(&dvi0.q_colour_valid, &scanbuf);
 		queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
+		const uint32_t encStart = timer_hw->timerawl;  							// Diagnostic build : encode time of one line
 		uint pixwidth = dvi0.timing->h_active_pixels;
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
 		if (currentMode->bitsPerPixel == 1) {  										// 1 bpp : one encode into channel 0 ; the lanes point to it
@@ -397,6 +410,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 1 * words_per_channel, pixwidth / 2, DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 2 * words_per_channel, pixwidth / 2, DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
 		}
+		{ uint32_t d = timer_hw->timerawl - encStart;if (d < 10000 && d > diagEncMax) diagEncMax = d; }
 		queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 		if (scanbuf != 0) queue_add_blocking_u32(&dvi0.q_colour_free, &scanbuf);
 	}
