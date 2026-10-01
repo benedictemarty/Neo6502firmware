@@ -32,6 +32,9 @@ struct BlitterArea {
 #define BLTFMT_BITS 2		// 8 1-bit values (src only)
 #define BLTFMT_HIGH 3		// High nibble (target only)
 #define BLTFMT_LOW  4		// Low nibble (target only)
+#define BLTFMT_PACKED     5	// Trinity T-90 : 2 pixels per byte, left pixel in the high nibble, first pixel in the HIGH
+							// nibble of the first byte (even x) — the 16 colour pages of mode 2 (target only)
+#define BLTFMT_PACKED_ODD 6	// Same, first pixel in the LOW nibble of the first byte (odd x) (target only)
 
 uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (T-12 : QuickDraw fonts)
 void BLTLoadArea(uint16_t addr,struct BlitterArea *b);													// 12,3 area structure in 6502 RAM (T-12)

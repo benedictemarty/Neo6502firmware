@@ -639,7 +639,54 @@ static uint16_t _BLTTargetBytes(uint8_t srcFormat,uint16_t width) {  			// Targe
 	return width;
 }
 
+//		T-90 (need n° 1 of Neo6502POP) : targets of 2 pixels per byte (BLTFMT_PACKED, _ODD), e.g. the 16 colour
+//		pages of mode 2. One generic line for every source format and action rather than nine more helpers : it
+//		reads the same values as the other copies (whole source bytes only), and writes value n into nibble
+//		first + n of the line, where first is 0 (high nibble of the first byte) or 1 (its low nibble), so an
+//		odd x needs no shifting by the program. Values keep their low 4 bits ; a nibble not written is kept.
+static uint16_t _BLTPackedBytes(uint8_t tgtFormat,uint16_t values) {
+	uint16_t first = (tgtFormat == BLTFMT_PACKED_ODD) ? 1 : 0;
+	return (uint16_t)((first + values + 1) / 2);
+}
+
+static void _BLTPackedLine(uint8_t action,const struct BlitterArea *source,uint8_t tgtFormat,uint8_t *tgt,const uint8_t *src,uint16_t values) {
+	uint32_t nib = (tgtFormat == BLTFMT_PACKED_ODD) ? 1 : 0;
+	for (uint16_t i = 0;i < values;i++,nib++) {
+		uint8_t v;
+		switch (source->format) {
+			case BLTFMT_BITS: v = (src[i >> 3] >> (7 - (i & 7))) & 1;break;
+			case BLTFMT_PAIR: v = (i & 1) ? (src[i >> 1] & 0x0F) : (src[i >> 1] >> 4);break;
+			default:          v = src[i];break;
+		}
+		if (action != BLTACT_COPY && v == source->transparent) continue;  		// copymasked / solidmasked : skipped
+		if (action == BLTACT_SOLID) v = source->solid;
+		v &= 0x0F;
+		uint8_t *t = tgt + (nib >> 1);
+		*t = (nib & 1) ? ((*t & 0xF0) | v) : ((*t & 0x0F) | (uint8_t)(v << 4));
+	}
+}
+
+static uint8_t _BLTPackedCopy(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target,
+							  const uint8_t *srcEnd,const uint8_t *tgtEnd) {
+	if (source->format != BLTFMT_BYTE && source->format != BLTFMT_PAIR && source->format != BLTFMT_BITS) return 1;
+	if (action != BLTACT_COPY && action != BLTACT_MASK && action != BLTACT_SOLID) return 1;
+	uint16_t values = _BLTTargetBytes(source->format,source->width);  			// Whole source bytes, as the other copies
+	uint8_t *src = BLTGetRealAddress(source->page, source->address);
+	uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
+	if (src == NULL || tgt == NULL) return 1;
+	for (uint8_t l = source->height; l > 0; --l) {
+		if (!_BLTLineFits(src,srcEnd,_BLTSourceBytes(source->format,source->width)) ||   // T-61 / T-97
+			!_BLTLineFits(tgt,tgtEnd,_BLTPackedBytes(target->format,values))) return 1;
+		_BLTPackedLine(action,source,target->format,tgt,src,values);
+		src += source->stride;
+		tgt += target->stride;
+	}
+	return 0;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
+	if (target->format == BLTFMT_PACKED || target->format == BLTFMT_PACKED_ODD)  	// T-90
+		return _BLTPackedCopy(action,source,target,_BLTAreaEnd(source->page),_BLTAreaEnd(target->page));
 	const uint8_t *srcEnd = _BLTAreaEnd(source->page);  							// T-61
 	const uint8_t *tgtEnd = _BLTAreaEnd(target->page);
 

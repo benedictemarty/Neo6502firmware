@@ -71,6 +71,11 @@ GROUP 12 Blitter
                         2: 8 single-bit values. Source only.
                         3: high nibble. Target only.
                         4: low nibble. Target only.
+                        5: two pixels per byte, left pixel in the high nibble, the first pixel going to the HIGH nibble of
+                           the first byte (even x). Target only (Trinity T-90, the 16 colour pages of mode 2).
+                        6: the same, the first pixel going to the LOW nibble of the first byte (odd x). Target only.
+                           With 5 and 6 every source format and action is supported ; each value keeps its low 4 bits
+                           (the solid value too) and a nibble that is not written is left unchanged.
 
                 7       A constant to use as the "transparent" value for BLTACT_MASK and BLTACT_SOLID. Source only. Not used in target.
 

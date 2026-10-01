@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.68** (2026-10-01) — **T-90 : 12,3 écrit dans les pages 16 couleurs du mode 2 (besoin n° 1 de Neo6502POP).**
+  Deux formats de cible : **5** (deux pixels par octet, pixel de gauche dans le quartet haut, premier pixel dans le
+  quartet haut du premier octet : x pair) et **6** (premier pixel dans le quartet bas : x impair, sans décalage à faire
+  par le programme). Toutes les sources (octets, quartets, bits) et toutes les actions (copy, copymasked, solidmasked)
+  sont acceptées ; chaque valeur garde ses 4 bits bas, un quartet non écrit est conservé ; contrôle des bornes en
+  octets réellement touchés (T-61 / T-97). Test `tests/api/blitpack` (11 cas en RAM + bout en bout en mode 2 relu par
+  5,33) : échoue sur l'ancien blitter, passe sur le nouveau. Formats 0-4 inchangés. RAM inchangée. `make test-api` 28/28,
+  toolbox 14/14, `test-boot` 8/8, `test-snd` OK, `test-coeur1` OK. Non vérifié sur carte.
+
 - **0.16.67** (2026-10-01) — **T-102 : la ligne noire des bordures du mode 1 n'est plus lue en flash.**
   `monoZero` (`static const`, donc en flash) était lue par `tmds_encode_1bpp` sur le cœur 1 pour chaque ligne de
   bordure du mode 1 (130 par image) : même défaut que T-101, en données. Trouvé par `tools/core1_flash.py` de la
