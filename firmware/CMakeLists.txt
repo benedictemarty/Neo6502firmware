@@ -68,6 +68,13 @@ else()
 endif()
 # bmarty : the patch is idempotent, so a PICO_DVI_PATH checkout can be patched by hand :
 #   sh firmware/patches/apply-picodvi.sh $PICO_DVI_PATH
+# 2026-10-01 : refuse a PicoDVI whose TMDS encoder still calls interp_save / interp_restore in flash (core 1
+# waiting on the flash while core 0 boots : late lines, red streaks). sh firmware/patches/apply-picodvi.sh <dir>
+file(READ ${picodvi_SOURCE_DIR}/software/libdvi/tmds_encode.c _dvi_enc)
+string(FIND "${_dvi_enc}" "Trinity interp RAM" _dvi_interp)
+if(_dvi_interp EQUAL -1)
+    message(FATAL_ERROR "PicoDVI ${picodvi_SOURCE_DIR} : encodeur TMDS sans le correctif interp en RAM : sh firmware/patches/apply-picodvi.sh ${picodvi_SOURCE_DIR}")
+endif()
 add_subdirectory(${picodvi_SOURCE_DIR}/software/libdvi ${picodvi_BINARY_DIR})
 
 #   T-58 : five TMDS buffers instead of three were tried on the board (2026-09-24) and changed

@@ -42,6 +42,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.66** (2026-10-01) — **T-101 : plus de traits au démarrage — l'encodeur TMDS n'appelle plus la flash.**
+  `tmds_encode_data_channel_16bpp` (PicoDVI, en RAM, cœur 1) appelait `interp_save` et `interp_restore` du SDK, qui
+  sont en flash : six appels par ligne. Pendant le démarrage, le cœur 0 exécute du code froid en flash et le cœur 1
+  l'attendait : lignes en retard, traits. Nouveau patch PicoDVI `firmware/patches/picodvi-interp-ram.sh` (copies inline,
+  appelé par `apply-picodvi.sh`, contrôlé par CMake). Mesuré sur carte, même carte, secteur coupé, sans clavier :
+  **74 et 74** épisodes de lignes en retard au démarrage en 0.16.65, **0 et 0** avec le correctif ; bmarty ne voit plus
+  de traits. Chemin du cœur 1 pendant l'affichage sans aucun appel en flash (objdump). RAM inchangée.
+  `make test-api` 27/27, toolbox 14/14, `test-boot` 8/8, `test-snd` OK.
+
 - **0.16.65** (2026-09-30) — **T-100 : arracher la clé pendant une lecture ne tue plus le cœur 0 (à valider sur carte).**
   Mesuré sur carte en 0.16.64 : une lecture en cours quand la clé disparaît finit en échec (délai de réception),
   TinyUSB marque le point IDLE mais laisse le tampon d'EPx armé ; le transfert suivant trouvait le bit AVAILABLE et
