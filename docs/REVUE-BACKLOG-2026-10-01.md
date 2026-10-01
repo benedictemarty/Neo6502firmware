@@ -48,6 +48,9 @@ Ordre pensé pour flasher une fois et réutiliser la clé. Outils déjà sur la 
 | 8 | T-29 / T-42 / T-43 | souris en mode 0 et 1, bords de l'écran | curseur suivi, rogné aux bords, sans éclat | bmarty (souris USB) |
 | 9 | T-28 | Échap pendant le démarrage avec un `boot/` | menu ouvert | bmarty |
 | 10 | T-18 | volumes (deux clés) | `A:` / `B:` vus | bmarty (2ᵉ clé) |
+| 11 | T-105 | `COPIE.NEO` en 0.16.68 puis 0.16.69 | durée de 12,2 (5,42 P1) plus courte sans `printf` | sonde |
+| 12 | T-104 | branche `t104-fatfs-tiny` contre 0.16.69 : `ARRACHE`, `COPY`, `RENDU`, `neotests` | débits comparables | sonde + bmarty |
+| 13 | T-106 | branche `diag-coeur1` : démarrage, 10 min d'usage, `RENDU` | `diagcoeur1.py` : phases et encodage max | sonde + bmarty |
 
 ## 3. Laissés ouverts (fonctions, pas des validations)
 
