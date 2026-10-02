@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.72** (2026-10-03) — **T-108 : la pile de remplissage AGI quitte la RAM statique.** Le décodeur (repris de
+  Neo6502AGI `35badbd`, `agipic_decoder_pile`, `AGIPIC_PILE` = 0) reçoit sa pile de l'appelant : 39,1 lui donne
+  2 × 2 048 points dans `gfxObjectMemory` juste après le plan (octets 26 880 à 30 975, `static_assert`), mémoire
+  déjà réservée au groupe 39 pendant son usage. RAM 233 932 → **232 908** (−1 024 o, règle T-13 de nouveau
+  respectée). Profondeur maximale observée par Neo6502AGI : 62 sur 20 000 flux aléatoires, 15 sur les images
+  réelles. `make test-api` 29/29 (contre-essai : pile d'un point → `agipic` échoue), toolbox 14/14, `test-boot` 8/8,
+  `test-snd` OK, `test-coeur1` OK. Non mesuré sur carte (seul l'emplacement de la pile change).
+
 - **0.16.71** (2026-10-02) — **T-107 : groupe 39, images Sierra AGI.** 39,1 Draw Picture (décode une ressource
   PICTURE AGI v2 de la RAM 6502 dans un plan 160×168 de `gfxObjectMemory`, priorité et couleur par pixel), 39,2 Show
   Picture (copie à l'écran, pixels doublés, modes 320 de large en 8 ou 4 bpp), 39,3 Picture Duration (µs, carte),
