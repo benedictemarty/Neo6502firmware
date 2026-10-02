@@ -57,3 +57,7 @@ Ordre pensé pour flasher une fois et réutiliser la clé. Outils déjà sur la 
 T-08, T-09, T-10, T-11, T-12 (toolbox en cours), T-33 (watchdog de boot), T-35 (politique de démarrage),
 T-70 (lecteurs de disquette USB), T-77 (boîte noire PicoDVI, gardée comme instrument), T-87 (casque USB, matériel),
 T-90 (mode 16 couleurs, étude).
+
+## 4. Séance carte du 2026-10-02 (sonde SWD, bmarty au secteur)
+
+Faits : étape 1 (0.16.69 : 0 épisode au démarrage), 2 (T-102, mesure SWD ; écran non regardé), 3 (T-100 validé), 11 (T-105 mesuré : 2 à 4× plus rapide), 12 (T-104 mesuré, livrable), 13 (T-106 : épisodes seulement aux changements de mode, en phase API). Restent : 4 (10 min d'usage normal à l'œil), 5-10 (vérifications à l'œil et au matériel : police MDA, AZERTY, Verr Num/Maj, souris, Échap au démarrage, deux clés). Carte laissée en 0.16.69, clé en place.
