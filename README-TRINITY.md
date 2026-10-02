@@ -42,6 +42,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.71** (2026-10-02) — **T-107 : groupe 39, images Sierra AGI.** 39,1 Draw Picture (décode une ressource
+  PICTURE AGI v2 de la RAM 6502 dans un plan 160×168 de `gfxObjectMemory`, priorité et couleur par pixel), 39,2 Show
+  Picture (copie à l'écran, pixels doublés, modes 320 de large en 8 ou 4 bpp), 39,3 Picture Duration (µs, carte),
+  39,4 Read Picture Point. Décodeur fourni par Neo6502AGI, **réécrit en salle blanche** ; ces fichiers
+  (`agipic.cpp`, `agipic_decodeur.cpp`, `agipic.h`, `agipic_decodeur.h`, `agipic_tables.h`) sont sous **EUPL 1.2**
+  (décision bmarty, le reste du firmware reste sous MIT ; provenance dans l'en-tête d'`agipic.cpp`, bilan des
+  licences : `docs/LICENCES-2026-10-02.md`). Code et tables en flash, dispatch par `DSPToolbox`. RAM 232 904 →
+  **233 932** (+1 028 o : pile de remplissage statique, écart à la règle T-13 suivi en T-108). Mesuré sur carte par
+  Neo6502AGI (même code, `32517a3`) : décodage 1,8 à 25,2 ms depuis la flash, rendu identique au pixel près.
+  `make test-api` 29/29 (nouveau test `agipic`), toolbox 14/14, `test-boot` 8/8, `test-snd` OK, `test-coeur1` OK.
+  Tests : `run_neo.sh` utilise `gnutimeout -k` (le `timeout` uutils ne tuait pas un `neo` bloqué).
+
 - **0.16.70** (2026-10-02) — **T-104 : 4 Ko de RAM regagnés (FatFs en mode « tiny »).** `FF_FS_TINY` = 1 : les huit
   descripteurs de fichier n'ont plus chacun leur tampon de secteur de 512 o, ils partagent la fenêtre de leur volume.
   RAM 237 000 → **232 904** (marge sous `RAM_LIMIT` 60 → 4 156 o ; `fileHandles` 4 416 → 320 o). Mesuré sur carte
