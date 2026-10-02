@@ -19,7 +19,8 @@ MODEM=""; if [ -r "$TDIR/$NAME.modem" ]; then                                   
     export NEO_CDC_TTY=$(cat "$OUT/pty.txt")
 fi
 export NEO_NO_HOST_INPUT=1                                                     # clavier et souris du PC ignorés (tests instables)
-cd "$OUT" && timeout 120 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 $ARGS > neo.log 2>&1
+TIMEOUT=$(command -v gnutimeout || command -v timeout)                          # uutils 0.2.2 : -k sans effet, neo bouclant ignore SIGTERM
+cd "$OUT" && "$TIMEOUT" -k 5 120 "$HERE/bin/neo" "$NAME.neo6502@800" run@800 $ARGS > neo.log 2>&1
 [ -n "$MODEM" ] && kill $MODEM 2>/dev/null
 python3 - "$OUT/memory.dump" > "$OUT/journal.txt" <<'PY'
 import sys
