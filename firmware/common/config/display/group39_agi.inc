@@ -43,3 +43,26 @@ GROUP 39 AGI Pictures
     DOCUMENTATION
         Returns the visual colour (Parameter:2) and the priority (Parameter:3) of the point Parameter:0,
         Parameter:1 (X 0-159, Y 0-167) of the AGI plane. Error 1 if out of range.
+
+    FUNCTION 5 Draw Cel
+        *DERROR = AGIDrawCel(DSPGetInt16(DPARAMS,0),DPARAMS[2],DPARAMS[3],DPARAMS[4],DPARAMS[5],DSPGetInt16(DPARAMS,6));
+    DOCUMENTATION
+        Trinity (T-109). Draws the AGI view cel whose header (width, height, transparency and mirror byte, then
+        the RLE lines : colour in the high nibble, length in the low nibble, 0 at the end of each line) is at
+        address Parameters:0,1 of 6502 RAM, its left side at X Parameter:2, its bottom line at Y Parameter:3
+        (AGI pixels), with the object priority Parameter:4 ; bit 0 of Parameter:5 mirrors it horizontally. The
+        plane top is at screen line Parameters:6,7. A pixel is drawn when it is not transparent and the object
+        priority is greater than or equal to the plane priority at that point ; on a control line (priority 0 to
+        3) the first point below which is not one is used, 15 if the bottom is reached (assumptions, see
+        Neo6502AGI docs/specs/view-v2.md). The cel is clipped to the plane ; a line longer than the width is cut.
+        Draw Cel never writes the plane. The caller handles the order of the objects : after Restore Rect has
+        erased an object, the objects it overlapped must be drawn again. Errors : 1 empty cel, position outside
+        the plane, header outside 6502 RAM or unsupported mode ; 2 cel data cut by the end of 6502 RAM.
+
+    FUNCTION 6 Restore Rect
+        *DERROR = AGIRestoreRect(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],DSPGetInt16(DPARAMS,4));
+    DOCUMENTATION
+        Trinity (T-109). Copies the visual colours of the AGI plane to the screen on the rectangle X Parameter:0, Y
+        Parameter:1, width Parameter:2, height Parameter:3 (AGI pixels, clipped to the plane), the plane top
+        being at screen line Parameters:4,5 : this erases the objects drawn there. Error 1 if the width or the
+        height is 0 or the mode is not supported.

@@ -28,6 +28,7 @@
 #include "common.h"
 #define AGIPIC_PILE 0																	// No static fill stack in the decoder (T-108)
 #include "interface/agipic_decodeur.h"
+#include "interface/agicel.h"
 
 #ifdef PICO
 #include "hardware/timer.h"
@@ -103,4 +104,40 @@ uint8_t AGIReadPoint(uint8_t x,uint8_t y,uint8_t *visual,uint8_t *priority) {
 	*visual = p & 0x0F;
 	*priority = p >> 4;
 	return AGI_ERR_OK;
+}
+
+// ***************************************************************************************
+//
+//		39,5 / 39,6 (T-109) : cels of AGI views, drawn to the screen only ; the plane is
+//		never written. agicel.cpp does the clipping and the priority test, _AGIPutScreen
+//		writes one AGI pixel (two screen pixels).
+//
+// ***************************************************************************************
+
+static_assert(AGICEL_LARGEUR == AGI_WIDTH && AGICEL_HAUTEUR == AGI_HEIGHT,"agicel and group 39 must agree on the plane");
+
+static void _AGIPutScreen(void *ctx,int x,int y,uint8_t colour) {
+	uint16_t top = *(const uint16_t *)ctx;
+	uint8_t *dst = gMode.graphicsMemory + (uint32_t)(top + y) * gMode.stride;
+	if (gMode.bitsPerPixel == 8) {
+		dst[2 * x] = colour;dst[2 * x + 1] = colour;
+	} else {
+		dst[x] = (uint8_t)((colour << 4) | colour);
+	}
+}
+
+static bool _AGIScreenOk(uint16_t top) {
+	if (gMode.xGSize != 2 * AGI_WIDTH || (uint32_t)top + AGI_HEIGHT > gMode.yGSize) return false;
+	return gMode.bitsPerPixel == 8 || gMode.bitsPerPixel == 4;
+}
+
+uint8_t AGIDrawCel(uint16_t address,uint8_t x,uint8_t yBottom,uint8_t priority,uint8_t flags,uint16_t top) {
+	if (!_AGIScreenOk(top)) return AGI_ERR_PARAM;
+	return (uint8_t)agicel_dessiner_vers(cpuMemory,MEMORY_SIZE,address,x,yBottom,priority,flags & 1,
+	                                     gfxObjectMemory,_AGIPutScreen,&top);
+}
+
+uint8_t AGIRestoreRect(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint16_t top) {
+	if (!_AGIScreenOk(top)) return AGI_ERR_PARAM;
+	return (uint8_t)agicel_restaurer_vers(x,y,width,height,gfxObjectMemory,_AGIPutScreen,&top);
 }
