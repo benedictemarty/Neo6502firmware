@@ -18,7 +18,8 @@ GROUP 39 AGI Pictures
         byte per pixel : priority in the high nibble, visual colour in the low nibble). If bit 0 of Parameter:4 is
         set the plane is first cleared (priority 4, visual 15). Generic : works for any AGI game. The 6502 is held
         for the whole decoding (a few ms to about 40 ms). Errors : 1 address range outside 6502 RAM or length 0,
-        2 fill stack overflow. Graphics memory is shared with sprites, tiles and images : a program
+        2 fill stack overflow. The fill stack uses graphics memory just after the plane (offsets 26 880 to
+        30 975, 4 096 bytes). Graphics memory is shared with sprites, tiles and images : a program
         using this group must not use them.
 
     FUNCTION 2 Show Picture

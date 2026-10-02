@@ -19,12 +19,14 @@
 //		the clean room is a documented good faith effort, not an absolute guarantee.
 //		It replaces a first decoder derived from Sarien (GPL v2), removed on 2026-10-02.
 //
-//		RAM : the fill stack (1 KB) and the decoder state are static ; no heap is used.
+//		RAM (T-108) : the fill stack (2 x 2 KB) lives in graphics memory just after the plane
+//		(offsets 26 880 to 30 975) ; no static array, no heap.
 //
 // ***************************************************************************************
 // ***************************************************************************************
 
 #include "common.h"
+#define AGIPIC_PILE 0																	// No static fill stack in the decoder (T-108)
 #include "interface/agipic_decodeur.h"
 
 #ifdef PICO
@@ -33,6 +35,9 @@
 
 static_assert(AGI_PLANE_SIZE <= GFX_MEMORY_SIZE,"the AGI plane must fit in graphics memory");
 static_assert(AGI_PLANE_SIZE == AGIPIC_TAILLE,"group 39 and the decoder must agree on the plane size");
+
+#define AGI_FILL_CAPACITY	2048															// Fill stack points (deepest seen : 62 on 20 000 random streams)
+static_assert(AGI_PLANE_SIZE + 2 * AGI_FILL_CAPACITY <= GFX_MEMORY_SIZE,"the fill stack must fit after the AGI plane");
 
 static uint32_t agiLastDuration = 0;
 
@@ -54,7 +59,9 @@ static uint32_t _AGIMicros(void) {
 uint8_t AGIDrawPicture(uint16_t address,uint16_t length,uint8_t flags) {
 	if (length == 0 || (uint32_t)address + length > MEMORY_SIZE) return AGI_ERR_PARAM;
 	uint32_t start = _AGIMicros();
-	int r = agipic_decoder(cpuMemory + address,length,gfxObjectMemory,flags & 1,NULL);
+	uint8_t *stack = gfxObjectMemory + AGI_PLANE_SIZE;
+	int r = agipic_decoder_pile(cpuMemory + address,length,gfxObjectMemory,flags & 1,NULL,
+								stack,stack + AGI_FILL_CAPACITY,AGI_FILL_CAPACITY);
 	agiLastDuration = _AGIMicros() - start;
 	return (r == 0) ? AGI_ERR_OK : AGI_ERR_FILL;
 }

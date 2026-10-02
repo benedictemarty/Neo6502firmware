@@ -51,10 +51,23 @@ typedef struct {
  * `effacer` non nul : le plan est d'abord rempli avec AGIPIC_FOND.
  * `stats` peut etre NULL.
  * Retour : 0, ou -1 si la pile de remplissage est epuisee.
- * Non reentrant (la pile de remplissage est statique).
+ * Non reentrant (la pile de remplissage est statique). Absent si
+ * AGIPIC_PILE vaut 0.
  */
+#if AGIPIC_PILE > 0
 int agipic_decoder(const uint8_t *donnees, size_t lg, uint8_t *plan,
                    int effacer, agipic_stats *stats);
+#endif
+
+/*
+ * Meme decodage avec une pile de remplissage fournie par l'appelant :
+ * pile_x et pile_y de pile_cap octets chacun (un element = un point).
+ * Retour -1 si pile_x ou pile_y est NULL, si pile_cap vaut 0, ou si la pile
+ * deborde. Reentrant si chaque appel a sa propre pile.
+ */
+int agipic_decoder_pile(const uint8_t *donnees, size_t lg, uint8_t *plan,
+                        int effacer, agipic_stats *stats,
+                        uint8_t *pile_x, uint8_t *pile_y, size_t pile_cap);
 
 #ifdef __cplusplus
 }

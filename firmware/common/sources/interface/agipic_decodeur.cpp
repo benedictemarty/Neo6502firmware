@@ -16,10 +16,11 @@
  * modulo par une valeur variable (le trace de segment utilise un
  * accumulateur), tables en static const, compilable en C99 et en C++17.
  */
-/* Intégration Trinity (T-107) : fichier repris tel quel de Neo6502AGI
- * tools/agipic/agipic.c, seuls changent les chemins d'inclusion et la taille
- * de la pile de remplissage (512 points, 1 Ko de RAM statique). */
-#define AGIPIC_PILE 512
+/* Intégration Trinity (T-107, T-108) : fichier repris tel quel de Neo6502AGI
+ * tools/agipic/agipic.c (35badbd), seuls changent les chemins d'inclusion et
+ * AGIPIC_PILE = 0 : pas de pile statique, la pile est fournie par agipic.cpp
+ * (agipic_decoder_pile, dans gfxObjectMemory après le plan). */
+#define AGIPIC_PILE 0
 
 #include "interface/agipic_decodeur.h"
 
@@ -43,11 +44,17 @@ typedef struct {
     uint8_t motif;         /* octet de motif (0xF9) */
     uint8_t num_motif;     /* numero de motif (splatter) */
     agipic_stats *st;
+    uint8_t *pile_x;       /* pile du remplissage : un element = (x, y) */
+    uint8_t *pile_y;
+    size_t pile_cap;       /* nombre d'elements */
 } contexte;
 
-/* Pile du remplissage : un element = (x, y) sur deux octets. */
-static uint8_t pile_x[AGIPIC_PILE];
-static uint8_t pile_y[AGIPIC_PILE];
+#if AGIPIC_PILE > 0
+/* Pile statique de agipic_decoder (AGIPIC_PILE = 0 : pas de pile statique,
+ * seul agipic_decoder_pile est disponible). */
+static uint8_t pile_x_statique[AGIPIC_PILE];
+static uint8_t pile_y_statique[AGIPIC_PILE];
+#endif
 
 /* Lecture d'un octet ; au-dela de la fin du flux : 0xFF. */
 static uint8_t lire(contexte *c)
@@ -242,16 +249,16 @@ static int remplir(contexte *c, int gx, int gy)
 
     if (mode == 0 || gx >= AGIPIC_LARGEUR || gy >= AGIPIC_HAUTEUR)
         return 0;
-    pile_x[0] = (uint8_t)gx;
-    pile_y[0] = (uint8_t)gy;
+    c->pile_x[0] = (uint8_t)gx;
+    c->pile_y[0] = (uint8_t)gy;
     sp = 1;
     if (c->st->pile_max < 1) c->st->pile_max = 1;
 
     while (sp > 0) {
         int x, y, g, d, i, k;
         sp--;
-        x = pile_x[sp];
-        y = pile_y[sp];
+        x = c->pile_x[sp];
+        y = c->pile_y[sp];
         if (!remplissable(c, mode, x, y))
             continue;
         /* etendre l'intervalle horizontal */
@@ -273,10 +280,10 @@ static int remplir(contexte *c, int gx, int gy)
             for (i = g; i <= d; i++) {
                 int r = remplissable(c, mode, i, ny);
                 if (r && !avant) {
-                    if (sp >= AGIPIC_PILE)
+                    if (sp >= c->pile_cap)
                         return -1;
-                    pile_x[sp] = (uint8_t)i;
-                    pile_y[sp] = (uint8_t)ny;
+                    c->pile_x[sp] = (uint8_t)i;
+                    c->pile_y[sp] = (uint8_t)ny;
                     sp++;
                     if (sp > c->st->pile_max) c->st->pile_max = sp;
                 }
@@ -358,18 +365,34 @@ static void cmd_pinceaux(contexte *c)
 /* Boucle principale                                                         */
 /* ------------------------------------------------------------------------ */
 
+#if AGIPIC_PILE > 0
 int agipic_decoder(const uint8_t *donnees, size_t lg, uint8_t *plan,
                    int effacer, agipic_stats *stats)
+{
+    return agipic_decoder_pile(donnees, lg, plan, effacer, stats,
+                               pile_x_statique, pile_y_statique, AGIPIC_PILE);
+}
+#endif
+
+int agipic_decoder_pile(const uint8_t *donnees, size_t lg, uint8_t *plan,
+                        int effacer, agipic_stats *stats,
+                        uint8_t *pile_x, uint8_t *pile_y, size_t pile_cap)
 {
     contexte c;
     agipic_stats local;
     int ret = 0;
+
+    if (pile_x == NULL || pile_y == NULL || pile_cap == 0)
+        return -1;
 
     memset(&local, 0, sizeof local);
     c.donnees = donnees;
     c.lg = (donnees != NULL) ? lg : 0;
     c.pos = 0;
     c.plan = plan;
+    c.pile_x = pile_x;
+    c.pile_y = pile_y;
+    c.pile_cap = pile_cap;
     c.vis_actif = 0;
     c.prio_actif = 0;
     c.vis_couleur = 15;
