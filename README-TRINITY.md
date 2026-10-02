@@ -42,6 +42,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.70** (2026-10-02) — **T-104 : 4 Ko de RAM regagnés (FatFs en mode « tiny »).** `FF_FS_TINY` = 1 : les huit
+  descripteurs de fichier n'ont plus chacun leur tampon de secteur de 512 o, ils partagent la fenêtre de leur volume.
+  RAM 237 000 → **232 904** (marge sous `RAM_LIMIT` 60 → 4 156 o ; `fileHandles` 4 416 → 320 o). Mesuré sur carte
+  avant livraison (branche, même carte, même clé, 2026-10-02) : lecture séquentielle 898 Ko/s contre 893 ; copie de
+  256 Ko (deux fichiers en alternance) 6,4 / 8,2 s contre 6,4 / 6,8 s, avec le même nombre de lectures disque (440) ;
+  tests API sur carte 18/20, mêmes deux écarts d'état. `make test-api` 28/28, toolbox 14/14, `test-boot` 8/8,
+  `test-snd` OK, `test-coeur1` OK.
+
 - **0.16.69** (2026-10-01) — **T-105 : plus de `printf` de débogage sur la carte.** La sortie standard est désactivée
   dans le firmware, mais 12,2 (`BLTSimpleCopy`), le chargeur de programmes (`fileinterface.cpp`, une dizaine par
   chargement), `mos.cpp` et l'éditeur de ligne (`EPRINTF`, 12 traces) mettaient quand même chaque message en forme, sur
