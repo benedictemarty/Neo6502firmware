@@ -1,13 +1,15 @@
 # Sprites en mode 0 — fonctionnement réel (T-117)
 
-Lu dans les sources de Trinity 0.16.72 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
-`tilemap.cpp`, `blitter.cpp`, `console.cpp`), qui reprennent ici le code amont sans changement de comportement.
+Lu dans les sources de Trinity 0.16.73 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
+`tilemap.cpp`, `blitter.cpp`, `console.cpp`). Tout y est le comportement du code amont, sauf le redessin forcé
+(§ 3), ajouté par Trinity 0.16.73.
 Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
-Ce document décrit l'existant ; les améliorations proposées sont T-111 à T-116 et T-118 (`docs/BACKLOG.md`).
+Ce document décrit l'existant ; les améliorations proposées sont T-111 à T-113, T-115, T-116 et T-118 (`docs/BACKLOG.md`).
 
 Les points 2 à 4 sont vérifiés dans l'émulateur `neo` par `tests/api/sprmode0.asm` (un pixel relu après chaque
-opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin, contournement par l'ancre,
-cible au format 4). Non vérifié sur la carte.
+opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin avec l'ancre 7,
+contournement par l'ancre, cible au format 4, redessin forcé, redessin systématique avec l'ancre 0). Non vérifié sur
+la carte.
 
 ## 1. Une seule mémoire, deux couches
 
@@ -46,27 +48,42 @@ exclusif au pixel entier (`_SPXORDrawPacked`), exact sur fond noir seulement.
 ## 3. Quand `SPRUpdate` (6,2) redessine
 
 Paramètres : `[0]` numéro (0–127), `[1..2]` x, `[3..4]` y, `[5]` image et taille, `[6]` retournement (bit 0 : x,
-bit 1 : y), `[7]` ancre (0–9). La valeur `$80` dans `[5]`, `[6]` ou `[7]`, ou `$80` dans l'octet haut de x, veut
-dire « inchangé ».
+bit 1 : y), `[7]` ancre (0–9, bit 6 : forcer, voir plus bas). La valeur `$80` dans `[5]`, `[6]` ou `[7]`, ou `$80`
+dans l'octet haut de x, veut dire « inchangé ».
 
 Le sprite n'est effacé et redessiné que si **au moins un** de ces éléments change :
 
-- la position (x **ou** y différent de la dernière position reçue) ;
+- la position ;
 - l'octet image et taille ;
 - le retournement ;
 - l'ancre ;
-- ou si c'est le sprite de la tortue.
+- ou si c'est le sprite de la tortue ;
+- ou, depuis Trinity 0.16.73, si le bit « forcer » est mis.
 
-Sinon l'appel ne fait **rien**. En particulier :
+**Piège de la position** : le firmware compare le x et le y reçus au **coin haut gauche** du sprite, calculé avec
+l'ancre. Les deux ne coïncident que pour l'**ancre 7** (haut gauche). Avec toute autre ancre, chaque appel qui donne
+une position compte comme un changement : le sprite est toujours redessiné, et redevient visible après 6,3.
+
+Avec l'ancre 7, ou sans position (`$80` dans l'octet haut de x), un appel où rien ne change ne fait **rien** :
 
 - **Une image réécrite en place** dans la RAM graphique n'est pas reprise : le numéro d'image n'a pas changé.
-- **Après 6,3 (masquer)**, le sprite est marqué invisible. Seul un changement de **position** le rend de nouveau
+- **Après 6,3 (masquer)**, le sprite est marqué invisible. Seul un changement de position le rend de nouveau
   visible (`isVisible` n'est remis à vrai que dans la branche « position changée »). Le réafficher au même endroit
   ne fait rien, même avec une autre image : l'image est enregistrée mais le sprite reste caché.
 - Contournement connu (L'Aigle d'Or) : changer l'ancre entre deux valeurs équivalentes, par exemple 0 (centre) et
   7 (coin haut gauche) en décalant les coordonnées d'une demi-taille (8 ou 16). Le sprite reste au même endroit à
-  l'écran, mais l'ancre **et** la position reçue changent : il est redessiné, et redevient visible après 6,3.
-  Proposition : T-114.
+  l'écran, mais la position reçue diffère du coin haut gauche : il est redessiné, et redevient visible après 6,3.
+
+**Forcer le redessin (Trinity 0.16.73, T-114)** : le bit 6 de l'octet d'ancre (`$40`) force l'effacement et le
+redessin, même si rien n'a changé. Le reste de l'octet est l'ancre : `$47` = ancre 7 et forcer, **`$C0` = forcer
+sans changer l'ancre**. Forcer relit l'adresse de l'image dans la RAM graphique, et rend visible un sprite masqué
+par 6,3, à sa dernière position, s'il en a déjà reçu une. Sur un firmware sans T-114 (amont, Trinity 0.16.72 ou
+plus ancien), le bit 6 rend une ancre supérieure à 9 : erreur 1, sprite effacé et pas redessiné. Un programme qui doit
+tourner sur les deux peut tester cette erreur.
+
+Pour **changer l'image d'un sprite en place** : 6,3 (masquer) **d'abord**, puis réécrire l'image, puis 6,2 avec
+`$C0`. Réécrire l'image d'un sprite affiché fausse l'effacement : le OU exclusif retire la nouvelle image alors que
+c'est l'ancienne qui est à l'écran.
 
 Ancres (comme un pavé numérique) : 0 et 5 = centre ; 7, 8, 9 = haut gauche, haut milieu, haut droite ;
 4, 6 = milieu gauche, milieu droite ; 1, 2, 3 = bas gauche, bas milieu, bas droite. Une ancre supérieure à 9 rend

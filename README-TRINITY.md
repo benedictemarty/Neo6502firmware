@@ -43,6 +43,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.73** (2026-10-07) — **T-114 : forcer le redessin d'un sprite (demande Neo6502AigleDor).** Dans 6,2, le bit 6
+  de l'octet d'ancre (`$40`) force l'effacement et le redessin même si rien n'a changé ; le reste de l'octet est l'ancre
+  (`$C0` = forcer sans changer l'ancre). Forcer relit l'adresse de l'image (image réécrite en place) et rend visible un
+  sprite masqué par 6,3 à sa dernière position. Avant : `$40` et plus donnaient l'erreur 1 (ancre > 9), donc aucun
+  programme existant n'est changé. Documentation `docs/SPRITES-MODE0.md` § 3, qui corrige aussi un point de la
+  version précédente : le firmware compare la position reçue au coin haut gauche, donc seule l'ancre 7 peut être
+  « inchangée » ; avec une autre ancre, tout appel avec une position redessine. Test `sprmode0` étendu à 11 cas
+  (contre-essai : H, I et J échouent avec l'erreur 1 sur le `neo` de la 0.16.72). `make test-api` 30/30, toolbox
+  14/14, `test-boot` 8/8. Aucune RAM ajoutée. NeoDOS 0.32.1. Non essayé sur carte.
+
 - **0.16.72** (2026-10-03) — **T-108 : la pile de remplissage AGI quitte la RAM statique.** Le décodeur (repris de
   Neo6502AGI `35badbd`, `agipic_decoder_pile`, `AGIPIC_PILE` = 0) reçoit sa pile de l'appelant : 39,1 lui donne
   2 × 2 048 points dans `gfxObjectMemory` juste après le plan (octets 26 880 à 30 975, `static_assert`), mémoire

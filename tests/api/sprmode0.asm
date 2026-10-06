@@ -10,6 +10,11 @@
 ;   E 6,2 ancre 0 (centre) en (108,208) : même place         -> 10 (ancre et position changent : redessiné)
 ;   F 12,3 copie $07 vers l'octet, cible au format 4         -> 17 (quartet haut conservé)
 ;   G 6,3 masque le sprite                                   -> 07 (effacement propre)
+;   T-114, bit 6 de l'octet d'ancre = forcer le redessin :
+;   H 6,2 mêmes paramètres qu'en A, ancre $47 (7 + forcer)   -> 17 (redessiné et de nouveau visible)
+;   I 6,3 puis 6,2 « forcer seul » (x $8000, $80, $80, $C0)  -> 17 (réaffiché à sa place)
+;   J 6,3, image réécrite en place (couleur 2), forcer seul  -> 27 (image relue)
+;   K 6,3 puis 6,2 ancre 0 en (108,208), sans forcer         -> 27 (ancre autre que 7 : toujours redessiné)
 ; Auteur : bmarty <bmarty@mailo.com>
 
 NEO = 0
@@ -36,6 +41,8 @@ start:
   stz logLen
   lda #$20
   sta logLen+1
+  lda #12                   ; écran effacé : la console reste en haut, loin du pixel relu (sinon son
+  jsr wchar                 ; défilement déplace aussi les 4 bits bas de la ligne 200)
   ldx #0                    ; image : couleur 1 sur tous les pixels
   lda #$11
 i1:
@@ -109,6 +116,44 @@ f1:
 
   jsr masquer               ; G
   lda #'G'
+  jsr ligne
+
+  ldx #<spriteH             ; H
+  ldy #>spriteH
+  jsr sprite
+  lda #'H'
+  jsr ligne
+
+  jsr masquer               ; I
+  ldx #<forcer
+  ldy #>forcer
+  jsr sprite
+  lda #'I'
+  jsr ligne
+
+  jsr masquer               ; J : masquer AVANT de réécrire l'image (effacement par OU exclusif)
+  ldx #0
+  lda #$22
+j1:
+  sta IMG,x
+  inx
+  cpx #128
+  bne j1
+  lda #<IMG
+  ldx #>IMG
+  ldy #128
+  jsr versgfx1
+  ldx #<forcer
+  ldy #>forcer
+  jsr sprite
+  lda #'J'
+  jsr ligne
+
+  jsr masquer               ; K
+  ldx #<spriteE
+  ldy #>spriteE
+  jsr sprite
+  lda #'K'
   jsr ligne
 
   ldx #<sfin
@@ -227,6 +272,8 @@ entete: .byte 1, 0, 1, 0    ; graphismes présents, 0 tuile, 1 sprite 16 x 16, 0
 ; 6,2 : numéro, x, y, image, retournement, ancre
 spriteA: .byte 0, <100, >100, <200, >200, 0, 0, 7
 spriteE: .byte 0, <108, >108, <208, >208, 0, 0, 0
+spriteH: .byte 0, <100, >100, <200, >200, 0, 0, $47
+forcer:  .byte 0, $00, $80, 0, 0, $80, $80, $C0
 
 ; F : source OCT (page 0, pas 1, format 0, 1 ligne de 1 octet) ; cible PIX (page $80, pas 320, format 4)
 zonesF: .byte <OCT,>OCT,0,0, 1,0, 0,0,0, 1, 1,0,   <PIX,>PIX,$80,0, <320,>320, 4,0,0,0,0,0

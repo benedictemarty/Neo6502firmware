@@ -224,7 +224,12 @@ int SPRUpdate(uint8_t *paramData) {
 	uint8_t  imageSize = paramData[5];
 	uint8_t flip = paramData[6];
 	uint8_t anchor = paramData[7];
-	
+	//		T-114 (Neo6502AigleDor) : bit 6 of the anchor byte forces the redraw, the rest is the anchor
+	//		($80 unchanged, so $C0 = force only). The image address is looked up again (image rewritten
+	//		in place, header changed) and a sprite hidden by 6,3 becomes visible where it was.
+	bool forced = (anchor & 0x40) != 0;
+	anchor &= ~0x40;
+
 	SPRITE_INTERNAL *p = &sprites[spriteID];  									// Pointer to sprite structures
 
 	bool xyChanged = ((x & 0xFF00) != 0x8000) && (p->x != x || p->y != y); 		// Check to see if elements changed.
@@ -232,11 +237,14 @@ int SPRUpdate(uint8_t *paramData) {
 	bool flipChanged = (flip != 0x80) && (flip != p->flip);
 	bool anchorChanged = (anchor != 0x80) && (anchor != p->anchor);
 	bool isTurtle = (spriteID == turtleSpriteID);
+	if (forced && !isChanged && p->imageSize != 0xFF) {  						// Same image : find it again
+		imageSize = p->imageSize;isChanged = true;
+	}
 
 	//printf("Sprite #%d to (%d,%d) ImSize:%x Flip:%x Anchor:%d %d %d %d %d @ %d,%d %d:%d\n",
 	// 	*paramData,x,y,paramData[5],paramData[6],paramData[7],xyChanged,isChanged,flipChanged,anchorChanged,p->x,p->y,p->isVisible,p->isDrawn);
 
-	if (xyChanged || isChanged || flipChanged || anchorChanged || isTurtle) {  	// Some change made.
+	if (xyChanged || isChanged || flipChanged || anchorChanged || isTurtle || forced) {  // Some change made.
 		if (p->isDrawn) {  														// Erase if currently drawn
 			SPRSetupAction(&saRemove,p);
 			SPRPHYErase(&saRemove);
@@ -272,6 +280,10 @@ int SPRUpdate(uint8_t *paramData) {
 			p->xc = x;p->yc = y;  												// Remember centre position
 			p->isVisible = true;
 			//printf("changed %d %d %d\n",p->x,p->y,p->isVisible);
+		}
+
+		if (forced && p->imageSize != 0xFF && (p->xc != -1 || p->yc != -1)) {  	// T-114 : shown again where it was
+			p->isVisible = true;
 		}
 
 		if (p->isVisible) {  													// Redraw if possible.
@@ -314,5 +326,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //		23/01/24 	Rationalised SPRITE_ACTION initialisation code.
 //					Added turtle rendering on demand code.
 //		18/03/24 	Sprite collision requires visible sprites.
+//		07/10/26 	T-114 : anchor bit 6 forces the redraw (bmarty).
 //
 // ***************************************************************************************
