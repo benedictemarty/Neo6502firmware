@@ -43,6 +43,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.74** (2026-10-07) — **T-111 : sprites opaques avec priorité (demande Neo6502AigleDor, appuyée par
+  Neo6502Bagman).** Nouvelle fonction **6,6 Sprite Draw Mode** : 0 = OU exclusif (amont, défaut), 1 = opaque. En mode
+  opaque, la couleur 0 d'une image est transparente, le sprite de plus petit numéro est devant, et dessin comme
+  effacement passent par la zone du sprite (4 bits hauts remis à 0, puis les sprites qui la touchent redessinés de
+  l'arrière vers l'avant) : plus de mélange aux chevauchements, plus de « négatif » après une copie 12,2. Le mode est
+  gardé par 6,1, remis à 0 par 1,0 et au démarrage ; sans effet dans les modes empaquetés. Documentation de 6,2
+  complétée (bit « forcer » de la 0.16.73) dans `group6_sprites.inc`. `docs/SPRITES-MODE0.md` § 2 bis. Test `sprmode1`
+  (10 cas ; contre-essai : C et G échouent sur le `neo` de la 0.16.73). `make test-api` 31/31, toolbox 14/14,
+  `test-boot` 8/8, `test-snd` OK. Non essayé sur carte, coût non mesuré.
+- 0.16.73 : `test-coeur1` et `test-snd` passés aussi après la compilation (non notés dans son entrée, écrite avant).
+
 - **0.16.73** (2026-10-07) — **T-114 : forcer le redessin d'un sprite (demande Neo6502AigleDor).** Dans 6,2, le bit 6
   de l'octet d'ancre (`$40`) force l'effacement et le redessin même si rien n'a changé ; le reste de l'octet est l'ancre
   (`$C0` = forcer sans changer l'ancre). Forcer relit l'adresse de l'image (image réécrite en place) et rend visible un

@@ -151,8 +151,38 @@ void SPRPHYDraw(SPRITE_ACTION *s) {
 
 // ***************************************************************************************
 //
+//		T-111 (Neo6502AigleDor) : opaque drawing, 8 bit modes. Writes the sprite colour into the high
+//		nibble of every pixel where the image is not 0, inside the clip rectangle (x0,y0)-(x1,y1)
+//		inclusive. The caller clears the area and draws the sprites back to front (sprites.cpp).
+//
+// ***************************************************************************************
+
+void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1) {
+	if (x0 < 0) x0 = 0;
+	if (y0 < 0) y0 = 0;
+	if (x1 >= gMode.xGSize) x1 = gMode.xGSize-1;
+	if (y1 >= gMode.yGSize) y1 = gMode.yGSize-1;
+	int xSize = s->xSize,ySize = s->ySize;
+	int ya = (s->y > y0) ? s->y : y0,yb = (s->y+ySize-1 < y1) ? s->y+ySize-1 : y1;
+	int xa = (s->x > x0) ? s->x : x0,xb = (s->x+xSize-1 < x1) ? s->x+xSize-1 : x1;
+	for (int y = ya;y <= yb;y++) {
+		int yImg = (s->flip & 2) ? ySize-1-(y-s->y) : y-s->y;
+		const uint8_t *line = s->image + yImg * xSize / 2;
+		uint8_t *display = gMode.graphicsMemory + y * gMode.xGSize + xa;
+		for (int x = xa;x <= xb;x++,display++) {
+			int xImg = (s->flip & 1) ? xSize-1-(x-s->x) : x-s->x;
+			uint8_t p = line[xImg >> 1];
+			p = (xImg & 1) ? (p & 0x0F) : (p >> 4);
+			if (p != 0) *display = (*display & 0x0F) | (p << 4);
+		}
+	}
+}
+
+// ***************************************************************************************
+//
 //		Date 		Revision
 //		==== 		========
 //		15/01/24 	Fixes for better sprite clipping
+//		07/10/26 	T-111 : opaque drawing (bmarty).
 //
 // ***************************************************************************************

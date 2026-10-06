@@ -48,6 +48,8 @@ void SPRScreenCleared(void);  													// Packed modes : drawn sprites were 
 
 void SPRPHYErase(SPRITE_ACTION *s); 											// Sprite draw/erase routines
 void SPRPHYDraw(SPRITE_ACTION *s);
+void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1); 		// T-111 : opaque, clipped
+int SPRSetDrawMode(uint8_t mode); 												// T-111 : 0 XOR (default), 1 opaque
 
 #endif
 

@@ -16,6 +16,7 @@ static int16_t spriteVisibleCount; 												// How many currently visible ?
 static int16_t turtleSpriteID = -1; 											// Sprite allocated to rotation
 static int16_t turtleRotation = 0; 												// Rotation of turtle.
 static int16_t turtleColour = 7; 												// Turtle drawing colour.
+static uint8_t drawMode = 0; 													// T-111 : 0 XOR (upstream), 1 opaque
 
 // ***************************************************************************************
 //
@@ -27,6 +28,7 @@ static SPRITE_INTERNAL sprites[MAX_SPRITES];
 static uint8_t turtleImage[16*16/2];
 static SPRITE_ACTION saHide;
 static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p);
+static void _SPRUndraw(SPRITE_INTERNAL *p);
 
 // ***************************************************************************************
 //
@@ -101,7 +103,7 @@ void SPRResetAll(void) {
 void SPRReset(void) {
 	if (GFXIsPackedMode()) {  													// No sprite layer : erase (XOR) what is drawn.
 		for (int i = 0;i < MAX_SPRITES;i++) {
-			if (sprites[i].isDrawn) { SPRSetupAction(&saHide,&sprites[i]);SPRPHYErase(&saHide); }
+			if (sprites[i].isDrawn) _SPRUndraw(&sprites[i]);
 		}
 		spriteVisibleCount = 0;
 		SPRResetAll();
@@ -154,6 +156,77 @@ static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p) {
 
 // ***************************************************************************************
 //
+//		T-111 (Neo6502AigleDor) : opaque sprites, 8 bit modes only. An area is redrawn by
+//		clearing its high nibbles (the sprite layer) and drawing every drawn sprite that
+//		touches it, highest number first : the lowest number ends in front, colour 0 of
+//		an image stays transparent. Erasing no longer depends on what is in the layer.
+//
+// ***************************************************************************************
+
+static bool _SPROpaque(void) {
+	return drawMode == 1 && !GFXIsPackedMode();
+}
+
+static void _SPRRefresh(int x0,int y0,int x1,int y1) {
+	if (x0 < 0) x0 = 0;
+	if (y0 < 0) y0 = 0;
+	if (x1 >= gMode.xGSize) x1 = gMode.xGSize-1;
+	if (y1 >= gMode.yGSize) y1 = gMode.yGSize-1;
+	if (x0 > x1 || y0 > y1) return;
+	for (int y = y0;y <= y1;y++) {  											// Clear the layer in the area
+		uint8_t *d = gMode.graphicsMemory + y * gMode.xGSize + x0;
+		for (int x = x0;x <= x1;x++) *d++ &= 0x0F;
+	}
+	SPRITE_ACTION sa;
+	for (int i = MAX_SPRITES-1;i >= 0;i--) {  									// Back to front
+		SPRITE_INTERNAL *q = &sprites[i];
+		if (!q->isDrawn) continue;
+		if (q->x > x1 || q->y > y1 || q->x+q->xSize-1 < x0 || q->y+q->ySize-1 < y0) continue;
+		SPRSetupAction(&sa,q);
+		SPRPHYDrawOpaque(&sa,x0,y0,x1,y1);
+	}
+}
+
+static void _SPRUndraw(SPRITE_INTERNAL *p) {  									// Erase a drawn sprite
+	p->isDrawn = false;
+	spriteVisibleCount--;
+	if (_SPROpaque()) {
+		_SPRRefresh(p->x,p->y,p->x+p->xSize-1,p->y+p->ySize-1);
+	} else {
+		SPRSetupAction(&saHide,p);
+		SPRPHYErase(&saHide);
+	}
+}
+
+static void _SPRDraw(SPRITE_INTERNAL *p) {  									// Draw a sprite not drawn
+	p->isDrawn = true;
+	spriteVisibleCount++;
+	if (_SPROpaque()) {
+		_SPRRefresh(p->x,p->y,p->x+p->xSize-1,p->y+p->ySize-1);
+	} else {
+		SPRSetupAction(&saHide,p);
+		SPRPHYDraw(&saHide);
+	}
+}
+
+//		6,6 : the drawn sprites are erased the old way and drawn back the new way.
+int SPRSetDrawMode(uint8_t mode) {
+	if (mode > 1) return 1;
+	if (mode == drawMode) return 0;
+	bool wasDrawn[MAX_SPRITES];
+	for (int i = 0;i < MAX_SPRITES;i++) {
+		wasDrawn[i] = sprites[i].isDrawn;
+		if (wasDrawn[i]) _SPRUndraw(&sprites[i]);
+	}
+	drawMode = mode;
+	for (int i = MAX_SPRITES-1;i >= 0;i--) {
+		if (wasDrawn[i]) _SPRDraw(&sprites[i]);
+	}
+	return 0;
+}
+
+// ***************************************************************************************
+//
 //									Hide a sprite
 //
 // ***************************************************************************************
@@ -162,12 +235,7 @@ void SPRHide(uint8_t *paramData) {
 	int spriteID = *paramData;  												// Sprite ID
 	if (spriteID < MAX_SPRITES) {  												// Legit ?
 		SPRITE_INTERNAL *s = &sprites[spriteID];
-		if (s->isDrawn) {  														// If drawn, erase it and mark not drawn.
-			SPRSetupAction(&saHide,s);
-			SPRPHYErase(&saHide);
-			sprites[spriteID].isDrawn = false;
-			spriteVisibleCount--;
-		}
+		if (s->isDrawn) _SPRUndraw(s);  										// If drawn, erase it and mark not drawn.
 		sprites[spriteID].isVisible = false;  									// Mark not visible.
 	}
 }
@@ -212,7 +280,6 @@ static uint8_t *SPRUnpackTurtleGraphic(uint16_t angle) {
 //
 // ***************************************************************************************
 
-static SPRITE_ACTION saRemove,saDraw;
 
 int SPRUpdate(uint8_t *paramData) {
 
@@ -245,12 +312,7 @@ int SPRUpdate(uint8_t *paramData) {
 	// 	*paramData,x,y,paramData[5],paramData[6],paramData[7],xyChanged,isChanged,flipChanged,anchorChanged,p->x,p->y,p->isVisible,p->isDrawn);
 
 	if (xyChanged || isChanged || flipChanged || anchorChanged || isTurtle || forced) {  // Some change made.
-		if (p->isDrawn) {  														// Erase if currently drawn
-			SPRSetupAction(&saRemove,p);
-			SPRPHYErase(&saRemove);
-			spriteVisibleCount--;
-			p->isDrawn = false;
-		}
+		if (p->isDrawn) _SPRUndraw(p);  										// Erase if currently drawn
 
 		if (flipChanged) { 														// Flip has changed
 			p->flip = flip; 
@@ -286,12 +348,7 @@ int SPRUpdate(uint8_t *paramData) {
 			p->isVisible = true;
 		}
 
-		if (p->isVisible) {  													// Redraw if possible.
-			SPRSetupAction(&saDraw,p);
-			SPRPHYDraw(&saDraw);
-			spriteVisibleCount++;
-			p->isDrawn = true;  												// And mark as drawn.
-		}
+		if (p->isVisible) _SPRDraw(p);  										// Redraw if possible, mark as drawn.
 	}
 
 	return 0; 
@@ -327,5 +384,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //					Added turtle rendering on demand code.
 //		18/03/24 	Sprite collision requires visible sprites.
 //		07/10/26 	T-114 : anchor bit 6 forces the redraw (bmarty).
+//		07/10/26 	T-111 : opaque drawing mode with priority, 6,6 (bmarty).
 //
 // ***************************************************************************************

@@ -1,15 +1,15 @@
 # Sprites en mode 0 — fonctionnement réel (T-117)
 
-Lu dans les sources de Trinity 0.16.73 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
+Lu dans les sources de Trinity 0.16.74 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
 `tilemap.cpp`, `blitter.cpp`, `console.cpp`). Tout y est le comportement du code amont, sauf le redessin forcé
-(§ 3), ajouté par Trinity 0.16.73.
+(§ 3, Trinity 0.16.73) et le mode opaque (§ 2 bis, Trinity 0.16.74).
 Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
-Ce document décrit l'existant ; les améliorations proposées sont T-111 à T-113, T-115, T-116 et T-118 (`docs/BACKLOG.md`).
+Ce document décrit l'existant ; les améliorations proposées sont T-112, T-113, T-115, T-116 et T-118 (`docs/BACKLOG.md`).
 
 Les points 2 à 4 sont vérifiés dans l'émulateur `neo` par `tests/api/sprmode0.asm` (un pixel relu après chaque
 opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin avec l'ancre 7,
 contournement par l'ancre, cible au format 4, redessin forcé, redessin systématique avec l'ancre 0). Non vérifié sur
-la carte.
+la carte. Le mode opaque est vérifié par `tests/api/sprmode1.asm`.
 
 ## 1. Une seule mémoire, deux couches
 
@@ -37,13 +37,34 @@ reçoit `octet ^= couleur << 4`. Effacer un sprite, c'est le redessiner (`SPRPHY
 Conséquences :
 
 - **Deux sprites qui se chevauchent mélangent leurs couleurs** (OU exclusif des deux), sans ordre d'affichage : le
-  numéro du sprite ne donne aucune priorité. Proposition : T-111.
+  numéro du sprite ne donne aucune priorité. Le mode opaque (§ 2 bis) règle ce point.
 - **L'effacement suppose que les 4 bits hauts n'ont pas bougé** depuis le dessin. Si quelque chose les a réécrits
   (section 4), effacer le sprite y fait apparaître son « négatif ».
 - Les 4 bits bas ne sont jamais touchés par un sprite.
 
 Dans les modes à pixels empaquetés (1 et 4 bits par pixel), il n'y a pas de couche : le sprite est combiné par OU
 exclusif au pixel entier (`_SPXORDrawPacked`), exact sur fond noir seulement.
+
+## 2 bis. Mode opaque (Trinity 0.16.74, T-111)
+
+**6,6** choisit le mode de dessin : `Parameter:0` = 0 pour le OU exclusif (amont, par défaut), 1 pour le mode
+opaque ; toute autre valeur rend l'erreur 1. Les sprites déjà affichés sont effacés à l'ancienne et redessinés dans
+le nouveau mode. 6,1 garde le mode ; une remise à zéro du système (1,0, démarrage) revient au OU exclusif. Les
+modes à pixels empaquetés (1 et 4 bits par pixel) ne sont pas concernés : ils restent en OU exclusif.
+
+En mode opaque :
+
+- le sprite **écrit** sa couleur dans les 4 bits hauts, et la couleur 0 de l'image reste **transparente** ;
+- le sprite de **plus petit numéro est devant** (le sprite 0 passe devant le sprite 1, comme sur C64 ou NES) ;
+- pour dessiner ou effacer un sprite, le firmware **remet à 0 les 4 bits hauts de son rectangle**, puis y redessine
+  tous les sprites affichés qui le touchent, du plus grand numéro au plus petit. L'effacement ne dépend donc plus de
+  ce qu'il y a dans la couche : après une copie 12,2 qui l'a écrasée, il n'y a plus de « négatif » ;
+- en contrepartie, ce que le programme aurait mis lui-même dans les 4 bits hauts (blitter au format 3, par exemple)
+  est effacé dans les rectangles des sprites qui bougent ;
+- coût : chaque changement redessine les sprites qui chevauchent l'ancienne et la nouvelle place, pixel par pixel ;
+  non mesuré sur la carte.
+
+Les couleurs restent celles du § 1 : 15 couleurs de sprite dans les 4 bits hauts, avec la palette par défaut.
 
 ## 3. Quand `SPRUpdate` (6,2) redessine
 
@@ -106,8 +127,9 @@ collision par la distance entre les points d'ancrage (sprites visibles seulement
 | Blitter 12,3, cible au format 4 (quartet bas) | conservés : seul le quartet bas est écrit |
 | Blitter 12,3, cible au format 3 (quartet haut) | réécrits : c'est la couche des sprites elle-même |
 
-Le firmware **ne sait pas** quand la couche a été écrasée : il croit toujours les sprites dessinés, et les efface
-par OU exclusif au prochain changement (section 2). Pour poser un fond par le blitter sous des sprites, utiliser
+Le firmware **ne sait pas** quand la couche a été écrasée : il croit toujours les sprites dessinés. En OU exclusif,
+il les efface au prochain changement en y laissant leur « négatif » (section 2) ; en mode opaque, l'effacement est
+propre, mais le sprite reste absent de l'écran jusqu'à son prochain redessin (6,2 avec `$C0` pour le forcer). Pour poser un fond par le blitter sous des sprites, utiliser
 une cible au **format 4** (quartet bas, valeurs 0–15) plutôt que 12,2. Proposition pour aller plus loin : T-112.
 
 ## 5. Les images : la RAM graphique (page `$90`)
