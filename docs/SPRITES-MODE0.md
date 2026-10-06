@@ -1,0 +1,120 @@
+# Sprites en mode 0 — fonctionnement réel (T-117)
+
+Lu dans les sources de Trinity 0.16.72 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
+`tilemap.cpp`, `blitter.cpp`, `console.cpp`), qui reprennent ici le code amont sans changement de comportement.
+Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
+Ce document décrit l'existant ; les améliorations proposées sont T-111 à T-116 et T-118 (`docs/BACKLOG.md`).
+
+Les points 2 à 4 sont vérifiés dans l'émulateur `neo` par `tests/api/sprmode0.asm` (un pixel relu après chaque
+opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin, contournement par l'ancre,
+cible au format 4). Non vérifié sur la carte.
+
+## 1. Une seule mémoire, deux couches
+
+Le mode 0 fait 320 × 240 pixels, **un octet par pixel**, dans la VRAM (page blitter `$80`). Il n'y a pas de couche
+de sprites séparée : l'octet de chaque pixel est partagé.
+
+| Bits | Contenu |
+|---|---|
+| 4 bits bas (`$0x`) | le fond : tracé (groupe 5), texte, tilemap |
+| 4 bits hauts (`$x0`) | les sprites |
+
+La palette par défaut (`GFXDefaultPalette`) donne aux index `$00`–`$0F` les 16 couleurs de base, et à tout index
+`$yx` avec `y ≠ 0` **la couleur `y`**, quelle que soit `x`. Résultat : là où un sprite a écrit, on voit la couleur
+du sprite ; ailleurs, le fond. Un programme peut changer ces 256 entrées par 5,32 (par exemple pour des effets de
+transparence), mais par défaut :
+
+- **le fond a 16 couleurs au plus** quand des sprites sont affichés ;
+- **un sprite a 15 couleurs** (1 à 15) ; la couleur 0 d'une image est transparente.
+
+## 2. Dessin par OU exclusif
+
+`_SPXORDrawForwardLine` / `_SPXORDrawBackwardLine` : pour chaque pixel non nul de l'image, l'octet de l'écran
+reçoit `octet ^= couleur << 4`. Effacer un sprite, c'est le redessiner (`SPRPHYErase` appelle `SPRPHYDraw`).
+
+Conséquences :
+
+- **Deux sprites qui se chevauchent mélangent leurs couleurs** (OU exclusif des deux), sans ordre d'affichage : le
+  numéro du sprite ne donne aucune priorité. Proposition : T-111.
+- **L'effacement suppose que les 4 bits hauts n'ont pas bougé** depuis le dessin. Si quelque chose les a réécrits
+  (section 4), effacer le sprite y fait apparaître son « négatif ».
+- Les 4 bits bas ne sont jamais touchés par un sprite.
+
+Dans les modes à pixels empaquetés (1 et 4 bits par pixel), il n'y a pas de couche : le sprite est combiné par OU
+exclusif au pixel entier (`_SPXORDrawPacked`), exact sur fond noir seulement.
+
+## 3. Quand `SPRUpdate` (6,2) redessine
+
+Paramètres : `[0]` numéro (0–127), `[1..2]` x, `[3..4]` y, `[5]` image et taille, `[6]` retournement (bit 0 : x,
+bit 1 : y), `[7]` ancre (0–9). La valeur `$80` dans `[5]`, `[6]` ou `[7]`, ou `$80` dans l'octet haut de x, veut
+dire « inchangé ».
+
+Le sprite n'est effacé et redessiné que si **au moins un** de ces éléments change :
+
+- la position (x **ou** y différent de la dernière position reçue) ;
+- l'octet image et taille ;
+- le retournement ;
+- l'ancre ;
+- ou si c'est le sprite de la tortue.
+
+Sinon l'appel ne fait **rien**. En particulier :
+
+- **Une image réécrite en place** dans la RAM graphique n'est pas reprise : le numéro d'image n'a pas changé.
+- **Après 6,3 (masquer)**, le sprite est marqué invisible. Seul un changement de **position** le rend de nouveau
+  visible (`isVisible` n'est remis à vrai que dans la branche « position changée »). Le réafficher au même endroit
+  ne fait rien, même avec une autre image : l'image est enregistrée mais le sprite reste caché.
+- Contournement connu (L'Aigle d'Or) : changer l'ancre entre deux valeurs équivalentes, par exemple 0 (centre) et
+  7 (coin haut gauche) en décalant les coordonnées d'une demi-taille (8 ou 16). Le sprite reste au même endroit à
+  l'écran, mais l'ancre **et** la position reçue changent : il est redessiné, et redevient visible après 6,3.
+  Proposition : T-114.
+
+Ancres (comme un pavé numérique) : 0 et 5 = centre ; 7, 8, 9 = haut gauche, haut milieu, haut droite ;
+4, 6 = milieu gauche, milieu droite ; 1, 2, 3 = bas gauche, bas milieu, bas droite. Une ancre supérieure à 9 rend
+l'erreur 1, un numéro d'image absent l'erreur 2. **Dans ces deux cas, le sprite a déjà été effacé** quand l'erreur
+est rendue.
+
+6,1 efface toute la couche (les 4 bits hauts de tous les pixels) et oublie tous les sprites ; 6,4 teste la
+collision par la distance entre les points d'ancrage (sprites visibles seulement) ; 6,5 rend la position de l'ancre.
+
+## 4. Ce qui conserve la couche des sprites, et ce qui l'écrase
+
+| Opération | 4 bits hauts |
+|---|---|
+| Tracé du groupe 5 (points, lignes, rectangles, images), **tant qu'au moins un sprite est affiché** | conservés (masque `| $F0`) ; la couleur de tracé doit alors rester dans `$00`–`$0F`, sinon elle s'ajoute par OU exclusif à la couche |
+| Même tracé **sans aucun sprite affiché** | écrasés par la couleur de tracé (octet entier, 256 couleurs possibles) |
+| Tilemap (5,35 / 5,8) | conservés : les tuiles n'écrivent que les 4 bits bas |
+| Effacement de l'écran (console) avec des sprites affichés | conservés : seuls les 4 bits bas sont remis à 0 |
+| Blitter 12,2 (copie simple, octets entiers) vers la VRAM | **écrasés** |
+| Blitter 12,3 (copie complexe) vers la VRAM, cible au format 0 (octet) | **écrasés** |
+| Blitter 12,3, cible au format 4 (quartet bas) | conservés : seul le quartet bas est écrit |
+| Blitter 12,3, cible au format 3 (quartet haut) | réécrits : c'est la couche des sprites elle-même |
+
+Le firmware **ne sait pas** quand la couche a été écrasée : il croit toujours les sprites dessinés, et les efface
+par OU exclusif au prochain changement (section 2). Pour poser un fond par le blitter sous des sprites, utiliser
+une cible au **format 4** (quartet bas, valeurs 0–15) plutôt que 12,2. Proposition pour aller plus loin : T-112.
+
+## 5. Les images : la RAM graphique (page `$90`)
+
+Les images de sprites et de tuiles vivent dans `gfxObjectMemory`, 32 Ko (`GFX_MEMORY_SIZE`), page blitter `$90`.
+On l'emplit par 3,2 (lire un fichier) à l'adresse `$FFFF`, ou par le blitter.
+
+En-tête de 256 octets :
+
+| Octet | Contenu |
+|---|---|
+| `[0]` | non nul = graphismes présents (`makeimg.py` de NeoBASIC écrit 1) ; à 0, l'affichage d'images (5,7) ne fait rien |
+| `[1]` | nombre de tuiles 16 × 16 |
+| `[2]` | nombre de sprites 16 × 16 |
+| `[3]` | nombre de sprites 32 × 32 |
+| `[4..255]` | non lus par le firmware |
+
+Puis, à partir de l'offset 256 et sans trou : les tuiles 16 × 16 (128 octets chacune), les sprites 16 × 16
+(128 octets), les sprites 32 × 32 (512 octets). Exemple vérifié : `graphics.gfx` de NeoBASIC commence par
+`01 08 06 05` et fait 256 + 8 × 128 + 6 × 128 + 5 × 512 = 4 608 octets.
+
+Format d'une image : 4 bits par pixel, deux pixels par octet, **pixel de gauche dans le quartet haut**, ligne par
+ligne de haut en bas, pixel 0 transparent.
+
+Dans 6,2, l'octet `[5]` vaut `numéro | $40` pour un 32 × 32, `numéro` pour un 16 × 16 : bits 0–5 = numéro, d'où
+**64 images au plus par taille**, et seulement ces deux tailles. Une image qui déborderait des 32 Ko est refusée
+(erreur 2). Propositions : T-113 (tailles libres, palette par sprite), T-116 (plus de RAM graphique).
