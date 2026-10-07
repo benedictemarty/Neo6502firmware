@@ -10,6 +10,10 @@
 ;                                               -> 80 80 80 80 88 88 88 88 89 8A 8B 8B 89 89 89 89
 ;   F refus : bpp 3, options 4, largeur 0, palette hors de sa page, carte hors de sa page, descripteur sur $FF00
 ;                                               -> 01 01 01 01 01 01
+;   Mode 2 (16 couleurs, deux pixels par octet : chemin empaqueté), sans palette, pixels 100-115 de la ligne 200 (5,33) :
+;   G options 0                                 -> 3 3 2 1 0 0 0 0 8 8 8 8 9 A B B
+;   H défilement y 1                            -> 1 x8 puis 9 x8
+;   I 0 transparent, défilement y 0             -> 3 3 2 1 1 1 1 1 9 9 9 9 9 A B B
 ; Auteur : bmarty <bmarty@mailo.com>
 
 NEO = 0
@@ -159,6 +163,39 @@ d1:
   jsr hex
   jsr cr
 
+  lda #2                    ; mode 2
+  sta API_PARAMETERS
+  lda #9
+  ldx #5
+  jsr api
+  ldx #0                    ; descripteur de base, sans palette
+d2:
+  lda base,x
+  sta DESC,x
+  inx
+  cpx #26
+  bne d2
+  lda #$FF
+  sta DESC+12
+  jsr draw                  ; G
+  lda #'G'
+  jsr ligne2
+  lda #1                    ; H : défilement y 1
+  sta DESC+16
+  jsr draw
+  lda #'H'
+  jsr ligne2
+  stz DESC+16               ; I : 0 transparent
+  lda #2
+  sta DESC+9
+  jsr draw
+  lda #'I'
+  jsr ligne2
+  stz API_PARAMETERS        ; retour au mode 0
+  lda #9
+  ldx #5
+  jsr api
+
   ldx #<sfin
   ldy #>sfin
   jsr print
@@ -222,6 +259,34 @@ l1:
   inx
   cpx #16
   bne l1
+  jmp cr
+
+; « lettre erreur pixels » : pixels 100 à 115 de la ligne 200 relus par 5,33 (mode 2)
+ligne2:
+  jsr wchar
+  lda #' '
+  jsr wchar
+  lda err
+  jsr hex
+  ldx #100
+lp2:
+  lda #' '
+  jsr wchar
+  stx API_PARAMETERS
+  stz API_PARAMETERS+1
+  lda #200
+  sta API_PARAMETERS+2
+  stz API_PARAMETERS+3
+  phx
+  lda #33
+  ldx #5
+  jsr api
+  plx
+  lda API_PARAMETERS
+  jsr nibble
+  inx
+  cpx #116
+  bne lp2
   jmp cr
 
 ; descripteur : carte MAP (page 0) 2 x 1, tuiles TILES (page 0) 2 bpp, options 0, palette PAL (page 0),
