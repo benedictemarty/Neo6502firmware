@@ -14,6 +14,7 @@ static int fails = 0;
 
 int SNDGetSampleFrequency(void) { return 252000000/32/255; }                   // 30 882 Hz, comme sound.cpp à 252 MHz
 uint8_t cpuMemory[65536];                                                       // T-79 : RAM du 6502 (tampon du flux)
+uint8_t gfxObjectMemory[0x8000];                                                // T-119 : RAM graphique (8,17)
 
 static void note(int ch,int freq,int vol,int type) {
     SOUND_CHANNEL c = {};
@@ -125,6 +126,40 @@ int main(void) {
     int m = SNDGetNextSample();
     CHECK(m == (100+63)*3/4 || m == (-100+63)*3/4,"flux + canal : somme puis CAG 3/4");
     SNDStreamStop();SNDMuteAllChannels();
+
+    // ---- T-119 : flux depuis la RAM graphique (8,17) ----
+    CHECK(SNDStreamStartGraphics(0x100,0,fe,127,false) == 1,"flux graphique : longueur 0 refusee");
+    CHECK(SNDStreamStartGraphics(0x100,50,0,127,false) == 1,"flux graphique : cadence 0 refusee");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,128,false) == 1,"flux graphique : volume 128 refuse");
+    CHECK(SNDStreamStartGraphics(0x7FF0,0x11,fe,127,false) == 1,"flux graphique : au-dela de la RAM graphique refuse");
+    CHECK(SNDStreamStartGraphics(0x7FF0,0x10,fe,127,false) == 0,"flux graphique : jusqu'au dernier octet accepte");
+    SNDStreamStop();
+    for (int i = 0;i < 50;i++) { gfxObjectMemory[0x100+i] = 0x80 + 64;cpuMemory[0x100+i] = 0x80 - 64; }
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,false) == 0,"flux graphique : demarrage une fois");
+    SNDGetNextSample();
+    ok = 1;
+    for (int i = 1;i < 50;i++) if (SNDGetNextSample() != 64*127/128) ok = 0;
+    CHECK(ok,"flux graphique : lit la RAM graphique, pas celle du 6502");
+    CHECK(SNDStreamStatus(&u) == 0,"flux graphique : arrete a la fin de l'echantillon");
+    CHECK(SNDGetNextSample() == 0 && SNDGetNextSample() == 0,"flux graphique : silence apres la fin");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,true) == 0,"flux graphique : demarrage en boucle");
+    CHECK(SNDStreamFilled(0) == 1,"flux graphique : 8,14 refuse");
+    ok = 1;
+    for (int i = 0;i < 500;i++) { int v = SNDGetNextSample(); if (i > 0 && v != 64*127/128) ok = 0; }
+    CHECK(ok && SNDStreamStatus(&u) == 0x80 && u == 0,"flux graphique : la boucle rejoue sans fin ni retard");
+    for (int i = 0;i < 50;i++) gfxObjectMemory[0x100+i] = (i == 0) ? 0x80 + 100 : 0x80;
+    SNDStreamStop();
+    CHECK(SNDStreamStartGraphics(0x100,50,fe/2,127,true) == 0,"flux graphique : boucle a fe/2");
+    for (int i = 0;i < 98;i++) SNDGetNextSample();
+    int l1 = SNDGetNextSample(),l2 = SNDGetNextSample();                           // dernier echantillon (0) puis milieu vers le premier (50)
+    CHECK(l1 == 0 && abs(l2 - 50*127/128) <= 1,"flux graphique : la boucle interpole vers le debut");
+    SNDStreamStop();
+    CHECK(SNDStreamStatus(&u) == 0,"flux graphique : 8,12 arrete");
+    for (int i = 0;i < 200;i++) cpuMemory[0x1000+i] = 0x80 + 64;
+    CHECK(SNDStreamStart(0x1000,100,fe,127) == 0,"flux : 8,11 reprend la RAM du 6502 apres 8,17");
+    SNDGetNextSample();
+    CHECK(SNDGetNextSample() == 64*127/128 && SNDStreamStatus(&u) == 0x80,"flux : 8,11 apres 8,17 rend ses moitiés");
+    SNDStreamStop();
 
     // ---- T-86 : volume général et touches multimédia ----
     SNDMuteAllChannels();note(0,440,100,SOUNDTYPE_SQUARE);

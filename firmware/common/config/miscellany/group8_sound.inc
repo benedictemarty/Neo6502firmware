@@ -146,3 +146,14 @@ GROUP 8 Sound
     DOCUMENTATION
         Sets the master volume to Parameter:0 (0-16) and mutes the sound if Parameter:1 is not zero (Trinity T-86). Sets
         the error flag if the volume is above 16.
+
+    FUNCTION 17 Stream Start Graphics
+        *DERROR = (DPARAMS[6] > 100) ? 1 : SNDStreamStartGraphics(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DPARAMS[6] * 127 / 100,(DPARAMS[7] & 1) != 0);
+    DOCUMENTATION
+        Plays a sample of 8 bit unsigned PCM ($80 = silence) held in graphics memory, mixed with the four channels
+        (Trinity T-119). Parameters:0,1 is its offset in graphics memory, Parameters:2,3 its length in bytes, Parameters:4,5
+        its rate in Hz and Parameter:6 the volume (0-100) ; bit 0 of Parameter:7 set plays it again and again, clear plays
+        it once. The 6502 has nothing to do while it plays : Function 8,13 returns $80 until a sample played once is over,
+        then 0 ; Function 8,14 is refused. It replaces a stream started by Function 8,11 and is stopped by Function 8,12 or
+        8,1. Sets the error flag if the length or the rate is 0, the volume above 100, or the sample goes past the end of
+        graphics memory.

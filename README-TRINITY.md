@@ -43,6 +43,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.77** (2026-10-07) — **T-119 (première partie) : flux PCM depuis la RAM graphique (demande Neo6502Bagman).**
+  Nouvelle fonction **8,17 Stream Start Graphics** : un échantillon 8 bits non signé pris dans la RAM graphique
+  (adresse, longueur, cadence, volume 0-100), joué une fois ou en boucle (bit 0 du paramètre 7), mélangé aux quatre
+  canaux comme le flux de 8,11. Le 6502 n'a rien à faire : 8,13 rend `$80` pendant la lecture, puis 0 à la fin d'une
+  lecture unique ; 8,14 est refusé ; 8,12 et 8,1 l'arrêtent ; 8,17 remplace un flux 8,11 en cours, et inversement. La
+  boucle interpole du dernier échantillon vers le premier. La lecture depuis un fichier, seconde moitié de T-119, reste
+  à faire. RAM 232 944 → 233 092 (+148 : `DSPHandler` +76 pour l'entrée 8,17, interruption `SNDGetNextSample` +52,
+  structure `stream` +4, veneer +16 ; comparé symbole par symbole au binaire de la 0.16.76). `test-snd` : 17 cas de plus
+  (contre-essais : boucle sans interpolation, boucle qui s'arrête, lecture dans la RAM du 6502, tous détectés). Test API
+  `sndgfx` (8 lignes ; contre-essai : échoue sur le `neo` de la 0.16.76). `make test-api` 34/34, toolbox 14/14,
+  `test-boot` 8/8, `test-coeur1` OK. Non essayé sur carte, rien d’entendu.
+
 - **0.16.76** (2026-10-07) — **T-113 : images de sprites libres et palette par sprite (demandes Neo6502AigleDor et
   Neo6502Bagman).** Nouvelle fonction **6,7 Sprite Set Image** : image prise à une adresse de la RAM graphique, largeur
   et hauteur de 1 à 255, 1, 2, 4 ou 8 bits par pixel, table de couleurs de 2^bpp octets par sprite (`$FFFF` = aucune).

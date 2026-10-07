@@ -31,9 +31,17 @@ struct _ChannelStatus {
 //      declared rate through a 16.16 phase accumulator and hands each half back once played.
 //      A half not refilled in time is not replayed : the stream goes silent until it is.
 //      The flags are single bytes, each written by one side at a time (no read-modify-write).
+//      T-119 : 8,17 plays a sample from graphics memory instead, once or in a loop, as a single
+//      'half' that is never handed back : the 6502 has nothing to do.
 //
+#define STREAM_HALVES   (0)                                                     // 8,11 : two halves refilled by the 6502
+#define STREAM_ONCE     (1)                                                     // 8,17 : one sample, stops at its end
+#define STREAM_LOOP     (2)                                                     // 8,17 : one sample, played again and again
+
 static struct {
     bool on;
+    uint8_t mode;                                                               // T-119 : STREAM_HALVES, _ONCE or _LOOP
+    const uint8_t *mem;                                                         // T-119 : cpuMemory or gfxObjectMemory
     uint16_t base,half,rate;                                                    // Buffer (two halves of 'half' bytes), samples/s
     uint8_t volume;                                                             // 0-127, as the channels
     uint32_t step,phase;                                                        // Input samples per output sample, 16.16
@@ -110,18 +118,26 @@ int16_t __time_critical_func(SNDGetNextSample)(void) {                      // T
     if (stream.on) {                                                            // T-79 : the stream counts as one more channel
         activeCount++;
         if (stream.full[stream.cur]) {
+            const uint8_t *mem = stream.mem;
             uint16_t at = stream.base + stream.cur * stream.half + stream.pos;
-            int a = cpuMemory[at],b = a;                                        // Linear interpolation to the next sample :
-            if (stream.pos + 1 < stream.half) b = cpuMemory[at + 1];            // holding each one (1 or 2 outputs at 22050
-            else if (stream.full[stream.cur ^ 1])                               // -> 30882 Hz) put images at -34 dB around
-                b = cpuMemory[stream.base + (stream.cur ^ 1) * stream.half];    // 9 kHz, bmarty heard them (T-79)
+            int a = mem[at],b = a;                                              // Linear interpolation to the next sample :
+            if (stream.pos + 1 < stream.half) b = mem[at + 1];                  // holding each one (1 or 2 outputs at 22050
+            else if (stream.mode == STREAM_LOOP) b = mem[stream.base];          // -> 30882 Hz) put images at -34 dB around
+            else if (stream.mode == STREAM_HALVES && stream.full[stream.cur ^ 1])   // 9 kHz, bmarty heard them (T-79)
+                b = mem[stream.base + (stream.cur ^ 1) * stream.half];
             int v = a + (((b - a) * (int)(stream.phase >> 8)) >> 8);
             level += (v - 128) * stream.volume / 128;
             stream.phase += stream.step;
             while (stream.phase >= 0x10000) {
                 stream.phase -= 0x10000;
                 if (++stream.pos >= stream.half) {                              // Half played : hand it back, go to the other
-                    stream.pos = 0;stream.full[stream.cur] = 0;stream.cur ^= 1;
+                    stream.pos = 0;
+                    if (stream.mode == STREAM_LOOP) continue;                   // T-119 : sample again from its start
+                    if (stream.mode == STREAM_ONCE) {                           // T-119 : sample over, the stream stops
+                        stream.on = false;stream.full[0] = 0;
+                        break;
+                    }
+                    stream.full[stream.cur] = 0;stream.cur ^= 1;
                     if (!stream.full[stream.cur]) {
                         if (stream.underruns != 0xFFFF) stream.underruns = stream.underruns + 1;
                         break;
@@ -191,9 +207,24 @@ uint8_t SNDStreamStart(uint16_t address,uint16_t half,uint16_t rate,int volume) 
     if (half == 0 || rate == 0 || volume < 0 || volume > 127) return 1;
     if ((uint32_t)address + 2u * half > 0xFF00) return 1;                       // Below the API page
     stream.on = false;                                                          // The interrupt ignores it while it changes
+    stream.mode = STREAM_HALVES;stream.mem = cpuMemory;
     stream.base = address;stream.half = half;stream.rate = rate;stream.volume = volume;
     stream.phase = 0;stream.pos = 0;stream.cur = 0;stream.underruns = 0;
     stream.full[0] = 1;stream.full[1] = 1;
+    _SNDStreamStep();
+    stream.on = true;
+    return 0;
+}
+
+// 8,17 (T-119) : a sample of 'length' bytes at 'address' in graphics memory, once or looped
+uint8_t SNDStreamStartGraphics(uint16_t address,uint16_t length,uint16_t rate,int volume,bool loop) {
+    if (length == 0 || rate == 0 || volume < 0 || volume > 127) return 1;
+    if ((uint32_t)address + length > GFX_MEMORY_SIZE) return 1;                 // Inside graphics memory
+    stream.on = false;
+    stream.mode = loop ? STREAM_LOOP : STREAM_ONCE;stream.mem = gfxObjectMemory;
+    stream.base = address;stream.half = length;stream.rate = rate;stream.volume = volume;
+    stream.phase = 0;stream.pos = 0;stream.cur = 0;stream.underruns = 0;
+    stream.full[0] = 1;stream.full[1] = 0;
     _SNDStreamStep();
     stream.on = true;
     return 0;
@@ -208,11 +239,12 @@ void SNDStreamStop(void) {                                                      
 uint8_t SNDStreamStatus(uint16_t *underruns) {
     *underruns = stream.underruns;
     if (!stream.on) return 0;
+    if (stream.mode != STREAM_HALVES) return 0x80;                              // T-119 : nothing to refill
     return 0x80 | (stream.full[0] ? 0 : 1) | (stream.full[1] ? 0 : 2);
 }
 
 uint8_t SNDStreamFilled(uint8_t half) {                                         // 8,14
-    if (half > 1 || !stream.on) return 1;
+    if (half > 1 || !stream.on || stream.mode != STREAM_HALVES) return 1;
     stream.full[half] = 1;
     return 0;
 }
