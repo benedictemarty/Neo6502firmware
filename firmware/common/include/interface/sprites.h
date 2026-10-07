@@ -59,6 +59,7 @@ void SPRPHYDraw(SPRITE_ACTION *s);
 void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1); 		// T-111 : opaque, clipped
 int SPRSetDrawMode(uint8_t mode); 												// T-111 : 0 XOR (default), 1 opaque
 int SPRSetImage(uint8_t *paramData);  											// T-113 : 6,7
+int SPRSetImagePage(uint8_t page);  												// T-116 : 6,8, $90 or bank page $A0+n
 
 #endif
 

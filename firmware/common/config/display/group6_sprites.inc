@@ -75,4 +75,15 @@ GROUP 6 Sprites
         with colour table[v] (or v without a table), of which the sprite layer keeps the low 4 bits (0 = transparent).
         A placed sprite keeps its anchor point and is drawn again. Use 6,2 with $80 as image to move it ; 6,2 with an
         image number goes back to the standard images. Error 1 for a bad sprite, size or bits per pixel, 2 if the
-        image or the table does not fit in graphics memory.
+        image or the table does not fit in graphics memory (Trinity T-116 : the image may be in a bank, see 6,8 ; the
+        colour table always is in graphics memory).
+
+    FUNCTION 8 Sprite Image Page
+        *DERROR = SPRSetImagePage(DPARAMS[0]);
+    DOCUMENTATION
+        Trinity (T-116). Sets the page later 6,7 calls take their image from : Parameter:0 = $90 graphics memory (the
+        default), or $A0+n bank n (flash, written by 1,22 Write Bank, 8 Ko each). Read only images (masks, sprites of a
+        whole game) then leave the 32 Ko of graphics memory free ; the colour table of 6,7 stays in graphics memory.
+        Sprites already set keep their image. Rewriting with 1,22 a bank whose image a sprite shows changes the sprite at
+        its next drawing ; erase the sprite before (6,3), as an image rewritten in graphics memory. Kept by 6,1, set
+        back to $90 by a reset (1,0). Error 1 for any other page.

@@ -17,6 +17,7 @@ static int16_t turtleSpriteID = -1; 											// Sprite allocated to rotation
 static int16_t turtleRotation = 0; 												// Rotation of turtle.
 static int16_t turtleColour = 7; 												// Turtle drawing colour.
 static uint8_t drawMode = 0; 													// T-111 : 0 XOR (upstream), 1 opaque
+static uint8_t imagePage = 0x90;  												// T-116 : page of the images of 6,7 ($90 or a bank)
 
 // ***************************************************************************************
 //
@@ -378,18 +379,28 @@ int SPRSetImage(uint8_t *paramData) {
 	if (width == 0 || height == 0) return 1;
 	if (bpp != 1 && bpp != 2 && bpp != 4 && bpp != 8) return 1;
 	uint32_t stride = ((uint32_t)width * bpp + 7) / 8;
-	if ((uint32_t)offset + stride * height > GFX_MEMORY_SIZE) return 2;  		// Image outside graphics memory
+	const uint8_t *image = BLTGetRealAddress(imagePage,offset);  				// T-116 : graphics memory or a bank (6,8)
+	const uint8_t *imageEnd = BLTGetAreaEnd(imagePage);
+	if (image == NULL || imageEnd == NULL || (uint32_t)(imageEnd - image) < stride * height) return 2;
 	if (map != 0xFFFF && (uint32_t)map + (1u << bpp) > GFX_MEMORY_SIZE) return 2;
 	SPRITE_INTERNAL *p = &sprites[spriteID];
 	if (p->isDrawn) _SPRUndraw(p);
 	p->imageSize = 0xFE;p->bpp = bpp;p->mapOffset = map;
-	p->imageAddress = gfxObjectMemory + offset;
+	p->imageAddress = (uint8_t *)image;  										// Read only when it is in a bank
 	p->xSize = width;p->ySize = height;
 	if (p->xc != -1 || p->yc != -1) {  											// Placed : same anchor point
 		p->x = p->xc - anchorX[p->anchor] * p->xSize / 2;
 		p->y = p->yc - anchorY[p->anchor] * p->ySize / 2;
 	}
 	if (p->isVisible) _SPRDraw(p);
+	return 0;
+}
+
+// 6,8 (T-116) : the page later 6,7 calls take their image from. A bank is flash (written by 1,22) : read
+// from core 0 during the API call that draws the sprite, never by the display core or DSPSync.
+int SPRSetImagePage(uint8_t page) {
+	if (page != 0x90 && (page < BANK_PAGE || page >= BANK_PAGE + BANK_COUNT)) return 1;
+	imagePage = page;
 	return 0;
 }
 
@@ -425,5 +436,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //		07/10/26 	T-114 : anchor bit 6 forces the redraw (bmarty).
 //		07/10/26 	T-111 : opaque drawing mode with priority, 6,6 (bmarty).
 //		07/10/26 	T-113 : 6,7 images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
+//		07/10/26 	T-116 : 6,8 images of 6,7 taken in a flash bank (bmarty).
 //
 // ***************************************************************************************

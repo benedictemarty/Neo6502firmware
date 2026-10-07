@@ -108,6 +108,7 @@ static void DSPResetP0(void) {  												// P0 : hardware and firmware state 
 	GFXSetMode(0);                                                              // Initialise graphics
 	SPRReset();                                                                 // Reset sprites.
 	SPRSetDrawMode(0);  														// T-111 : sprites drawn by XOR again
+	SPRSetImagePage(0x90);  													// T-116 : images of 6,7 in graphics memory
 	QDInitGraf();                                                               // Toolbox (T-12) : QuickDraw port
 	EVTReset();                                                                 // Event manager off
 	WMReset();                                                                  // No windows
@@ -162,6 +163,7 @@ void DSPSoftReset(void) {
 	GFXSetMode(0);  															// Mode 0, palette, console cleared
 	SPRReset();
 	SPRSetDrawMode(0);  														// T-111
+	SPRSetImagePage(0x90);  													// T-116
 	QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();  // Toolbox (T-88)
 	BNKReset();  																// No bank mapped (T-17)
 	IRQSetTick(0);IRQSetFrame(0);  												// No interrupt tick, no frame IRQ (T-14)

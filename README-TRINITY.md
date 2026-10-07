@@ -43,6 +43,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.80** (2026-10-07) — **T-116 : les images des sprites dans les banques en flash (demandes Neo6502AigleDor
+  et Neo6502Bagman).** La RAM graphique ne peut pas grandir : il reste environ 4 Ko sous `RAM_LIMIT`, pour 32 Ko
+  demandés. Les données en lecture seule vont donc dans les 32 banques de 8 Ko en flash (T-17, écrites une fois par
+  1,22). Nouvelle fonction **6,8 Sprite Image Page** : les appels 6,7 suivants prennent leur image en `$90` (défaut)
+  ou dans la banque n (`$A0+n`) ; la table de couleurs reste dans la RAM graphique. Gardée par 6,1, remise à `$90` par
+  1,0. La flash n'est lue que par le cœur 0 pendant l'appel d'API qui dessine le sprite : jamais par le cœur 1 ni
+  depuis DSPSync (règles T-44 et DSPSync). Déjà possible avant cette version : 12,3 (blitter) et 5,43 (tilemap 8 × 8)
+  lisent les banques ; non couverts : 5,8 (tuiles 16 × 16) et 8,17 (le son est lu dans une interruption, et 1,22 coupe
+  la lecture de la flash pendant l'écriture). RAM 233 124 → 233 140 (+16 ; symboles +25 : `DSPHandler` +8, veneer
+  +16, `imagePage` +1 ; 9 octets de remplissage en moins, non attribués). Test `sprbank` (7 cas : banque, table en RAM
+  graphique, fin exacte de banque, débordement, pages refusées, retour à `$90` ; contre-essai : sur le `neo` de la
+  0.16.79 le sprite montre l’image de la RAM graphique). `make test-api` 37/37, toolbox 14/14, `test-boot` 8/8,
+  `test-snd`, `test-coeur1`, `test-fonctions` OK. Non essayé sur carte.
+
 - **0.16.79** (2026-10-07) — **T-118 : tilemap de tuiles 8 × 8 avec un attribut par case (demande Neo6502Bagman,
   ADR 0010).** Nouvelle fonction **5,43 Draw Tilemap 8x8**. Ses paramètres donnent l'adresse d'un descripteur de
   26 octets en RAM 6502 ; rien n'est gardé d'un appel à l'autre. Carte, tuiles et palette sont chacune dans une page au
