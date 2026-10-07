@@ -43,6 +43,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.78** (2026-10-07) — **T-119 (seconde partie) : un fichier lu en flux sans tampon en RAM 6502 (demande
+  Neo6502Bagman).** Le paramètre 7 de **8,17** prend une troisième valeur : **2** = deux moitiés dans la RAM graphique,
+  jouées et rendues exactement comme celles de 8,11 (8,13, 8,14, retards comptés). Le programme recharge chaque moitié
+  rendue par **3,28** directement en page `$90`, puis la déclare pleine. Les données ne passent pas par la RAM 6502, et
+  le 6502 continue de tourner pendant les transferts USB (T-82). Le firmware ne lit pas le fichier lui-même : FatFs est
+  en flash, et rien de ce qu'appelle la boucle du bus ne doit l'être (règle DSPSync) ; la lecture a donc lieu pendant
+  un appel d'API. Le paramètre 7 vaut 0 (une fois), 1 (boucle) ou 2 ; au-delà, erreur (en 0.16.77, seul son bit 0
+  comptait). RAM 233 092 → 233 076 (−16 : `DSPHandler` −4 ; aucun autre symbole en RAM ne change, les 12 autres octets
+  ne sont pas attribués). `test-snd` : 9 cas de plus (contre-essais détectés : seconde moitié non marquée pleine au
+  départ, taille du tampon contrôlée sur une seule moitié). Nouveau test API `sndfile` : 1 024 octets de `readpaged.bin`
+  joués en flux (2 moitiés de 128 au départ, puis 6 recharges dans l'ordre 0, 1, 0, 1…) ; contre-essai : bloqué sur le
+  `neo` de la 0.16.77. `make test-api` 35/35, toolbox 14/14, `test-boot` 8/8, `test-coeur1` OK. Non essayé sur
+  carte, rien d’entendu.
+
 - **0.16.77** (2026-10-07) — **T-119 (première partie) : flux PCM depuis la RAM graphique (demande Neo6502Bagman).**
   Nouvelle fonction **8,17 Stream Start Graphics** : un échantillon 8 bits non signé pris dans la RAM graphique
   (adresse, longueur, cadence, volume 0-100), joué une fois ou en boucle (bit 0 du paramètre 7), mélangé aux quatre

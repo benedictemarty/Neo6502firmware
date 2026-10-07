@@ -128,33 +128,51 @@ int main(void) {
     SNDStreamStop();SNDMuteAllChannels();
 
     // ---- T-119 : flux depuis la RAM graphique (8,17) ----
-    CHECK(SNDStreamStartGraphics(0x100,0,fe,127,false) == 1,"flux graphique : longueur 0 refusee");
-    CHECK(SNDStreamStartGraphics(0x100,50,0,127,false) == 1,"flux graphique : cadence 0 refusee");
-    CHECK(SNDStreamStartGraphics(0x100,50,fe,128,false) == 1,"flux graphique : volume 128 refuse");
-    CHECK(SNDStreamStartGraphics(0x7FF0,0x11,fe,127,false) == 1,"flux graphique : au-dela de la RAM graphique refuse");
-    CHECK(SNDStreamStartGraphics(0x7FF0,0x10,fe,127,false) == 0,"flux graphique : jusqu'au dernier octet accepte");
+    CHECK(SNDStreamStartGraphics(0x100,0,fe,127,0) == 1,"flux graphique : longueur 0 refusee");
+    CHECK(SNDStreamStartGraphics(0x100,50,0,127,0) == 1,"flux graphique : cadence 0 refusee");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,128,0) == 1,"flux graphique : volume 128 refuse");
+    CHECK(SNDStreamStartGraphics(0x7FF0,0x11,fe,127,0) == 1,"flux graphique : au-dela de la RAM graphique refuse");
+    CHECK(SNDStreamStartGraphics(0x7FF0,0x10,fe,127,0) == 0,"flux graphique : jusqu'au dernier octet accepte");
     SNDStreamStop();
     for (int i = 0;i < 50;i++) { gfxObjectMemory[0x100+i] = 0x80 + 64;cpuMemory[0x100+i] = 0x80 - 64; }
-    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,false) == 0,"flux graphique : demarrage une fois");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,0) == 0,"flux graphique : demarrage une fois");
     SNDGetNextSample();
     ok = 1;
     for (int i = 1;i < 50;i++) if (SNDGetNextSample() != 64*127/128) ok = 0;
     CHECK(ok,"flux graphique : lit la RAM graphique, pas celle du 6502");
     CHECK(SNDStreamStatus(&u) == 0,"flux graphique : arrete a la fin de l'echantillon");
     CHECK(SNDGetNextSample() == 0 && SNDGetNextSample() == 0,"flux graphique : silence apres la fin");
-    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,true) == 0,"flux graphique : demarrage en boucle");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,1) == 0,"flux graphique : demarrage en boucle");
     CHECK(SNDStreamFilled(0) == 1,"flux graphique : 8,14 refuse");
     ok = 1;
     for (int i = 0;i < 500;i++) { int v = SNDGetNextSample(); if (i > 0 && v != 64*127/128) ok = 0; }
     CHECK(ok && SNDStreamStatus(&u) == 0x80 && u == 0,"flux graphique : la boucle rejoue sans fin ni retard");
     for (int i = 0;i < 50;i++) gfxObjectMemory[0x100+i] = (i == 0) ? 0x80 + 100 : 0x80;
     SNDStreamStop();
-    CHECK(SNDStreamStartGraphics(0x100,50,fe/2,127,true) == 0,"flux graphique : boucle a fe/2");
+    CHECK(SNDStreamStartGraphics(0x100,50,fe/2,127,1) == 0,"flux graphique : boucle a fe/2");
     for (int i = 0;i < 98;i++) SNDGetNextSample();
     int l1 = SNDGetNextSample(),l2 = SNDGetNextSample();                           // dernier echantillon (0) puis milieu vers le premier (50)
     CHECK(l1 == 0 && abs(l2 - 50*127/128) <= 1,"flux graphique : la boucle interpole vers le debut");
     SNDStreamStop();
     CHECK(SNDStreamStatus(&u) == 0,"flux graphique : 8,12 arrete");
+    // Deux moitiés dans la RAM graphique (8,17 parametre 7 = 2) : comme 8,11, remplies par 3,28 en page $90
+    CHECK(SNDStreamStartGraphics(0x100,50,fe,127,3) == 1,"flux graphique : parametre 7 = 3 refuse");
+    CHECK(SNDStreamStartGraphics(0x7F00,0x81,fe,127,2) == 1,"flux graphique : deux moitiés au-dela de la RAM graphique refusees");
+    CHECK(SNDStreamStartGraphics(0x7F00,0x80,fe,127,2) == 0,"flux graphique : deux moitiés jusqu'au dernier octet acceptees");
+    SNDStreamStop();
+    for (int i = 0;i < 50;i++) { gfxObjectMemory[0x200+i] = 0x80 + 64;gfxObjectMemory[0x232+i] = 0x80 - 64;cpuMemory[0x200+i] = 0x80; }
+    CHECK(SNDStreamStartGraphics(0x200,50,fe,127,2) == 0,"flux graphique : demarrage en deux moitiés");
+    SNDGetNextSample();
+    ok = 1;
+    for (int i = 1;i < 50;i++) if (SNDGetNextSample() != 64*127/128) ok = 0;
+    CHECK(ok && SNDStreamStatus(&u) == 0x81,"flux graphique : moitie 0 lue dans la RAM graphique puis rendue");
+    ok = 1;
+    for (int i = 0;i < 50;i++) if (SNDGetNextSample() != -64*127/128) ok = 0;
+    CHECK(ok && SNDStreamStatus(&u) == 0x83 && u == 1,"flux graphique : moitie 1 jouee, les deux rendues, un retard");
+    CHECK(SNDGetNextSample() == 0,"flux graphique : silence sans moitie pleine");
+    CHECK(SNDStreamFilled(1) == 0 && SNDStreamFilled(0) == 0,"flux graphique : 8,14 accepte en deux moitiés");
+    CHECK(SNDGetNextSample() == 64*127/128 && SNDStreamStatus(&u) == 0x80,"flux graphique : reprise sur la moitie 0");
+    SNDStreamStop();
     for (int i = 0;i < 200;i++) cpuMemory[0x1000+i] = 0x80 + 64;
     CHECK(SNDStreamStart(0x1000,100,fe,127) == 0,"flux : 8,11 reprend la RAM du 6502 apres 8,17");
     SNDGetNextSample();

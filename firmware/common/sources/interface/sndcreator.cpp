@@ -32,7 +32,10 @@ struct _ChannelStatus {
 //      A half not refilled in time is not replayed : the stream goes silent until it is.
 //      The flags are single bytes, each written by one side at a time (no read-modify-write).
 //      T-119 : 8,17 plays a sample from graphics memory instead, once or in a loop, as a single
-//      'half' that is never handed back : the 6502 has nothing to do.
+//      'half' that is never handed back : the 6502 has nothing to do. Or two halves in graphics
+//      memory, as 8,11 : the program refills them from a file with 3,28 (page $90), so a file is
+//      streamed without a buffer in 6502 RAM. The firmware cannot read the file itself : FatFs is
+//      in flash, and nothing the bus loop calls may be (DSPSync rule).
 //
 #define STREAM_HALVES   (0)                                                     // 8,11 : two halves refilled by the 6502
 #define STREAM_ONCE     (1)                                                     // 8,17 : one sample, stops at its end
@@ -216,15 +219,18 @@ uint8_t SNDStreamStart(uint16_t address,uint16_t half,uint16_t rate,int volume) 
     return 0;
 }
 
-// 8,17 (T-119) : a sample of 'length' bytes at 'address' in graphics memory, once or looped
-uint8_t SNDStreamStartGraphics(uint16_t address,uint16_t length,uint16_t rate,int volume,bool loop) {
-    if (length == 0 || rate == 0 || volume < 0 || volume > 127) return 1;
-    if ((uint32_t)address + length > GFX_MEMORY_SIZE) return 1;                 // Inside graphics memory
+// 8,17 (T-119) : a sample of 'length' bytes at 'address' in graphics memory, played once (flags 0),
+// looped (bit 0), or two halves of 'length' bytes refilled by the program as 8,11 (bit 1)
+uint8_t SNDStreamStartGraphics(uint16_t address,uint16_t length,uint16_t rate,int volume,uint8_t flags) {
+    if (length == 0 || rate == 0 || volume < 0 || volume > 127 || flags > 2) return 1;
+    uint32_t size = (flags == 2) ? 2u * length : length;
+    if ((uint32_t)address + size > GFX_MEMORY_SIZE) return 1;                   // Inside graphics memory
     stream.on = false;
-    stream.mode = loop ? STREAM_LOOP : STREAM_ONCE;stream.mem = gfxObjectMemory;
+    stream.mode = (flags == 2) ? STREAM_HALVES : (flags == 1) ? STREAM_LOOP : STREAM_ONCE;
+    stream.mem = gfxObjectMemory;
     stream.base = address;stream.half = length;stream.rate = rate;stream.volume = volume;
     stream.phase = 0;stream.pos = 0;stream.cur = 0;stream.underruns = 0;
-    stream.full[0] = 1;stream.full[1] = 0;
+    stream.full[0] = 1;stream.full[1] = (flags == 2) ? 1 : 0;
     _SNDStreamStep();
     stream.on = true;
     return 0;

@@ -148,12 +148,15 @@ GROUP 8 Sound
         the error flag if the volume is above 16.
 
     FUNCTION 17 Stream Start Graphics
-        *DERROR = (DPARAMS[6] > 100) ? 1 : SNDStreamStartGraphics(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DPARAMS[6] * 127 / 100,(DPARAMS[7] & 1) != 0);
+        *DERROR = (DPARAMS[6] > 100) ? 1 : SNDStreamStartGraphics(DSPGetInt16(DPARAMS,0),DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DPARAMS[6] * 127 / 100,DPARAMS[7]);
     DOCUMENTATION
         Plays a sample of 8 bit unsigned PCM ($80 = silence) held in graphics memory, mixed with the four channels
         (Trinity T-119). Parameters:0,1 is its offset in graphics memory, Parameters:2,3 its length in bytes, Parameters:4,5
-        its rate in Hz and Parameter:6 the volume (0-100) ; bit 0 of Parameter:7 set plays it again and again, clear plays
-        it once. The 6502 has nothing to do while it plays : Function 8,13 returns $80 until a sample played once is over,
-        then 0 ; Function 8,14 is refused. It replaces a stream started by Function 8,11 and is stopped by Function 8,12 or
-        8,1. Sets the error flag if the length or the rate is 0, the volume above 100, or the sample goes past the end of
-        graphics memory.
+        its rate in Hz and Parameter:6 the volume (0-100). Parameter:7 chooses how it plays : 0 once, 1 again and again ;
+        the 6502 has nothing to do then, Function 8,13 returns $80 until a sample played once is over, then 0, and
+        Function 8,14 is refused. With Parameter:7 = 2 the buffer is two halves of Parameters:2,3 bytes each, one after the
+        other, played and handed back exactly as with Function 8,11 (Functions 8,13 and 8,14) : to stream a file without
+        a buffer in 6502 RAM, refill each half handed back with Function 3,28 into page $90, then mark it full once the
+        read is over. It replaces a stream started by Function 8,11 and is stopped by Function 8,12 or 8,1. Sets the
+        error flag if the length or the rate is 0, the volume above 100, Parameter:7 above 2, or the buffer goes past
+        the end of graphics memory.

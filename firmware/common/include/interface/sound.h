@@ -67,7 +67,7 @@ uint8_t SNDStreamStart(uint16_t address,uint16_t half,uint16_t rate,int volume);
 void SNDStreamStop(void);  														// T-79 : 8,12
 uint8_t SNDStreamStatus(uint16_t *underruns);  										// T-79 : 8,13
 uint8_t SNDStreamFilled(uint8_t half);  											// T-79 : 8,14
-uint8_t SNDStreamStartGraphics(uint16_t address,uint16_t length,uint16_t rate,int volume,bool loop);	// T-119 : 8,17
+uint8_t SNDStreamStartGraphics(uint16_t address,uint16_t length,uint16_t rate,int volume,uint8_t flags);	// T-119 : 8,17
 void SNDStreamClockChanged(void);  												// T-79 : output rate changed
 void SNDGetMasterVolume(uint8_t *volume,bool *mute);  								// T-86 : 8,15
 uint8_t SNDSetMasterVolume(uint8_t volume,bool mute);  							// T-86 : 8,16
