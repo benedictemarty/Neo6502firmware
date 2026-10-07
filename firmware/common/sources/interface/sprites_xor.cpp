@@ -19,6 +19,29 @@ static const int16_t clipRight = 319;
 
 // ***************************************************************************************
 //
+//		T-113 : colour of one image pixel (0 = transparent). Images of 1, 2, 4 or 8 bits a pixel,
+//		leftmost pixel in the high bits, lines of s->stride bytes ; bpp 0 is a standard image
+//		(4 bits). With a colour table, a non zero value v gives map[v] ; the sprite layer keeps
+//		the low 4 bits of the result, and 0 stays transparent.
+//
+// ***************************************************************************************
+
+static inline uint8_t _SPRPix(const SPRITE_ACTION *s,int xi,int yi) {
+	const uint8_t *line = s->image + yi * s->stride;
+	uint8_t v;
+	switch (s->bpp) {
+		case 8:  v = line[xi];break;
+		case 2:  v = (line[xi >> 2] >> (6 - 2 * (xi & 3))) & 3;break;
+		case 1:  v = (line[xi >> 3] >> (7 - (xi & 7))) & 1;break;
+		default: v = line[xi >> 1];v = (xi & 1) ? (v & 0x0F) : (v >> 4);break;
+	}
+	if (v == 0) return 0;
+	if (s->map != NULL) v = s->map[v];
+	return v & 0x0F;
+}
+
+// ***************************************************************************************
+//
 //								XOR in image L->R
 //
 // ***************************************************************************************
@@ -99,20 +122,37 @@ static void _SPXORDrawPacked(SPRITE_ACTION *s) {
 		int y = s->y + yPos;
 		if (y < 0 || y >= gMode.yGSize) continue;
 		int yImg = (s->flip & 2) ? ySize-1-yPos : yPos;
-		const uint8_t *line = s->image + yImg * xSize / 2;
 		for (int xPos = 0;xPos < xSize;xPos++) {
 			int x = s->x + xPos;
 			if (x < 0 || x >= gMode.xGSize) continue;
 			int xImg = (s->flip & 1) ? xSize-1-xPos : xPos;
-			uint8_t p = line[xImg >> 1];
-			p = (xImg & 1) ? (p & 0x0F) : (p >> 4);
+			uint8_t p = _SPRPix(s,xImg,yImg);
 			if (p != 0) GFXWritePixelRaw(x,y,GFXReadPixelRaw(x,y) ^ p);
+		}
+	}
+}
+
+//		T-113 : images set by 6,7 in 8 bit modes : the same, into the high nibble.
+static void _SPXORDrawGeneric(SPRITE_ACTION *s) {
+	int xSize = s->xSize,ySize = s->ySize;
+	for (int yPos = 0;yPos < ySize;yPos++) {
+		int y = s->y + yPos;
+		if (y < 0 || y >= gMode.yGSize) continue;
+		int yImg = (s->flip & 2) ? ySize-1-yPos : yPos;
+		uint8_t *display = gMode.graphicsMemory + y * gMode.xGSize;
+		for (int xPos = 0;xPos < xSize;xPos++) {
+			int x = s->x + xPos;
+			if (x < 0 || x >= gMode.xGSize) continue;
+			int xImg = (s->flip & 1) ? xSize-1-xPos : xPos;
+			uint8_t p = _SPRPix(s,xImg,yImg);
+			if (p != 0) display[x] ^= (p << 4);
 		}
 	}
 }
 
 void SPRPHYDraw(SPRITE_ACTION *s) {
 	if (GFXIsPackedMode()) { _SPXORDrawPacked(s);return; }
+	if (s->bpp != 0) { _SPXORDrawGeneric(s);return; }
 	if (s->x < clipLeft - s->xSize || s->x > clipRight) return; 				// Clip completely.
 
 	s->xBytes = s->xSize/2; 							 						// Bytes to copy
@@ -167,12 +207,10 @@ void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1) {
 	int xa = (s->x > x0) ? s->x : x0,xb = (s->x+xSize-1 < x1) ? s->x+xSize-1 : x1;
 	for (int y = ya;y <= yb;y++) {
 		int yImg = (s->flip & 2) ? ySize-1-(y-s->y) : y-s->y;
-		const uint8_t *line = s->image + yImg * xSize / 2;
 		uint8_t *display = gMode.graphicsMemory + y * gMode.xGSize + xa;
 		for (int x = xa;x <= xb;x++,display++) {
 			int xImg = (s->flip & 1) ? xSize-1-(x-s->x) : x-s->x;
-			uint8_t p = line[xImg >> 1];
-			p = (xImg & 1) ? (p & 0x0F) : (p >> 4);
+			uint8_t p = _SPRPix(s,xImg,yImg);
 			if (p != 0) *display = (*display & 0x0F) | (p << 4);
 		}
 	}
@@ -184,5 +222,6 @@ void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1) {
 //		==== 		========
 //		15/01/24 	Fixes for better sprite clipping
 //		07/10/26 	T-111 : opaque drawing (bmarty).
+//		07/10/26 	T-113 : images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
 //
 // ***************************************************************************************

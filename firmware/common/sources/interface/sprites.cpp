@@ -69,6 +69,7 @@ static void _SPRResetSprite(int n) {
 	p->imageSize = 0xFF;
 	p->anchor = p->flip = 0;
 	p->xSize = p->ySize = 0;	
+	p->bpp = 0;p->mapOffset = 0xFFFF;  											// T-113 : standard image
 }
 
 // ***************************************************************************************
@@ -152,6 +153,9 @@ static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p) {
 	sa->x = p->x;sa->y = p->y;  												// Coordinates
 	sa->xSize = p->xSize;sa->ySize = p->ySize;  								// Size and flip.
 	sa->flip = p->flip;
+	sa->bpp = p->bpp;  															// T-113
+	sa->stride = (p->bpp == 0) ? p->xSize / 2 : (p->xSize * p->bpp + 7) / 8;
+	sa->map = (p->bpp != 0 && p->mapOffset != 0xFFFF) ? gfxObjectMemory + p->mapOffset : NULL;
 }
 
 // ***************************************************************************************
@@ -304,7 +308,7 @@ int SPRUpdate(uint8_t *paramData) {
 	bool flipChanged = (flip != 0x80) && (flip != p->flip);
 	bool anchorChanged = (anchor != 0x80) && (anchor != p->anchor);
 	bool isTurtle = (spriteID == turtleSpriteID);
-	if (forced && !isChanged && p->imageSize != 0xFF) {  						// Same image : find it again
+	if (forced && !isChanged && p->imageSize != 0xFF && p->bpp == 0) {  		// Same image : find it again
 		imageSize = p->imageSize;isChanged = true;
 	}
 
@@ -325,6 +329,7 @@ int SPRUpdate(uint8_t *paramData) {
 
 		if (isChanged != 0 && isTurtle == 0) {  								// Image or size changed, not turtle
 			p->imageSize = imageSize;  											// Update image size.
+			p->bpp = 0;p->mapOffset = 0xFFFF;  									// T-113 : back to a standard image
 			p->xSize = p->ySize = (imageSize & 0x40) ? 32:16;   				// Size of image.
 			int img = GFXFindImage((p->xSize == 16) ? 1 : 2,imageSize & 0x3F);	// Address of image (offset in gfx memory)													
 			if (img < 0) return 2;   											// Bad image number
@@ -333,6 +338,7 @@ int SPRUpdate(uint8_t *paramData) {
 
 		if (isTurtle) {  														// If the turtle sprite
 			p->imageSize = p->xSize = p->ySize = 16;   							// Set up as the correct size.
+			p->bpp = 0;p->mapOffset = 0xFFFF;
 			p->imageAddress = SPRUnpackTurtleGraphic(turtleRotation);
 		}
 
@@ -352,6 +358,39 @@ int SPRUpdate(uint8_t *paramData) {
 	}
 
 	return 0; 
+}
+
+// ***************************************************************************************
+//
+//		T-113 (Neo6502AigleDor, Neo6502Bagman) : 6,7, image of any size in graphics memory.
+//		Parameters : sprite, offset in graphics memory (2 bytes), width, height (1-255), bits a
+//		pixel (1, 2, 4, 8), offset of a colour table of 2^bpp bytes ($FFFF none). The sprite
+//		keeps its anchor point ; 6,2 with an image number goes back to the standard images.
+//
+// ***************************************************************************************
+
+int SPRSetImage(uint8_t *paramData) {
+	uint8_t spriteID = paramData[0];
+	if (spriteID >= MAX_SPRITES) return 1;
+	uint16_t offset = paramData[1] + (paramData[2] << 8);
+	uint8_t width = paramData[3],height = paramData[4],bpp = paramData[5];
+	uint16_t map = paramData[6] + (paramData[7] << 8);
+	if (width == 0 || height == 0) return 1;
+	if (bpp != 1 && bpp != 2 && bpp != 4 && bpp != 8) return 1;
+	uint32_t stride = ((uint32_t)width * bpp + 7) / 8;
+	if ((uint32_t)offset + stride * height > GFX_MEMORY_SIZE) return 2;  		// Image outside graphics memory
+	if (map != 0xFFFF && (uint32_t)map + (1u << bpp) > GFX_MEMORY_SIZE) return 2;
+	SPRITE_INTERNAL *p = &sprites[spriteID];
+	if (p->isDrawn) _SPRUndraw(p);
+	p->imageSize = 0xFE;p->bpp = bpp;p->mapOffset = map;
+	p->imageAddress = gfxObjectMemory + offset;
+	p->xSize = width;p->ySize = height;
+	if (p->xc != -1 || p->yc != -1) {  											// Placed : same anchor point
+		p->x = p->xc - anchorX[p->anchor] * p->xSize / 2;
+		p->y = p->yc - anchorY[p->anchor] * p->ySize / 2;
+	}
+	if (p->isVisible) _SPRDraw(p);
+	return 0;
 }
 
 // ***************************************************************************************
@@ -385,5 +424,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //		18/03/24 	Sprite collision requires visible sprites.
 //		07/10/26 	T-114 : anchor bit 6 forces the redraw (bmarty).
 //		07/10/26 	T-111 : opaque drawing mode with priority, 6,6 (bmarty).
+//		07/10/26 	T-113 : 6,7 images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
 //
 // ***************************************************************************************

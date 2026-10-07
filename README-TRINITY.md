@@ -43,6 +43,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.76** (2026-10-07) — **T-113 : images de sprites libres et palette par sprite (demandes Neo6502AigleDor et
+  Neo6502Bagman).** Nouvelle fonction **6,7 Sprite Set Image** : image prise à une adresse de la RAM graphique, largeur
+  et hauteur de 1 à 255, 1, 2, 4 ou 8 bits par pixel, table de couleurs de 2^bpp octets par sprite (`$FFFF` = aucune).
+  0 est transparent ; la couche des sprites garde les 4 bits bas de la couleur. Un sprite placé garde son ancre ; 6,2
+  avec un numéro d'image revient aux images classiques, qui gardent le tracé rapide de l'amont. Marche en OU exclusif
+  et en mode opaque (0.16.74). Les nouveaux champs prennent le bourrage de `SPRITE_INTERNAL` (`static_assert` : 24
+  octets) : le tableau des sprites reste à 3 072 octets. RAM 232 912 → 232 944 (+32 : entrée 6,7 de `DSPHandler`, qui
+  est en RAM, et son veneer vers la flash, `saHide` +4). `docs/SPRITES-MODE0.md` § 6. Test `sprimg` (11 cas ; contre-essai : échoue sur le `neo` de
+  la 0.16.75). `make test-api` 33/33, toolbox 14/14, `test-boot` 8/8, `test-snd` OK. Non essayé sur carte.
+
 - **0.16.75** (2026-10-07) — **T-115 : copie traduite du blitter (demande Neo6502AigleDor).** 12,3 action **3**
   (translate) écrit `table[v]` pour chaque valeur source v, action **4** (translatemasked) fait de même mais saute
   les valeurs égales au transparent de la source. Table de 256 octets aux paramètres 5-6 (adresse) et 7 (page : 0,

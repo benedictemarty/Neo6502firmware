@@ -64,3 +64,15 @@ GROUP 6 Sprites
         of its area then draws back the other sprites there, so it does not depend on what was in the layer.
         Sprites already drawn are erased and drawn again in the new mode. Kept by 6,1, set back to 0 by a reset
         (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 1.
+
+    FUNCTION 7 Sprite Set Image
+        *DERROR = SPRSetImage(DPARAMS);
+    DOCUMENTATION
+        Trinity (T-113). Gives sprite Parameter:0 an image of any size taken in graphics memory (page $90) :
+        Parameters:1,2 its offset, Parameter:3 its width and Parameter:4 its height (1-255), Parameter:5 its bits per
+        pixel (1, 2, 4 or 8 ; lines of whole bytes, leftmost pixel in the high bits), Parameters:6,7 the offset of a
+        colour table of 2^bpp bytes ($FFFF : none). A pixel of value 0 is transparent ; any other value v is drawn
+        with colour table[v] (or v without a table), of which the sprite layer keeps the low 4 bits (0 = transparent).
+        A placed sprite keeps its anchor point and is drawn again. Use 6,2 with $80 as image to move it ; 6,2 with an
+        image number goes back to the standard images. Error 1 for a bad sprite, size or bits per pixel, 2 if the
+        image or the table does not fit in graphics memory.

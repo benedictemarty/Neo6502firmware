@@ -1,15 +1,15 @@
 # Sprites en mode 0 — fonctionnement réel (T-117)
 
-Lu dans les sources de Trinity 0.16.74 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
+Lu dans les sources de Trinity 0.16.76 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
 `tilemap.cpp`, `blitter.cpp`, `console.cpp`). Tout y est le comportement du code amont, sauf le redessin forcé
-(§ 3, Trinity 0.16.73) et le mode opaque (§ 2 bis, Trinity 0.16.74).
+(§ 3, Trinity 0.16.73), le mode opaque (§ 2 bis, Trinity 0.16.74) et les images libres (§ 6, Trinity 0.16.76).
 Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
-Ce document décrit l'existant ; les améliorations proposées sont T-112, T-113, T-116 et T-118 (`docs/BACKLOG.md`).
+Ce document décrit l'existant ; les améliorations proposées sont T-112, T-116 et T-118 (`docs/BACKLOG.md`).
 
 Les points 2 à 4 sont vérifiés dans l'émulateur `neo` par `tests/api/sprmode0.asm` (un pixel relu après chaque
 opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin avec l'ancre 7,
 contournement par l'ancre, cible au format 4, redessin forcé, redessin systématique avec l'ancre 0). Non vérifié sur
-la carte. Le mode opaque est vérifié par `tests/api/sprmode1.asm`.
+la carte. Le mode opaque est vérifié par `tests/api/sprmode1.asm`, les images libres par `tests/api/sprimg.asm`.
 
 ## 1. Une seule mémoire, deux couches
 
@@ -159,4 +159,27 @@ ligne de haut en bas, pixel 0 transparent.
 
 Dans 6,2, l'octet `[5]` vaut `numéro | $40` pour un 32 × 32, `numéro` pour un 16 × 16 : bits 0–5 = numéro, d'où
 **64 images au plus par taille**, et seulement ces deux tailles. Une image qui déborderait des 32 Ko est refusée
-(erreur 2). Propositions : T-113 (tailles libres, palette par sprite), T-116 (plus de RAM graphique).
+(erreur 2). Pour d'autres tailles et formats : § 6. Proposition : T-116 (plus de RAM graphique).
+
+## 6. Images libres et table de couleurs (Trinity 0.16.76, T-113)
+
+**6,7 Sprite Set Image** donne à un sprite une image quelconque de la RAM graphique, sans en-tête ni numéro :
+
+| Paramètre | Contenu |
+|---|---|
+| `[0]` | numéro du sprite |
+| `[1..2]` | adresse de l'image dans la page `$90` |
+| `[3]`, `[4]` | largeur, hauteur (1 à 255) |
+| `[5]` | bits par pixel : 1, 2, 4 ou 8 |
+| `[6..7]` | adresse d'une table de couleurs de 2^bpp octets, `$FFFF` = aucune |
+
+- Chaque ligne de l'image occupe un nombre entier d'octets ; le pixel de gauche est dans les bits de poids fort.
+- Un pixel de valeur 0 est **transparent**. Une autre valeur v donne la couleur `table[v]`, ou v sans table ; la
+  couche des sprites n'en garde que les **4 bits bas** (15 couleurs, § 1), et un résultat nul est transparent. En
+  8 bits sans table, la valeur `$10` est donc transparente et `$21` donne la couleur 1.
+- La table joue le rôle des CLUT des bornes : une même forme en 2 bits sert avec plusieurs tables, une par sprite.
+- Un sprite déjà placé garde son point d'ancrage et est redessiné. Pour le déplacer : 6,2 avec `$80` comme image.
+  6,2 avec un numéro d'image le ramène aux images classiques.
+- Erreur 1 : sprite, taille ou bits par pixel invalides ; erreur 2 : image ou table hors de la RAM graphique.
+- Fonctionne en OU exclusif comme en mode opaque, retournements compris. Les images classiques gardent le tracé
+  rapide de l'amont ; les images de 6,7 passent par un tracé pixel par pixel, non mesuré sur la carte.
