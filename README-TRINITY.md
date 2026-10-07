@@ -53,7 +53,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   préambule 6,1, 6,6, 6,8 pour tourner aussi sur une 0.16.80 (passe carte 0.16.80 : 29/30, `fdate` sans heure après une
   coupure du secteur). RAM 233 140 (inchangée). `make test-api` 38/38, toolbox 14/14, `test-boot`, `test-snd`,
   `test-coeur1`, `test-fonctions` OK ; une passe de `test-api` s'est arrêtée sur `sndfile` (T-120), passé ensuite 6 fois
-  sur 6. Non essayé sur carte.
+  sur 6. **Carte** (flashée par SWD le 2026-10-07, redémarrage normal) : `neotests.py` 30/31, `sprreset` OK ; seul
+  `fdate` échoue (pas d'heure après une coupure du secteur).
 
 - **0.16.80** (2026-10-07) — **T-116 : les images des sprites dans les banques en flash (demandes Neo6502AigleDor
   et Neo6502Bagman).** La RAM graphique ne peut pas grandir : il reste environ 4 Ko sous `RAM_LIMIT`, pour 32 Ko
