@@ -36,6 +36,18 @@ start:
   stz logLen
   lda #$20
   sta logLen+1
+  lda #1                    ; T-121 : sprites remis dans l'état du démarrage. Sur la carte, NeoDOS enchaîne les
+  ldx #6                    ; programmes sans remise à zéro : 6,1 efface les sprites, mais laisse le mode de
+  jsr api                   ; dessin (6,6) et la page des images (6,8) du programme précédent
+  stz API_PARAMETERS        ; 6,6 mode 0 (OU exclusif)
+  lda #6
+  ldx #6
+  jsr api
+  lda #$90                  ; 6,8 $90 (images en RAM graphique)
+  sta API_PARAMETERS
+  lda #8
+  ldx #6
+  jsr api
   lda #12                   ; écran effacé : la console reste en haut, loin du pixel relu
   jsr wchar
   ldx #0
