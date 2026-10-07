@@ -43,6 +43,24 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.79** (2026-10-07) — **T-118 : tilemap de tuiles 8 × 8 avec un attribut par case (demande Neo6502Bagman,
+  ADR 0010).** Nouvelle fonction **5,43 Draw Tilemap 8x8**. Ses paramètres donnent l'adresse d'un descripteur de
+  26 octets en RAM 6502 ; rien n'est gardé d'un appel à l'autre. Carte, tuiles et palette sont chacune dans une page au
+  choix (RAM 6502, `$90`, banques). Une case occupe 2 octets : tuile 0-1023, banque de palette 0-15, retournements x et
+  y. Tuiles de 1, 2, 4 ou 8 bits par pixel. Palette facultative de 16 banques (sinon couleur = banque × 2^bpp + index).
+  Sortie sur l'octet entier ou sur le quartet bas (couche des sprites du mode 0 gardée), index 0 transparent au
+  choix, défilement signé, fenêtre découpée à l'écran ; ce qui sort de la carte reste tel quel. Dessin pixel par pixel
+  pendant l'appel d'API, jamais sur le cœur 1 ; **durée non mesurée sur carte**. `BLTGetAreaEnd` rendu public (fin
+  de zone d'une page). **Défaut trouvé et corrigé avant livraison** : en insérant 5,43, j'avais effacé l'en-tête de
+  5,42 (Get Bus Timing), qui avait disparu du firmware sans qu'aucun test ne le voie ; vu en comparant la RAM
+  symbole par symbole. Nouveau garde-fou **`make test-fonctions`** (`tests/tools/api_fonctions.py`) : les 278
+  fonctions des dispatchs générés sont comparées à `tests/api/fonctions.txt` (référence tirée de la 0.16.78, plus
+  5,43) ; contre-essai : signale « 5,42 a DISPARU » sur le dispatch fautif. RAM 233 076 → 233 124 (+48 :
+  `DSPHandler` +20, veneer de `TM8Draw` +16 ; 12 octets non attribués, aucun autre symbole en RAM ne change). Test API
+  `tile8` (palette, quartet bas, 0 transparent, retournements, défilements x et y, 6 refus ; contre-essai : rien de
+  dessiné sur le `neo` de la 0.16.78). `make test-api` 36/36, toolbox 14/14, `test-boot` 8/8, `test-snd`,
+  `test-coeur1` et `test-fonctions` OK. Non essayé sur carte.
+
 - **0.16.78** (2026-10-07) — **T-119 (seconde partie) : un fichier lu en flux sans tampon en RAM 6502 (demande
   Neo6502Bagman).** Le paramètre 7 de **8,17** prend une troisième valeur : **2** = deux moitiés dans la RAM graphique,
   jouées et rendues exactement comme celles de 8,11 (8,13, 8,14, retards comptés). Le programme recharge chaque moitié

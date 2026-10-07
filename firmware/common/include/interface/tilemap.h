@@ -15,6 +15,7 @@
 
 void TMPSelectTileMap(uint8_t *data,uint16_t xOffset,uint16_t yOffset);
 uint8_t TMPDrawTileMap(uint8_t *data);
+uint8_t TM8Draw(uint16_t desc);  												// T-118 : 5,43, 8 x 8 tiles with attributes
 
 #endif
 

@@ -36,6 +36,7 @@ struct BlitterArea {
 							// nibble of the first byte (even x) — the 16 colour pages of mode 2 (target only)
 #define BLTFMT_PACKED_ODD 6	// Same, first pixel in the LOW nibble of the first byte (odd x) (target only)
 
+const uint8_t *BLTGetAreaEnd(uint8_t page);  									// T-118 : end of a page's area, NULL if illegal
 uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address);							// page:address -> pointer, NULL if illegal (T-12 : QuickDraw fonts)
 void BLTLoadArea(uint16_t addr,struct BlitterArea *b);													// 12,3 area structure in 6502 RAM (T-12)
 uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target);	// Areas in firmware memory (T-12)

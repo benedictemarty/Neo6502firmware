@@ -171,6 +171,31 @@ GROUP 5 Graphics
         Set Flip Bits
         Sets the flip bits for drawing images. Bit 0 set causes a horizontal flip, bit 1 set causes a vertical flip.
 
+    FUNCTION 43 Draw Tilemap 8x8
+        *DERROR = TM8Draw(DSPGetInt16(DPARAMS,0));
+    DOCUMENTATION
+        Draws a tilemap of 8 x 8 tiles with an attribute per cell (Trinity T-118), as on arcade boards and 8 bit
+        consoles. Parameters:0,1 is the address in 6502 RAM of a 26 byte descriptor ; nothing is kept between calls.
+        Pages are those of Function 12,2 : $00 6502 RAM, $90 graphics memory, $A0+n bank n.
+
+            0-2     map : address, page. Two bytes a cell, row by row : bits 0-9 tile (0-1023), bits 10-13 palette
+                    bank (0-15), bit 14 flips the tile horizontally, bit 15 vertically.
+            3,4     map width and height in cells (1-255).
+            5-7     tiles : address, page. 8 rows of 'bpp' bytes per tile, leftmost pixel in the high bits.
+            8       bits per pixel of the tiles : 1, 2, 4 or 8.
+            9       flags : bit 0 writes the low nibble of the pixel only (the sprite layer of mode 0 is kept), bit 1
+                    leaves the pixel as it is where the colour index is 0 (layers).
+            10-12   palette : address, page ; page $FF : no palette. A pixel of colour index i in a cell of bank b has
+                    colour n = b * 2^bpp + i (n = i with 8 bit tiles), or palette[n] with a palette, which must then
+                    hold 16 * 2^bpp bytes (256 with 8 bit tiles).
+            13      zero.
+            14-17   map pixel (x, y, signed) drawn at the top left of the window : scrolling.
+            18-25   window on screen : x, y (signed), width, height in pixels.
+
+        Pixels of the window outside the map, and those of tiles past the end of the tile area, are left as they are.
+        The error flag is set if a size is 0, the bits per pixel or the flags are not valid, or the map or the palette
+        does not fit in its page ; nothing is drawn then.
+
     FUNCTION 42 Get Bus Timing
         {
             uint32_t v = HWBusTiming(DPARAMS[0]);

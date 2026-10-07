@@ -136,6 +136,12 @@ test-coeur1:
 	echo "$$r" | grep -q "^0 fonction(s) en flash, 0 littéral(aux) en flash, 1 appel(s) indirect(s)$$" \
 	|| { python3 firmware/scripts/core1_flash.py $(COEUR1_ELF) $(COEUR1_RACINES); echo "test-coeur1 : ÉCHEC"; exit 1; }; echo "test-coeur1 : OK"
 
+# Aucune fonction de l'API ne disparaît (T-118 : une insertion dans un .inc avait effacé 5,42). Compare les dispatchs
+# générés à tests/api/fonctions.txt ; après l'ajout voulu d'une fonction : python3 tests/tools/api_fonctions.py --ref
+test-fonctions:
+	cd firmware/common && python3 scripts/makedispatch.py dispatch.config > include/data/dispatch_code.h
+	python3 tests/tools/api_fonctions.py
+
 # Synthétiseur compilé sur PC (T-80) : sndcreator.cpp contre un common.h minimal
 test-snd:
 	@mkdir -p build

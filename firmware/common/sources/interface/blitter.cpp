@@ -618,6 +618,10 @@ static const uint8_t *_BLTAreaEnd(uint8_t page) {
 	return NULL;
 }
 
+const uint8_t *BLTGetAreaEnd(uint8_t page) {  									// T-118 : public, for 5,43
+	return _BLTAreaEnd(page);
+}
+
 //		A line fits when it starts inside the area and ends inside it too.
 static bool _BLTLineFits(const uint8_t *p,const uint8_t *end,uint16_t width) {
 	return p != NULL && end != NULL && p < end && (size_t)(end - p) >= width;
