@@ -44,6 +44,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.81** (2026-10-07) — **T-121 : 6,1 Sprite Reset remet aussi 6,6 et 6,8 (décision bmarty).** Sur la carte,
+  NeoDOS enchaîne les programmes sans remise à zéro : un programme héritait du mode de dessin opaque (6,6 = 1) et de la
+  page des images (6,8) du précédent, que 6,1 gardait (`drawMode` = 1 relevé par SWD, tests `sprimg`, `sprmode0`,
+  `sprmode1` en échec sur la carte). 6,1 remet désormais 6,6 à 0 (OU exclusif) et 6,8 à `$90`, comme 1,0 et le
+  démarrage. Documentation de 6,1, 6,6, 6,8 et `docs/SPRITES-MODE0.md`. Test `sprreset` (contre-essai : sur le `neo` de
+  la 0.16.80, l'image vient encore de la banque et le mode reste opaque). Les trois tests de sprites gardent un
+  préambule 6,1, 6,6, 6,8 pour tourner aussi sur une 0.16.80 (passe carte 0.16.80 : 29/30, `fdate` sans heure après une
+  coupure du secteur). RAM 233 140 (inchangée). `make test-api` 38/38, toolbox 14/14, `test-boot`, `test-snd`,
+  `test-coeur1`, `test-fonctions` OK ; une passe de `test-api` s'est arrêtée sur `sndfile` (T-120), passé ensuite 6 fois
+  sur 6. Non essayé sur carte.
+
 - **0.16.80** (2026-10-07) — **T-116 : les images des sprites dans les banques en flash (demandes Neo6502AigleDor
   et Neo6502Bagman).** La RAM graphique ne peut pas grandir : il reste environ 4 Ko sous `RAM_LIMIT`, pour 32 Ko
   demandés. Les données en lecture seule vont donc dans les 32 banques de 8 Ko en flash (T-17, écrites une fois par

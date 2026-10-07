@@ -21,7 +21,8 @@ GROUP 6 Sprites
     FUNCTION 1 Sprite Reset
         SPRReset();
     DOCUMENTATION
-        Reset the sprite system.
+        Reset the sprite system. Trinity (T-121) : also sets the draw mode (6,6) back to 0 and the image page (6,8)
+        back to $90, so that a program does not inherit them from the one run before.
 
     FUNCTION 2 Sprite Set
         *DERROR = SPRUpdate(DPARAMS);
@@ -62,8 +63,8 @@ GROUP 6 Sprites
         the high nibble of the pixels (upstream, default), 1 opaque. In opaque mode colour 0 of an image is
         transparent, the sprite with the lowest number is in front, and erasing a sprite clears the high nibble
         of its area then draws back the other sprites there, so it does not depend on what was in the layer.
-        Sprites already drawn are erased and drawn again in the new mode. Kept by 6,1, set back to 0 by a reset
-        (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 1.
+        Sprites already drawn are erased and drawn again in the new mode. Set back to 0 by 6,1 (T-121) and by a
+        reset (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 1.
 
     FUNCTION 7 Sprite Set Image
         *DERROR = SPRSetImage(DPARAMS);
@@ -85,5 +86,5 @@ GROUP 6 Sprites
         default), or $A0+n bank n (flash, written by 1,22 Write Bank, 8 Ko each). Read only images (masks, sprites of a
         whole game) then leave the 32 Ko of graphics memory free ; the colour table of 6,7 stays in graphics memory.
         Sprites already set keep their image. Rewriting with 1,22 a bank whose image a sprite shows changes the sprite at
-        its next drawing ; erase the sprite before (6,3), as an image rewritten in graphics memory. Kept by 6,1, set
-        back to $90 by a reset (1,0). Error 1 for any other page.
+        its next drawing ; erase the sprite before (6,3), as an image rewritten in graphics memory. Set back to $90
+        by 6,1 (T-121) and by a reset (1,0). Error 1 for any other page.

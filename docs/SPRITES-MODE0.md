@@ -49,7 +49,8 @@ exclusif au pixel entier (`_SPXORDrawPacked`), exact sur fond noir seulement.
 
 **6,6** choisit le mode de dessin : `Parameter:0` = 0 pour le OU exclusif (amont, par défaut), 1 pour le mode
 opaque ; toute autre valeur rend l'erreur 1. Les sprites déjà affichés sont effacés à l'ancienne et redessinés dans
-le nouveau mode. 6,1 garde le mode ; une remise à zéro du système (1,0, démarrage) revient au OU exclusif. Les
+le nouveau mode. 6,1 (depuis la 0.16.81, T-121), une remise à zéro du système (1,0) et le démarrage reviennent au
+OU exclusif ; 6,1 remet aussi la page des images de 6,7 (6,8) à `$90`. Les
 modes à pixels empaquetés (1 et 4 bits par pixel) ne sont pas concernés : ils restent en OU exclusif.
 
 En mode opaque :

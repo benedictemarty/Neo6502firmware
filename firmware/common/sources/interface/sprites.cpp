@@ -109,10 +109,12 @@ void SPRReset(void) {
 		}
 		spriteVisibleCount = 0;
 		SPRResetAll();
+		drawMode = 0;imagePage = 0x90;  										// T-121 : 6,6 and 6,8 back to their boot value
 		return;
 	}
 	spriteVisibleCount = 0;
 	SPRResetAll();  	
+	drawMode = 0;imagePage = 0x90;  											// T-121
 	for (int i = 0;i < gMode.xGSize * gMode.yGSize;i++) {  						// Clear the sprite layer
 		gMode.graphicsMemory[i] &= 0x0F;  										// top 4 bits og graphics memory.
 	}
@@ -437,5 +439,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //		07/10/26 	T-111 : opaque drawing mode with priority, 6,6 (bmarty).
 //		07/10/26 	T-113 : 6,7 images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
 //		07/10/26 	T-116 : 6,8 images of 6,7 taken in a flash bank (bmarty).
+//		07/10/26 	T-121 : 6,1 also sets 6,6 back to 0 and 6,8 back to $90 (bmarty).
 //
 // ***************************************************************************************
