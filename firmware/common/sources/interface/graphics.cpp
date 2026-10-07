@@ -29,7 +29,7 @@ struct _PaletteState {  														// Current RGB Palette values.
 const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT] = {
 	{ 320,240, 8, 320, 53,30, 6,8,  0, 0 },  									// 0 : original 320x240x256
 	{ 720,350, 1,  90, 80,25, 9,14, 1, 65 },  									// 1 : Hercules text 80x25 (9x14) / graphics 720x348, timing 720x480
-	{ 320,240, 4, 160, 53,30, 6,8,  0, 0 },  									// 2 : T-90 trial, 320x240x16, two pages of 38 400 (mode 0 timing)
+	{ 320,240, 4, 160, 53,30, 6,8,  0, 0 },  									// 2 : T-90, 320x240x16, two pages of 38 400 (mode 0 timing)
 };
 
 static void GFXInitialiseMode(int mode) {

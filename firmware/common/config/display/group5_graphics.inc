@@ -71,10 +71,11 @@ GROUP 5 Graphics
     DOCUMENTATION
         Select the display mode in Parameter:0 and reinitialise the screen, palette and console (F5 / ADR-02).
         0 is the standard 320x240 256 colour mode. 1 is the Hercules mode (720x350 monochrome, 80x25 text in 9x14 cells).
-        2 is a TRIAL mode (Trinity T-90, study) : 320x240 in 16 colours, 4 bits per pixel, two pixels per byte, left pixel in
-        the high nibble, two pages (5,11 / 5,12), palette entries 0-15, same display timing as mode 0 ; no sprite layer
-        (sprites are drawn in XOR as in mode 1), console 53x30. It may change or go. (The fork's 320x256x16 mode 2 was
-        removed on 2026-09-19.) Tilemaps are drawn in modes 1 and 2 too (packed path of 5,8).
+        2 is the 16 colour mode (Trinity T-90, kept for good on 2026-10-07) : 320x240 in 16 colours, 4 bits per pixel, two
+        pixels per byte, left pixel in the high nibble, two pages (5,11 / 5,12), palette entries 0-15, same display timing
+        as mode 0 ; no sprite layer (sprites are drawn in XOR as in mode 1), console 53x30. The blitter writes into it with
+        12,3 target formats 5 and 6. (The fork's 320x256x16 mode 2 was removed on 2026-09-19.) Tilemaps are drawn in modes
+        1 and 2 too (packed path of 5,8 ; 5,43).
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
     FUNCTION 10 Get Graphics Mode
@@ -89,7 +90,7 @@ GROUP 5 Graphics
         *DERROR = GFXSetDrawPage(DPARAMS[0]);
     DOCUMENTATION
         Select the page (Parameter:0) that console and graphics commands draw into (F-55).
-        Mode 0 has one page, modes 1 and 2 have two (0 and 1) ; mode 2 is the 16 colour trial of T-90. Sets the error
+        Mode 0 has one page, modes 1 and 2 have two (0 and 1) ; mode 2 is the 16 colour mode of T-90. Sets the error
         flag if the page does not exist. Page n starts at offset n x (bytes per line x lines) of the video RAM, which is
         what the blitter addresses as pages $80/$81 : in mode 2, page 1 is at $80:9600 (38400 = 160 x 240), so a 12,3
         into the hidden page targets $80:9600 + y x 160 + x / 2, with target format 5 (even x) or 6 (odd x). In mode 1,

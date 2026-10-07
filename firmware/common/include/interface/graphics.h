@@ -27,7 +27,7 @@
 //
 #define GFX_MODE_320x240x256	(0)
 #define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
-#define GFX_MODE_COUNT 			(3)												// T-90 : mode 2 = 320x240x16, two pages (trial) ; the fork's 320x256x16 was removed on 2026-09-19
+#define GFX_MODE_COUNT 			(3)												// T-90 : mode 2 = 320x240x16, two pages (kept for good, 2026-10-07) ; the fork's 320x256x16 was removed on 2026-09-19
 
 struct GraphicsModeDescriptor {
 	uint16_t xGSize,yGSize;														// Pixels

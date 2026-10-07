@@ -2,6 +2,7 @@
 ; (deux moitiés dans la RAM graphique), chaque moitié rendue remplie par 3,28 en page $90 puis déclarée pleine (8,14).
 ; Fichier readpaged.bin : 1 024 octets, lus en 2 moitiés de 128 au départ puis 6 recharges, dans l'ordre 0, 1, 0, 1...
 ; Seuls les comptes sont affichés : les retards dépendent de la sortie son de neo (test-snd couvre les échantillons).
+; Les attentes du son sont bornées à 2 s (horloge 1,1) : si la sortie son n'avance plus, « SON BLOQUE » puis fin (T-120).
 ; Sortie attendue (console) :
 ;   OPEN 00 / PRE 80 0100 / START 00 / FILL 06 0400 / DRAIN 83 / STOP 00 / CLOSE 00 / END
 ; Auteur : bmarty <bmarty@mailo.com>
@@ -25,6 +26,7 @@ next  = $F6                  ; prochaine moitié à recharger
 fills = $F7                  ; recharges faites
 total = $F8                  ; octets lus (16 bits)
 target = $FA                 ; adresse de la moitié en RAM graphique (16 bits)
+t0    = $FC                 ; départ de l'attente en cours (centièmes, 16 bits)
 
 start:
   stz logLen
@@ -98,7 +100,9 @@ start:
 
   stz next                  ; la boucle de lecture : attendre la moitié 'next', la recharger, la déclarer pleine
   stz fills
+  jsr now
 loop:
+  jsr trop
   lda #13
   ldx #8
   jsr api
@@ -139,6 +143,7 @@ l0:
   lda next
   eor #1
   sta next
+  jsr now
   bra loop
 done:
   ldx #<sfill               ; FILL : recharges, octets lus en tout
@@ -157,7 +162,9 @@ done:
   ldx #<sdrain              ; DRAIN : le flux joue la fin puis rend les deux moitiés -> 83
   ldy #>sdrain
   jsr print
+  jsr now
 dw:
+  jsr trop
   lda #13
   ldx #8
   jsr api
@@ -199,6 +206,43 @@ halt:
   jmp $FFFF
 .endif
   rts
+
+; --- départ d'une attente du son : t0 = horloge (1,1, centièmes)
+now:
+  lda #1
+  ldx #1
+  jsr api
+  lda API_PARAMETERS
+  sta t0
+  lda API_PARAMETERS+1
+  sta t0+1
+  rts
+
+; --- plus de 2 s depuis t0 : « SON BLOQUE », arrêt du son, fin du test
+trop:
+  lda #1
+  ldx #1
+  jsr api
+  sec
+  lda API_PARAMETERS
+  sbc t0
+  tax
+  lda API_PARAMETERS+1
+  sbc t0+1
+  bne bloque
+  cpx #200
+  bcs bloque
+  rts
+bloque:
+  pla                       ; on ne revient pas
+  pla
+  ldx #<sbloque
+  ldy #>sbloque
+  jsr print
+  lda #12
+  ldx #8
+  jsr api
+  jmp halt
 
 ; --- 3,28 de A/X octets, canal 0, page $90, adresse 'target', état ST ; attend le bit 7
 bgread:
@@ -298,5 +342,6 @@ sfill:   .text "FILL ", 0
 sdrain:  .text "DRAIN ", 0
 sstop:   .text "STOP ", 0
 sclose:  .text "CLOSE ", 0
+sbloque: .text "SON BLOQUE", 0
 sfin:    .text "END", 0
 fname:   .ptext "readpaged.bin"

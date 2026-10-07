@@ -79,7 +79,7 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	//		baisser le debordement des canaux. Ni la polarite verticale, ni l'horloge, ni la
 	//		tension, ni le contenu n'expliquent l'ecart : quelque chose est calibre pour CE timing.
 	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
-	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 2 (T-90 trial) : as mode 0, 4 bpp lines
+	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 2 (T-90) : as mode 0, 4 bpp lines
 };
 
 // ***************************************************************************************

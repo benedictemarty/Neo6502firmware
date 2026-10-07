@@ -2,6 +2,7 @@
 
 **Firmware de référence unique depuis le 2026-09-19** (le fork `bmarty/main` est archivé). Backlog : `docs/BACKLOG.md`.
 Sprites en mode 0 (couches, OU exclusif, redessin de 6,2, en-tête de la RAM graphique) : `docs/SPRITES-MODE0.md` (T-117).
+**Mode 2** (320×240×16, deux pages, T-90) : **définitif** depuis le 2026-10-07 (décision bmarty) ; il était « d'essai » depuis la 0.16.58.
 
 Branche `trinity` (bmarty, 2026-09-18) : le firmware **amont** (`v1.0.0-14-gdc70908`, Paul Robson, MIT)
 plus : la reconnaissance d'un modem série USB (Pico W « picowifiusb », CDC-ACM) sur un port USB-A de la carte —

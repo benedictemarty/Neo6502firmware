@@ -1,4 +1,4 @@
-; mode2all.asm — T-90 : passe de compatibilité du mode 2 d'essai (320×240×16) dans l'émulateur.
+; mode2all.asm — T-90 : passe de compatibilité du mode 2 (320×240×16) dans l'émulateur.
 ; Console, rectangle, ligne, tilemap, image, sprite (XOR), QuickDraw, refus de 12,4 ; pixels relus par 5,33.
 ; mode2all.bin : tuile 0 (moitié gauche 0, droite 5), sprite 16×16 n° 0 plein de couleur 3.
 ; Résultats relevés avant tout affichage (la console écrit dans l'écran), affichés en mode 0.

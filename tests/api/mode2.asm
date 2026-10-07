@@ -1,4 +1,4 @@
-; mode2.asm — T-90 : mode 2 d'essai, 320×240×16 couleurs à deux pages.
+; mode2.asm — T-90 : mode 2, 320×240×16 couleurs à deux pages.
 ; 5,9 mode 2 puis 5,10 ; 5,11 et 5,12 page 1 acceptées, page 2 refusée ; pixels écrits en 16 couleurs (5,3 Plot,
 ; 5,39 Write Pixel) relus par 5,33 dans la page de dessin, y compris une abscisse impaire ; retour au mode 0.
 ; Le journal est tenu en RAM (la console redessine l'écran, les pixels sont lus avant tout affichage).
