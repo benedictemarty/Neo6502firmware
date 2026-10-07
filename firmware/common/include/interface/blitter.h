@@ -45,8 +45,10 @@ uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uin
 #define BLTACT_COPY 0		// Straight rectangle copy
 #define BLTACT_MASK 1		// Copy, but only where src != srcarea.transparent
 #define BLTACT_SOLID 2		// Fill with constant srcarea.solid value, but only where src != srcarea.transparent
+#define BLTACT_TRANSLATE 3	// Trinity T-115 : target = table[src] (12,3 only, table of 256 bytes)
+#define BLTACT_TRANSLATE_MASK 4	// Same, but only where src != srcarea.transparent
 
-uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget);
+uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget,uint16_t aTable,uint8_t tablePage);
 
 uint8_t BLTImage(uint8_t action, uint16_t sourceArea, int16_t x, int16_t y, uint8_t destFmt);
 

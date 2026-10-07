@@ -684,6 +684,60 @@ static uint8_t _BLTPackedCopy(uint8_t action,const struct BlitterArea *source,co
 	return 0;
 }
 
+//		T-115 (Neo6502AigleDor) : translated copy. Each source value v (byte, nibble or bit, as the other
+//		copies, whole source bytes only) is written as table[v] (256 bytes, any readable page) in the
+//		target format : whole byte, high or low nibble (the other one kept), or packed (T-90). With
+//		BLTACT_TRANSLATE_MASK a value equal to source->transparent leaves its target untouched.
+//		One generic line, like _BLTPackedLine. Done on the 6502, a background of 240 bytes a line
+//		cost ~4 300 cycles a line (Neo6502AigleDor).
+static void _BLTTranslateLine(bool masked,const struct BlitterArea *source,uint8_t tgtFormat,uint8_t *tgt,
+							  const uint8_t *src,uint16_t values,const uint8_t *table) {
+	uint32_t nib = (tgtFormat == BLTFMT_PACKED_ODD) ? 1 : 0;
+	for (uint16_t i = 0;i < values;i++,nib++) {
+		uint8_t v;
+		switch (source->format) {
+			case BLTFMT_BITS: v = (src[i >> 3] >> (7 - (i & 7))) & 1;break;
+			case BLTFMT_PAIR: v = (i & 1) ? (src[i >> 1] & 0x0F) : (src[i >> 1] >> 4);break;
+			default:          v = src[i];break;
+		}
+		if (masked && v == source->transparent) continue;
+		uint8_t w = table[v];
+		switch (tgtFormat) {
+			case BLTFMT_BYTE: tgt[i] = w;break;
+			case BLTFMT_HIGH: tgt[i] = (tgt[i] & 0x0F) | (uint8_t)(w << 4);break;
+			case BLTFMT_LOW:  tgt[i] = (tgt[i] & 0xF0) | (w & 0x0F);break;
+			default: {
+				uint8_t *t = tgt + (nib >> 1);
+				*t = (nib & 1) ? ((*t & 0xF0) | (w & 0x0F)) : ((*t & 0x0F) | (uint8_t)(w << 4));
+			}
+		}
+	}
+}
+
+static uint8_t _BLTTranslateCopy(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target,
+								 uint16_t aTable,uint8_t tablePage) {
+	if (source->format != BLTFMT_BYTE && source->format != BLTFMT_PAIR && source->format != BLTFMT_BITS) return 1;
+	uint8_t tf = target->format;
+	if (tf != BLTFMT_BYTE && tf != BLTFMT_HIGH && tf != BLTFMT_LOW && tf != BLTFMT_PACKED && tf != BLTFMT_PACKED_ODD) return 1;
+	const uint8_t *table = BLTGetRealAddress(tablePage,aTable);
+	if (!_BLTLineFits(table,_BLTAreaEnd(tablePage),256)) return 1;  				// The whole table must be readable
+	const uint8_t *srcEnd = _BLTAreaEnd(source->page);
+	const uint8_t *tgtEnd = _BLTAreaEnd(target->page);
+	uint16_t values = _BLTTargetBytes(source->format,source->width);  			// Whole source bytes, as the other copies
+	bool packed = (tf == BLTFMT_PACKED || tf == BLTFMT_PACKED_ODD);
+	uint8_t *src = BLTGetRealAddress(source->page, source->address);
+	uint8_t *tgt = BLTGetRealAddress(target->page, target->address);
+	if (src == NULL || tgt == NULL) return 1;
+	for (uint8_t l = source->height; l > 0; --l) {
+		if (!_BLTLineFits(src,srcEnd,_BLTSourceBytes(source->format,source->width)) ||
+			!_BLTLineFits(tgt,tgtEnd,packed ? _BLTPackedBytes(tf,values) : values)) return 1;
+		_BLTTranslateLine(action == BLTACT_TRANSLATE_MASK,source,tf,tgt,src,values,table);
+		src += source->stride;
+		tgt += target->stride;
+	}
+	return 0;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
 	if (target->format == BLTFMT_PACKED || target->format == BLTFMT_PACKED_ODD)  	// T-90
 		return _BLTPackedCopy(action,source,target,_BLTAreaEnd(source->page),_BLTAreaEnd(target->page));
@@ -757,11 +811,13 @@ uint8_t BLTCopyArea(uint8_t action,const struct BlitterArea *source,const struct
 	return internalBLTComplexCopy(action,source,target);
 }
 
-uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget) {
+uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget,uint16_t aTable,uint8_t tablePage) {
 	struct BlitterArea source, target;
 	_BLTLoadBlitterAreaObject(aSource,&source);
 	_BLTLoadBlitterAreaObject(aTarget,&target);
 	if (target.page >= BANK_PAGE) return 1;  										// T-17 : banks are read only (flash)
+	if (action == BLTACT_TRANSLATE || action == BLTACT_TRANSLATE_MASK)  			// T-115
+		return _BLTTranslateCopy(action,&source,&target,aTable,tablePage);
 	return internalBLTComplexCopy(action, &source, &target);
 }
 

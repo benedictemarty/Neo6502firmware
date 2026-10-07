@@ -4,7 +4,7 @@ Lu dans les sources de Trinity 0.16.74 (`sprites.cpp`, `sprites_xor.cpp`, `gfxco
 `tilemap.cpp`, `blitter.cpp`, `console.cpp`). Tout y est le comportement du code amont, sauf le redessin forcé
 (§ 3, Trinity 0.16.73) et le mode opaque (§ 2 bis, Trinity 0.16.74).
 Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
-Ce document décrit l'existant ; les améliorations proposées sont T-112, T-113, T-115, T-116 et T-118 (`docs/BACKLOG.md`).
+Ce document décrit l'existant ; les améliorations proposées sont T-112, T-113, T-116 et T-118 (`docs/BACKLOG.md`).
 
 Les points 2 à 4 sont vérifiés dans l'émulateur `neo` par `tests/api/sprmode0.asm` (un pixel relu après chaque
 opération : dessin, écrasement par 12,2, « négatif » à l'effacement, absence de redessin avec l'ancre 7,
@@ -125,12 +125,15 @@ collision par la distance entre les points d'ancrage (sprites visibles seulement
 | Blitter 12,2 (copie simple, octets entiers) vers la VRAM | **écrasés** |
 | Blitter 12,3 (copie complexe) vers la VRAM, cible au format 0 (octet) | **écrasés** |
 | Blitter 12,3, cible au format 4 (quartet bas) | conservés : seul le quartet bas est écrit |
+| Blitter 12,3 actions 3 et 4 (traduction, Trinity 0.16.75), cible au format 4 | conservés |
 | Blitter 12,3, cible au format 3 (quartet haut) | réécrits : c'est la couche des sprites elle-même |
 
 Le firmware **ne sait pas** quand la couche a été écrasée : il croit toujours les sprites dessinés. En OU exclusif,
 il les efface au prochain changement en y laissant leur « négatif » (section 2) ; en mode opaque, l'effacement est
 propre, mais le sprite reste absent de l'écran jusqu'à son prochain redessin (6,2 avec `$C0` pour le forcer). Pour poser un fond par le blitter sous des sprites, utiliser
-une cible au **format 4** (quartet bas, valeurs 0–15) plutôt que 12,2. Proposition pour aller plus loin : T-112.
+une cible au **format 4** (quartet bas, valeurs 0–15) plutôt que 12,2. Si les données du fond ne sont pas déjà
+des couleurs 0–15 (octets d'une autre machine, par exemple), les actions 3 et 4 de 12,3 (Trinity 0.16.75, T-115)
+les traduisent pendant la copie par une table de 256 octets, l'action 4 avec une couleur transparente. Proposition pour aller plus loin : T-112.
 
 ## 5. Les images : la RAM graphique (page `$90`)
 

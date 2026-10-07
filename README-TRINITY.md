@@ -43,6 +43,17 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.75** (2026-10-07) — **T-115 : copie traduite du blitter (demande Neo6502AigleDor).** 12,3 action **3**
+  (translate) écrit `table[v]` pour chaque valeur source v, action **4** (translatemasked) fait de même mais saute
+  les valeurs égales au transparent de la source. Table de 256 octets aux paramètres 5-6 (adresse) et 7 (page : 0,
+  $90 ou banque), refusée (erreur 1) si elle n'est pas lisible en entier. Sources octet, quartet, bit ; cibles octet,
+  quartet haut, quartet bas, empaquetées (5/6) ; cible au format 1 ou 2 : erreur 1. Usage visé : fond traduit en
+  16 couleurs vers la VRAM au format 4, sous les sprites, au lieu d'une traduction ligne par ligne en 6502
+  (~4 300 cycles par ligne de 240 octets chez Neo6502AigleDor). Sur un firmware sans T-115, les actions 3 et 4 ne
+  font rien et ne rendent pas d'erreur (sauf vers une cible empaquetée). Test `blittrad` (9 cas ; contre-essai :
+  échoue sur le `neo` de la 0.16.74). `make test-api` 32/32, toolbox 14/14, `test-boot` 8/8, `test-snd` OK.
+  Non essayé sur carte, durée non mesurée.
+
 - **0.16.74** (2026-10-07) — **T-111 : sprites opaques avec priorité (demande Neo6502AigleDor, appuyée par
   Neo6502Bagman).** Nouvelle fonction **6,6 Sprite Draw Mode** : 0 = OU exclusif (amont, défaut), 1 = opaque. En mode
   opaque, la couleur 0 d'une image est transparente, le sprite de plus petit numéro est devant, et dessin comme

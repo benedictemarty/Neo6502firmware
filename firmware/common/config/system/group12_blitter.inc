@@ -32,7 +32,7 @@ GROUP 12 Blitter
 
         
     FUNCTION 3 Complex Blit Copy
-        *DERROR = BLTComplexCopy(DPARAMS[0],DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7));
+        *DERROR = BLTComplexCopy(DPARAMS[0],DSPGetInt16(DCOMMAND,5),DSPGetInt16(DCOMMAND,7),DSPGetInt16(DCOMMAND,9),DPARAMS[7]);
 
     DOCUMENTATION
         Copy a source rectangular area to a destination rectangular area.
@@ -46,11 +46,20 @@ GROUP 12 Blitter
                            0 = copy
                            1 = copymasked - copy, but only where src is not the transparent value.
                            2 = solidmasked - set target to constant solid value, but only where src is not the transparent value.
+                           3 = translate (Trinity T-115) - write table[src] : each source value (byte, nibble or bit)
+                               indexes a table of 256 bytes, whose entry is written in the target format (byte, high or
+                               low nibble, packed 5/6). Source formats 0-2, target formats 0, 3, 4, 5, 6 ; error 1 otherwise.
+                           4 = translatemasked (Trinity T-115) - the same, but only where src is not the transparent value.
                            See below for transparent/solid values.
 
             Parameters (1,2) address of the source rectangle data.
 
             Parameters (3,4) address of the target rectangle data.
+
+            Parameters (5,6) and (7), actions 3 and 4 only (Trinity T-115) : address and page of the 256 byte
+            translation table (page 0 = 6502 RAM, $90 = graphics memory, $A0+n = bank n). Error 1 if the whole
+            table is not readable. On firmwares without T-115 actions 3 and 4 do nothing : no error, except with the packed
+            targets 5 and 6 (error 1).
 
             The source and target rectangle data is laid out in memory as follows:
 
