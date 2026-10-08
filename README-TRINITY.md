@@ -44,6 +44,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.82** (2026-10-08) — **T-109 et T-122 : cels de vues AGI et `add.to.pic` (groupe 39, demandes de Neo6502AGI ;
+  fusion de la branche `essai/agi-cels` décidée par bmarty sans les mesures sur carte prévues par FW-2).** 39,5 Draw Cel
+  dessine à l'écran un cel RLE de la RAM 6502, masqué par la priorité du plan AGI (« >= », lignes de contrôle 0-3 :
+  premier point plus bas, 15 au bas du plan), miroir en paramètre ; 39,6 Restore Rect recopie le plan à l'écran ;
+  39,7 Add Cel To Plane écrit un cel dans le plan (couleur et priorité 4 à 15, erreur 1 pour 0-3) ; 39,8 Fill Plane
+  Priority fixe la priorité d'un rectangle du plan (0 à 15, couleurs gardées). Octet 2 de l'en-tête au **format PC**
+  (bit 7 miroir, bits 6-4 boucle, quartet faible = couleur transparente ; décision bmarty, vue Police Quest PC).
+  `agicel.cpp` repris de Neo6502AGI (EUPL-1.2). Tests `agicel` et `agiplan` (contre-essais : ancienne lecture de la
+  transparence, refus 0-3, priorité non écrite, couleur perdue par 39,8). RAM 233 140 (inchangée), NeoDOS 0.32.1.
+  `make test-api` 40/40, toolbox 14/14, `test-boot`, `test-snd`, `test-coeur1`, `test-fonctions` (283) OK. Essayé
+  par Neo6502AGI dans `neo` sur Police Quest (Apple II converti et PC) et King's Quest IIgs. **Non essayé sur carte** :
+  durées d'un gros cel et d'un cel sur des lignes de contrôle non mesurées ; sommes du plan à vérifier (Police Quest :
+  K AF EA titre, K 59 C9 commissariat).
+
 - **Après 0.16.81** (2026-10-08, tests seulement, firmware inchangé) — **T-120 : cause trouvée.** Le blocage de
   `sndfile` venait du serveur audio du PC (PipeWire) qui, CPU saturé, cessait d'appeler le rappel son de SDL : 2/8 sous
   charge, 8/8 avec le pilote factice `dummy`. `run_neo.sh` et `run_boot.sh` lancent désormais `neo` avec
