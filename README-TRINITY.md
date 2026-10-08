@@ -44,6 +44,12 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **Après 0.16.81** (2026-10-08, tests seulement, firmware inchangé) — **T-120 : cause trouvée.** Le blocage de
+  `sndfile` venait du serveur audio du PC (PipeWire) qui, CPU saturé, cessait d'appeler le rappel son de SDL : 2/8 sous
+  charge, 8/8 avec le pilote factice `dummy`. `run_neo.sh` et `run_boot.sh` lancent désormais `neo` avec
+  `SDL_AUDIODRIVER=dummy` (`NEO_TEST_AUDIO=pipewire` pour le vrai) ; sous charge 20/20, contre-essai PipeWire 0/4.
+  `make test-api` 38/38, toolbox 14/14, `test-boot` 8/8, `test-snd`, `test-fonctions` OK.
+
 - **0.16.81** (2026-10-07) — **T-121 : 6,1 Sprite Reset remet aussi 6,6 et 6,8 (décision bmarty).** Sur la carte,
   NeoDOS enchaîne les programmes sans remise à zéro : un programme héritait du mode de dessin opaque (6,6 = 1) et de la
   page des images (6,8) du précédent, que 6,1 gardait (`drawMode` = 1 relevé par SWD, tests `sprimg`, `sprmode0`,

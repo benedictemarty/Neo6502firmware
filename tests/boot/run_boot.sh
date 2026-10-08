@@ -20,7 +20,7 @@ scenario() {
 	local name=$1 until=$2 want=$3 forbid=$4
 	local d=$OUT/$name; rm -rf "$d"; mkdir -p "$d"
 	( cd "$d" && prep_$name )
-	( cd "$d" && exec env NEO_NO_HOST_INPUT=1 "$HERE/bin/neo" >out.txt 2>err.txt ) & local p=$!
+	( cd "$d" && exec env NEO_NO_HOST_INPUT=1 SDL_AUDIODRIVER=${NEO_TEST_AUDIO:-dummy} "$HERE/bin/neo" >out.txt 2>err.txt ) & local p=$!
 	local i; for i in $(seq 1 60); do grep -aq -- "$until" "$d/err.txt" 2>/dev/null && break; sleep 1; done
 	sleep 1; kill $p 2>/dev/null; wait $p 2>/dev/null
 	tr -d '\r' < "$d/err.txt" | grep -av '^FIS\|^I2C\|^0$\|^$' > "$d/console.txt"
