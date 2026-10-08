@@ -13,6 +13,8 @@
 ;   C8 priorité 15 au même endroit                                                       -> 00 05
 ;   M1-M4 cel M (couleurs A puis B) sans miroir puis en miroir                           -> A B / B A
 ;   W1-W2 cel W (1, 2, 3) coupé au bord droit en x = 158                                 -> 01 02
+;   P1-P3 cel Q plein (couleur 6) puis cel P au format PC (octet $B3 : miroir au bit 7, transparent 3 au quartet faible ; couleurs 3, 4, 5),
+;         en (130,160), P5 = 0 : 3 transparent, pas de miroir lu dans l'octet (T-109, format PC) -> 06, 04, 05
 ;   R1 39,6 sur le pixel de C1                                                           -> 00 0F
 ;   E1 cel de largeur 0 ; E2 en-tête en $FFFE (hors RAM) ; E3 cel en $FFF7 dont les lignes sont coupées par la
 ;   fin de la RAM ; E4 y = 168 ; E5 39,6 de largeur 0 ; E6 plan en ligne 100 (déborde de l'écran)
@@ -92,6 +94,47 @@ c1:
   bra boucle
 
 fin_cas:
+; P1-P3 : cel Q plein (couleur 6) puis cel P au format PC au même endroit, les trois points relus avant
+; d'écrire une ligne (le texte du test fait défiler l'écran)
+  lda #<celQ
+  ldx #>celQ
+  jsr dessinp
+  lda #<celP
+  ldx #>celP
+  jsr dessinp
+  lda API_ERROR
+  sta err
+  ldx #0
+p_lire:
+  phx
+  lda prec,x
+  sta cas
+  lda prec+1,x
+  sta cas+1
+  jsr relire
+  plx
+  lda val
+  sta pval,x
+  inx
+  inx
+  cpx #6
+  bne p_lire
+  ldx #0
+p_ecr:
+  phx
+  lda prec,x
+  sta cas
+  lda prec+1,x
+  sta cas+1
+  lda pval,x
+  sta val
+  jsr ligne_cas
+  plx
+  inx
+  inx
+  cpx #6
+  bne p_ecr
+
 ; R1 : 39,6 sur (10,10,1,1), puis relecture de (20,18)
   lda #10
   sta API_PARAMETERS
@@ -260,6 +303,23 @@ agi:
   ldx #39
   jmp api
 
+; 39,5 du cel A,X en (130,160), priorité 5, sans miroir, plan en ligne 8
+dessinp:
+  sta API_PARAMETERS
+  stx API_PARAMETERS+1
+  lda #130
+  sta API_PARAMETERS+2
+  lda #160
+  sta API_PARAMETERS+3
+  lda #5
+  sta API_PARAMETERS+4
+  stz API_PARAMETERS+5
+  lda #8
+  sta API_PARAMETERS+6
+  stz API_PARAMETERS+7
+  lda #5
+  jmp agi
+
 image:
   .byte $F2,$09,$F6,$32,$00,$32,$A7
   .byte $F2,$01,$F6,$3C,$64
@@ -272,6 +332,8 @@ celA:   .byte 1, 1, $00, $51, 0                 ; 1 x 1, couleur 5, transparent 
 celM:   .byte 2, 1, $00, $A1, $B1, 0            ; 2 x 1, couleurs A puis B
 celW:   .byte 3, 1, $00, $11, $21, $31, 0       ; 3 x 1, couleurs 1, 2, 3
 celZ:   .byte 0, 1, $00, 0                      ; largeur 0
+celQ:   .byte 3, 1, $00, $63, 0                 ; 3 x 1, couleur 6
+celP:   .byte 3, 1, $B3, $31, $41, $51, 0       ; format PC : miroir (bit 7), boucle 3, transparent 3 ; couleurs 3, 4, 5
 e3cel:  .byte 1, 200, $00                       ; en-tête copié en $FFF7
 
 cases:  ; lettre, chiffre, cel, x, y, priorité, drapeaux, X écran, Y écran
@@ -335,6 +397,15 @@ cases:  ; lettre, chiffre, cel, x, y, priorité, drapeaux, X écran, Y écran
 
 r1:     .byte 'R','1', 0,0,0,0,0,0
   .word 20, 18
+
+prec:   .word p1, p2, p3
+pval:   .byte 0, 0, 0, 0, 0, 0
+p1:     .byte 'P','1', 0,0,0,0,0,0
+  .word 260, 168
+p2:     .byte 'P','2', 0,0,0,0,0,0
+  .word 262, 168
+p3:     .byte 'P','3', 0,0,0,0,0,0
+  .word 264, 168
 
 erreurs:  ; lettre, chiffre, cel, x, y, priorité, drapeaux, ligne du plan (2)
   .byte 'E','1'

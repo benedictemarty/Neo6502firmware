@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: EUPL-1.2 */
 /*
  * agicel.cpp : repris tel quel de Neo6502AGI tools/agicel/agicel.c (EUPL 1.2),
- * seul le chemin d'inclusion change. Écrit d'après Neo6502AGI
+ * seul le chemin d'inclusion change ; octet 2 de l'en-tête au format PC (T-109,
+ * 2026-10-08 : couleur transparente dans le quartet faible). Écrit d'après Neo6502AGI
  * docs/specs/view-v2.md, elle-même tirée d'AGI Specs (doc/agispecs.sgml de
  * https://github.com/cmatsuoka/sarien ; licence citée intégralement dans
  * view-v2.md).
@@ -29,7 +30,7 @@ int agicel_dessiner_vers(const uint8_t *mem, size_t mem_lg, size_t adresse, int 
         return AGICEL_PARAM;
     largeur = mem[i];
     hauteur = mem[i + 1];
-    transparent = mem[i + 2] >> 4;
+    transparent = mem[i + 2] & 0x0F;            /* format PC : bit 7 miroir, bits 6-4 boucle */
     i += 3;
     if (largeur == 0 || hauteur == 0 || x < 0 || x >= AGICEL_LARGEUR || y_bas < 0 || y_bas >= AGICEL_HAUTEUR)
         return AGICEL_PARAM;

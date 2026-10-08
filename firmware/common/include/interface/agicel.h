@@ -32,6 +32,9 @@ uint8_t agicel_priorite(const uint8_t *plan, int x, int y);
 /*
  * Dessine le cel dont l'en-tête est à mem[adresse] (mem : mem_lg octets),
  * x à gauche, y_bas = ligne du bas, priorité de l'objet, miroir (0 ou 1).
+ * En-tête : largeur, hauteur, octet au format PC (bit 7 miroir, bits 6-4
+ * boucle normale, quartet faible = couleur transparente) ; seul le quartet
+ * faible est lu, le miroir est passé par l'appelant.
  * Un pixel est écrit dans ecran (160 x 168) s'il n'est pas transparent, s'il
  * est dans le plan, et si priorite >= agicel_priorite() (hypothèse « >= »).
  * Une ligne plus longue que la largeur est coupée.

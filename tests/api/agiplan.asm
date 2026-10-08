@@ -14,6 +14,7 @@
 ;   W1 cel W (1, 2, 3) coupé au bord droit en x = 158, relu en 159            -> 00 02 05
 ;   T1-T2 cel T (transparent puis 5) en (120,50)                               -> 0F 04, 05 05
 ;   H1-H2 cel H (1 x 3, couleur 7) en priorité 6, bas en y = 12               -> 07 06 en y = 10 et 12
+;   Q1-Q3 cel P au format PC (octet $B3 : miroir au bit 7, transparent 3) sans miroir en P5 -> 0F 04, 04 05, 05 05
 ;   P0, P3, PG priorité 0, 3, 16 : erreur 1, plan inchangé en (30,30)           -> 01 0F 04
 ;   E1 cel de largeur 0 ; E2 en-tête en $FFFE ; E4 y = 168                      -> 01
 ;   F1-F3 39,8 (20,40, 3 x 2) priorité 2 : dedans, à droite, dessous            -> 02, 04, 04
@@ -137,6 +138,7 @@ celW:   .byte 3, 1, $00, $11, $21, $31, 0       ; 3 x 1, couleurs 1, 2, 3
 celT:   .byte 2, 1, $00, $01, $51, 0            ; 2 x 1, transparent puis 5
 celH:   .byte 1, 3, $00, $71, 0, $71, 0, $71, 0 ; 1 x 3, couleur 7
 celZ:   .byte 0, 1, $00, 0                      ; largeur 0
+celP:   .byte 3, 1, $B3, $31, $41, $51, 0       ; format PC : miroir (bit 7), boucle 3, transparent 3 ; couleurs 3, 4, 5
 
 cases:  ; fonction, lettre, chiffre, P0..P5, X, Y
   .byte 7,'A','1'
@@ -181,6 +183,15 @@ cases:  ; fonction, lettre, chiffre, P0..P5, X, Y
   .byte 7,'H','2'
   .word celH
   .byte 80, 12, 6, 0, 80, 12
+  .byte 7,'Q','1'
+  .word celP
+  .byte 130, 80, 5, 0, 130, 80
+  .byte 7,'Q','2'
+  .word celP
+  .byte 130, 80, 5, 0, 131, 80
+  .byte 7,'Q','3'
+  .word celP
+  .byte 130, 80, 5, 0, 132, 80
   .byte 7,'P','0'
   .word celA
   .byte 30, 30, 0, 0, 30, 30

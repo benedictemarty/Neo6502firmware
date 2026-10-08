@@ -47,7 +47,8 @@ GROUP 39 AGI Pictures
     FUNCTION 5 Draw Cel
         *DERROR = AGIDrawCel(DSPGetInt16(DPARAMS,0),DPARAMS[2],DPARAMS[3],DPARAMS[4],DPARAMS[5],DSPGetInt16(DPARAMS,6));
     DOCUMENTATION
-        Trinity (T-109). Draws the AGI view cel whose header (width, height, transparency and mirror byte, then
+        Trinity (T-109). Draws the AGI view cel whose header (width, height, then a byte in PC format : bit 7
+        mirror, bits 6-4 normal loop, low nibble transparent colour ; only the transparent colour is read, then
         the RLE lines : colour in the high nibble, length in the low nibble, 0 at the end of each line) is at
         address Parameters:0,1 of 6502 RAM, its left side at X Parameter:2, its bottom line at Y Parameter:3
         (AGI pixels), with the object priority Parameter:4 ; bit 0 of Parameter:5 mirrors it horizontally. The
