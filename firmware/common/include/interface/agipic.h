@@ -32,3 +32,5 @@ uint32_t AGILastDuration(void);                                                 
 uint8_t AGIReadPoint(uint8_t x,uint8_t y,uint8_t *visual,uint8_t *priority);   // 39,4
 uint8_t AGIDrawCel(uint16_t address,uint8_t x,uint8_t yBottom,uint8_t priority,uint8_t flags,uint16_t top);  // 39,5
 uint8_t AGIRestoreRect(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint16_t top);                      // 39,6
+uint8_t AGIAddCelToPlane(uint16_t address,uint8_t x,uint8_t yBottom,uint8_t priority,uint8_t flags);       // 39,7
+uint8_t AGIFillPlanePriority(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint8_t priority);             // 39,8

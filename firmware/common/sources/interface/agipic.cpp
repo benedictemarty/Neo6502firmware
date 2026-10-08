@@ -141,3 +141,33 @@ uint8_t AGIRestoreRect(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint16_t
 	if (!_AGIScreenOk(top)) return AGI_ERR_PARAM;
 	return (uint8_t)agicel_restaurer_vers(x,y,width,height,gfxObjectMemory,_AGIPutScreen,&top);
 }
+
+// ***************************************************************************************
+//
+//		39,7 / 39,8 (T-122) : add.to.pic. 39,7 writes a cel into the plane (colour and
+//		priority) with the priority test of 39,5 ; rows are drawn top to bottom and the
+//		search under a control line goes down, so a point already written never changes
+//		the test of the next ones as long as the priority is 4 or more : 0-3 is refused.
+//		39,8 sets the priority nibble of a rectangle, clipped to the plane.
+//
+// ***************************************************************************************
+
+static void _AGIPutPlane(void *ctx,int x,int y,uint8_t colour) {
+	gfxObjectMemory[y * AGI_WIDTH + x] = (uint8_t)((*(const uint8_t *)ctx << 4) | colour);
+}
+
+uint8_t AGIAddCelToPlane(uint16_t address,uint8_t x,uint8_t yBottom,uint8_t priority,uint8_t flags) {
+	if (priority < 4 || priority > 15) return AGI_ERR_PARAM;
+	return (uint8_t)agicel_dessiner_vers(cpuMemory,MEMORY_SIZE,address,x,yBottom,priority,flags & 1,
+	                                     gfxObjectMemory,_AGIPutPlane,&priority);
+}
+
+uint8_t AGIFillPlanePriority(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint8_t priority) {
+	if (width == 0 || height == 0 || priority > 15) return AGI_ERR_PARAM;
+	for (int yy = y;yy < y + height && yy < AGI_HEIGHT;yy++) {
+		uint8_t *p = gfxObjectMemory + yy * AGI_WIDTH;
+		for (int xx = x;xx < x + width && xx < AGI_WIDTH;xx++)
+			p[xx] = (uint8_t)((priority << 4) | (p[xx] & 0x0F));
+	}
+	return AGI_ERR_OK;
+}
