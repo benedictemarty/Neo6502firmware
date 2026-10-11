@@ -44,6 +44,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.83** (2026-10-11) — **T-126 et T-127 : vecteurs publics `KTaskSelf` et `KTaskStop` (demandes D-01 et D-02
+  de NeoWin, `~/Neo6502Windows`).** `KTaskSelf` (`$FFBE`) rend dans A le numéro de la tâche courante, X et Y préservés.
+  `KTaskStop` (`$FFBB`) arrête le tick (1,12 à 0 Hz, ce qui relâche IRQB) et l'ordonnanceur (`rtActive` = 0), I=1 au
+  retour : l'appelant continue seul sur sa pile, les autres tâches sont abandonnées, une IRQ ou un BRK refait un reset
+  comme avant `KTaskInit` ; l'interruption de trame (F-10) n'est pas arrêtée. NeoWin n'a plus à lire `$FF11` ni à
+  écrire `$FF10` (données internes, inchangées). Plus de place sous `$FF00` (13 octets, `$FEF3-$FEFF`) : les deux
+  routines sont en page `$FF`, après `KBoot` (`$FF98-$FFB0`) ; la table de sauts descend à `$FFBB`, les vecteurs
+  existants (`$FFC1-$FFF7`) ne bougent pas ; `$FFB1-$FFBA` reste libre (10 octets). Trois garde-fous d'assemblage
+  (`.cerror`) : code principal sur le port `$FF00`, données de l'ordonnanceur sur `KBoot`, code de la page `$FF` sur la
+  table (`KVectorTable`, écrit par `vectors.py`) ; chacun échoue dès qu'on le dépasse d'un octet. Test `rtos_stop`
+  (contre-essai : un `KTaskStop` réduit à `sei`/`rts` donne `ACT=80 HZ=0064`). NeoDOS 0.32.1. `make test-api` 41/41,
+  toolbox 14/14, `test-boot` 8/8, `test-snd`, `test-fonctions` (283) OK. **Non essayé sur carte.**
+
 - **0.16.82** (2026-10-08) — **T-109 et T-122 : cels de vues AGI et `add.to.pic` (groupe 39, demandes de Neo6502AGI ;
   fusion de la branche `essai/agi-cels` décidée par bmarty sans les mesures sur carte prévues par FW-2).** 39,5 Draw Cel
   dessine à l'écran un cel RLE de la RAM 6502, masqué par la priorité du plan AGI (« >= », lignes de contrôle 0-3 :

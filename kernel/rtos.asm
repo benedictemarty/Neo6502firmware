@@ -25,6 +25,9 @@
 ;                  KTaskTicks   -> A/X = tick counter lo/hi
 ;                  KSemWait     A/X = semaphore address : wait until > 0 then decrement
 ;                  KSemSignal   A/X = semaphore address : increment
+;                  KTaskSelf    -> A = current task id ; X, Y preserved (T-126)
+;                  KTaskStop    stop the tick and the scheduler, I=1 on return (T-127)
+;                               (both in kernel.asm after KBoot : no room below $FF00)
 ;
 ; ***************************************************************************************
 ; ***************************************************************************************

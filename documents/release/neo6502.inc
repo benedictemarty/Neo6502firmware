@@ -1,4 +1,6 @@
 ControlPort = $ff00
+TaskStop = $ffbb
+TaskSelf = $ffbe
 SemSignal = $ffc1
 SemWait = $ffc4
 TaskTicks = $ffc7
