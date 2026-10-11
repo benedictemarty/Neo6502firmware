@@ -8,7 +8,7 @@
 ;   A3 priorité 9 sur la colonne (hypothèse « >= »)                            -> 00 05 09
 ;   A4 priorité 5 sur la ligne de contrôle (60,100) : 6 trouvé dessous         -> 00 0F 01
 ;   A5 priorité 6 au même point : la ligne de contrôle est remplacée           -> 00 05 06
-;   A6 priorité 14 sur la colonne de contrôle jusqu'au bas (hypothèse : 15)    -> 00 0F 03
+;   A6 priorité 4 sur la colonne de contrôle jusqu'au bas (bas = 4, BUG-26)    -> 00 05 04
 ;   A7 priorité 15 au même endroit                                             -> 00 05 0F
 ;   M1-M2 cel M (A puis B) en miroir en (100,50)                               -> B, A
 ;   W1 cel W (1, 2, 3) coupé au bord droit en x = 158, relu en 159            -> 00 02 05
@@ -158,7 +158,7 @@ cases:  ; fonction, lettre, chiffre, P0..P5, X, Y
   .byte 60, 100, 6, 0, 60, 100
   .byte 7,'A','6'
   .word celA
-  .byte 70, 161, 14, 0, 70, 161
+  .byte 70, 161, 4, 0, 70, 161
   .byte 7,'A','7'
   .word celA
   .byte 70, 160, 15, 0, 70, 160

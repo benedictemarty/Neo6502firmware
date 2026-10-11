@@ -44,6 +44,14 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.84** (2026-10-11) — **BUG-26 de Neo6502AGI : sous une ligne de contrôle jusqu'au bas du plan, la priorité vaut 4
+  (et non plus 15).** `AGICEL_PRIO_BAS` = 4 dans `agicel.h` (39,5 Draw Cel et 39,7 Add Cel To Plane) : quand toute la
+  colonne sous un point n'est faite que de lignes de contrôle (0-3), le point est posé. Observé par Neo6502AGI sur
+  l'interpréteur d'origine sous DOSBox (Police Quest PC, carte routière, pièce 10 : 20 `add.to.pic` affichés), absents
+  avec 15 ; la valeur 15 était une hypothèse. Décision bmarty. Tests `agicel` (C7) et `agiplan` (A6) passés en priorité 4
+  (contre-essai : échec sur le `neo` de la 0.16.83). NeoDOS 0.32.1. `make test-api` 41/41, toolbox 14/14, `test-boot`
+  8/8, `test-snd`, `test-fonctions` (283) OK. **Non essayé sur carte.**
+
 - **0.16.83** (2026-10-11) — **T-126 et T-127 : vecteurs publics `KTaskSelf` et `KTaskStop` (demandes D-01 et D-02
   de NeoWin, `~/Neo6502Windows`).** `KTaskSelf` (`$FFBE`) rend dans A le numéro de la tâche courante, X et Y préservés.
   `KTaskStop` (`$FFBB`) arrête le tick (1,12 à 0 Hz, ce qui relâche IRQB) et l'ordonnanceur (`rtActive` = 0), I=1 au

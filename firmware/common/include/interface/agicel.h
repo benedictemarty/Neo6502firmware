@@ -22,8 +22,11 @@
 #define AGICEL_FORMAT  2        /* données du cel coupées par la fin de la mémoire */
 
 /* Priorité retenue quand la recherche sous une ligne de contrôle atteint le
- * bas du plan (hypothèse, docs/specs/view-v2.md). */
-#define AGICEL_PRIO_BAS 15
+ * bas du plan : la plus basse, le point est posé (observé sur l'interpréteur
+ * d'origine, BUG-26 : add.to.pic de la carte routière de Police Quest PC,
+ * dont le plan des priorités ne contient que des lignes de contrôle ;
+ * docs/specs/view-v2.md). */
+#define AGICEL_PRIO_BAS 4
 
 /* Priorité effective du point (x, y) du plan : sous une ligne de contrôle
  * (0 à 3), celle du premier point plus bas qui n'en est pas une. */

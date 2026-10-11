@@ -9,7 +9,7 @@
 ;   C4 relecture du pixel écran impair de C1 (pixels doublés)                            -> 00 05
 ;   C5 priorité 5 sur la ligne de contrôle (60,100) : 6 trouvé dessous                   -> 00 0F
 ;   C6 priorité 6 au même point                                                          -> 00 05
-;   C7 priorité 14 sur la colonne de contrôle jusqu'au bas (hypothèse : 15)              -> 00 0F
+;   C7 priorité 4 sur la colonne de contrôle jusqu'au bas (bas du plan = 4, BUG-26 AGI)  -> 00 05
 ;   C8 priorité 15 au même endroit                                                       -> 00 05
 ;   M1-M4 cel M (couleurs A puis B) sans miroir puis en miroir                           -> A B / B A
 ;   W1-W2 cel W (1, 2, 3) coupé au bord droit en x = 158                                 -> 01 02
@@ -363,7 +363,7 @@ cases:  ; lettre, chiffre, cel, x, y, priorité, drapeaux, X écran, Y écran
   .word 120, 108
   .byte 'C','7'
   .word celA
-  .byte 70, 161, 14, 0
+  .byte 70, 161, 4, 0
   .word 140, 169
   .byte 'C','8'
   .word celA
