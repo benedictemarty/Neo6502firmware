@@ -148,12 +148,16 @@ uint8_t AGIRestoreRect(uint8_t x,uint8_t y,uint8_t width,uint8_t height,uint16_t
 //		priority) with the priority test of 39,5 ; rows are drawn top to bottom and the
 //		search under a control line goes down, so a point already written never changes
 //		the test of the next ones as long as the priority is 4 or more : 0-3 is refused.
+//		A control line (0-3) already in the plane is kept, only the colour is written
+//		(T-129, BUG-31 of Neo6502AGI : seen on the original interpreter).
 //		39,8 sets the priority nibble of a rectangle, clipped to the plane.
 //
 // ***************************************************************************************
 
 static void _AGIPutPlane(void *ctx,int x,int y,uint8_t colour) {
-	gfxObjectMemory[y * AGI_WIDTH + x] = (uint8_t)((*(const uint8_t *)ctx << 4) | colour);
+	uint8_t *p = gfxObjectMemory + y * AGI_WIDTH + x;
+	uint8_t priority = (*p >> 4) < 4 ? (*p >> 4) : *(const uint8_t *)ctx;   	// control line kept (T-129)
+	*p = (uint8_t)((priority << 4) | colour);
 }
 
 uint8_t AGIAddCelToPlane(uint16_t address,uint8_t x,uint8_t yBottom,uint8_t priority,uint8_t flags) {

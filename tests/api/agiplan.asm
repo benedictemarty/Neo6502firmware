@@ -7,9 +7,9 @@
 ;   A2 priorité 8 sur la colonne de priorité 9 : plan inchangé                 -> 00 0F 09
 ;   A3 priorité 9 sur la colonne (hypothèse « >= »)                            -> 00 05 09
 ;   A4 priorité 5 sur la ligne de contrôle (60,100) : 6 trouvé dessous         -> 00 0F 01
-;   A5 priorité 6 au même point : la ligne de contrôle est remplacée           -> 00 05 06
-;   A6 priorité 4 sur la colonne de contrôle jusqu'au bas (bas = 4, BUG-26)    -> 00 05 04
-;   A7 priorité 15 au même endroit                                             -> 00 05 0F
+;   A5 priorité 6 au même point : la ligne de contrôle est gardée (BUG-31)     -> 00 05 01
+;   A6 priorité 4 sur la colonne de contrôle jusqu'au bas (bas = 4, BUG-26)    -> 00 05 03
+;   A7 priorité 15 au même endroit (ligne de contrôle 3 gardée)                -> 00 05 03
 ;   M1-M2 cel M (A puis B) en miroir en (100,50)                               -> B, A
 ;   W1 cel W (1, 2, 3) coupé au bord droit en x = 158, relu en 159            -> 00 02 05
 ;   T1-T2 cel T (transparent puis 5) en (120,50)                               -> 0F 04, 05 05

@@ -44,6 +44,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.85** (2026-10-12) — **BUG-31 de Neo6502AGI : 39,7 Add Cel To Plane garde les lignes de contrôle du plan.**
+  Sur un point dont la priorité en place est 0-3, seule la couleur de l'ajout est écrite ; la ligne de contrôle reste
+  (`_AGIPutPlane`, `agipic.cpp`). Observé par Neo6502AGI sur l'interpréteur d'origine sous DOSBox : Police Quest PC,
+  couloir (pièce 6), `add.to.pic` sur une ligne 0 — l'original déplace ego, la ligne est toujours là ; même effet
+  pièce 25. Ce que l'original fait d'autre à ces points n'est pas connu (seule la conservation est observée). Décision
+  bmarty. Test `agiplan` : A5, A6, A7 rendent la ligne de contrôle (01, 03, 03) au lieu de la priorité de l'ajout
+  (contre-essai : échec sur le `neo` de la 0.16.84). NeoDOS 0.32.1. `make test-api` 41/41, toolbox 14/14, `test-boot`
+  8/8, `test-snd`, `test-fonctions` (283) OK. **Non essayé sur carte.**
+
 - **0.16.84** (2026-10-11) — **BUG-26 de Neo6502AGI : sous une ligne de contrôle jusqu'au bas du plan, la priorité vaut 4
   (et non plus 15).** `AGICEL_PRIO_BAS` = 4 dans `agicel.h` (39,5 Draw Cel et 39,7 Add Cel To Plane) : quand toute la
   colonne sous un point n'est faite que de lignes de contrôle (0-3), le point est posé. Observé par Neo6502AGI sur
