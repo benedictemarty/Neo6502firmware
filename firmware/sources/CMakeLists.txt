@@ -33,7 +33,7 @@ target_sources(firmware PRIVATE main.cpp
     #
     hardware/dvi_320x240x256.cpp  hardware/usbdriver.cpp  hardware/timer.cpp  hardware/sound.cpp
     hardware/fileimplementation.cpp hardware/tick.cpp hardware/serial.cpp hardware/ports.cpp
-    hardware/GamepadController.cpp hardware/debugport.cpp hardware/tmds_encode_font_2bpp.S hardware/cdc.cpp hardware/cxxthrow.cpp hardware/clock.cpp hardware/banks.cpp ${PADSOURCES}
+    hardware/GamepadController.cpp hardware/debugport.cpp hardware/stacks.cpp hardware/tmds_encode_font_2bpp.S hardware/cdc.cpp hardware/cxxthrow.cpp hardware/clock.cpp hardware/banks.cpp ${PADSOURCES}
 
     #
     #       CPU type (pretty much permanently PIO now)
@@ -103,3 +103,7 @@ add_custom_target(reset
 )
 
 add_dependencies(upload firmware)
+# T-132 (M1) : DSPHandler lives in RAM and calls hundreds of API functions in flash ; with plain calls the
+# linker adds a 16 byte veneer in RAM for each (206 of them, 3 296 bytes). -mlong-calls loads the address
+# instead : measured -2 352 bytes of RAM (study docs/ETUDE-PERF-MEMOIRE-2026-10-12.md).
+set_source_files_properties(${COMMONSRC}/dispatch.cpp PROPERTIES COMPILE_OPTIONS "-mlong-calls")

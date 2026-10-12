@@ -247,7 +247,9 @@ GROUP 5 Graphics
         (DSPHandler) ; Trinity T-90 adds the display side, core 1 : 2 the longest scanline callback (conversion of one
         line into the scan buffer), 3 the longest gap between two scanline callbacks (nominal : 32 in mode 1, whose
         lines are native, but 63 in modes 0 and 2, whose lines are doubled : the callback runs every other line),
-        4 the number of callbacks late by more than twice that nominal gap. 0 and 1 are the time the firmware spends away from the 6502 bus : while it is there the PIO
+        4 the number of callbacks late by more than twice that nominal gap ; Trinity T-132 adds the stacks, which have
+        no guard : 10 the deepest the core 0 stack has been since power-on, 11 the same for core 1 (bytes, measured on a
+        pattern painted at boot ; the linker reserves 2048 each, deeper means it ran into its margin). 0 and 1 are the time the firmware spends away from the 6502 bus : while it is there the PIO
         stalls and the processor clock stops, which is normal for an API call and pathological when it lasts.
         Counts of stalls alone (Function 5,41) cannot tell the two apart, hence these. Reset with 5,41 and $FF.
         0 in the emulators.

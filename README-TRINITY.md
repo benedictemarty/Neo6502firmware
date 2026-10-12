@@ -44,6 +44,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.90** (2026-10-12) — **RAM −2 352 octets et profondeur des piles (T-132, pistes M1 et « piles » de l'étude
+  `docs/ETUDE-PERF-MEMOIRE-2026-10-12.md`).** `dispatch.cpp` compilé en `-mlong-calls` : `DSPHandler`, en RAM, appelait
+  les fonctions de l'API en flash par 206 relais de 16 octets ajoutés en RAM par l'éditeur de liens ; il charge
+  maintenant l'adresse. RAM 233 720 → **231 368** (marge sous `RAM_LIMIT` 3 340 → 5 692), relais en RAM 239 → 32 ;
+  `CPUExecute` (boucle du bus) a les mêmes instructions (seules les adresses du pool de littéraux changent).
+  Piles : aucune n'a de garde ; au démarrage, avant le cœur 1, `stacks.cpp` remplit d'un motif la pile du cœur 0 et sa
+  marge (scratch_y entier) et celle du cœur 1 (scratch_x après les encodeurs) ; 5,42 sélecteurs 10 et 11 rendent la
+  plus grande profondeur atteinte depuis la mise sous tension (octets ; 2 048 réservés chacune). NeoDOS **0.33.0**
+  (mode 3 : `MODE`, `EDIT` à la taille de 5,10).
+
 - **0.16.89** (2026-10-12) — **Mode 3 : écriture directe dans la grille (T-131, interface de NeoBBS D-01).** 5,13 Text
   Write (chaîne à longueur à (x, y) avec un attribut papier << 4 | encre, entrées 0-15 de la palette ; chaque octet est un
   glyphe CP437, codes $00-$1F et $80-$FF compris, sans transcription ; coupée en fin de rangée), 5,14 Text Scroll

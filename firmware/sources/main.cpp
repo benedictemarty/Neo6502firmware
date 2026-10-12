@@ -33,7 +33,10 @@ void ResetSystem(void) {
 //
 // ***************************************************************************************
 
+void STKPaint(void);  																	// T-132 : stacks.cpp
+
 int main() {
+    STKPaint();                                                                 // T-132 : before core 1 starts (stack depths, 5,42)
     DSPReset();                                                                 // Initialises everything.
     THWStart();
     while (1) CPUExecute();                                                     // Doesn't have to loop but can.

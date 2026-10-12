@@ -105,8 +105,12 @@ void __time_critical_func(HWBusServeBurst)(void) {  								// Called between tw
 	burstWrites = consecutive_writes;
 }
 
+uint32_t STKDepth(int core);  													// T-132 : stacks.cpp
+
 uint32_t HWBusTiming(uint8_t which) {
 	switch (which) {
+		case 10: return STKDepth(0);  											// T-132 : deepest stack seen since boot, core 0
+		case 11: return STKDepth(1);  											// and core 1, in bytes
 		case 0: return syncMaxUs;
 		case 1: return cmdMaxUs;
 		case 2: return RNDCallbackMax();  										// T-90 : display timings of core 1 (T-77)
