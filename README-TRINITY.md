@@ -44,6 +44,25 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.88** (2026-10-12) — **Mode 3 : texte couleur 80 × 25 (T-131, demande D-01 de NeoBBS).** 5,9 P0=3 : 80 × 25 cellules
+  8 × 8, 640 × 200 affichés en lignes doublées dans 640x480p60 (le texte 80 colonnes de la carte CGA), une encre et un
+  papier par cellule en RGB222 (niveaux 00/55/AA/FF, les couleurs CGA/ANSI exactes), glyphes CP437 (police 8 × 8 de la
+  console Linux Uni2-VGA8, domaine public, 7 glyphes dessinés ; `firmware/common/scripts/cp437font8.py`). La console
+  marche comme dans les autres modes : ses 16 couleurs sont les entrées 0-15 de la palette (5,32 recolore l'écran), ses
+  caractères Latin-1 $A0-$FF sont montrés par le même glyphe CP437 ou la lettre sans accent ; curseur = cellule aux
+  couleurs inversées. Pas de pixels : 5,10 rend 0 bit par pixel, le dessin (5,2-5,8, 5,33, 5,36, 5,39, 5,43) et les
+  sprites (6,2, 6,7) lèvent l'erreur, le pointeur de souris n'est pas dessiné ; page 0 seulement ; 2,5 et 2,21 sans
+  effet. La grille (codes CP437 puis 3 plans de couleur) est en tête de la mémoire vidéo, `$80:0000` (graphicsMemory
+  alignée sur 4) ; `text80.cpp` est commun à la carte et à `neo`. Carte : encodeur `tmds_encode_font_2bpp` de PicoDVI
+  (BSD-3) dans scratch_x, sa table de 2 Ko et sa police recopiées après la grille. **Mesuré sur carte** (essai
+  `c1086931` puis cette version) : 7 400 cycles par ligne sur 16 000, aucune ligne en retard (NeoDOS en `MODE 3`, deux
+  `DIR`), « stable sans trait, lisible, curseur visible » (bmarty). L'essai en 8 × 16 lignes natives (écran rouge,
+  7 934 cycles sur 8 000) a été écarté. Test API `mode3` (grille, couleurs, refus, palette, retour au mode 0), identique
+  dans `neo` et sur carte ; contre-essai : la 0.16.87 refuse le mode 3. `test-coeur1` a arrêté une première version
+  (accesseurs de la grille en flash appelés par le cœur 1). RAM 233 464 (+324). À venir (0.16.89) : les fonctions
+  NeoBBS (chaîne à (x, y) en CP437 brut, défilement d'une zone, effacement d'un rectangle). Phosphoneo : à adapter
+  (rendu 640 × 200, `RNDModeSupported` suit `GFX_MODE_COUNT`).
+
 - **0.16.87** (2026-10-12) — **Chargement des `.neo` par blocs (T-132, piste P1 de l'étude
   `docs/ETUDE-PERF-MEMOIRE-2026-10-12.md`).** 3,2 Load File d'un exécutable `.neo` lisait chaque octet de données
   par un `f_read` (≈ 34 µs l'octet sur carte, mesure de la 0.16.41) ; les données de chaque bloc sont maintenant lues
