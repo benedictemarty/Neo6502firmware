@@ -112,3 +112,10 @@ L'option effective est `-O2` (`firmware/CMakeLists.txt:41`). Passer certains fic
 5. La mesure des piles (§ 5), avant de toucher aux scratch.
 
 Le reste à la demande. Chaque piste ferait l'objet d'un ticket à part, avec son test et un contre-essai.
+
+## 7. Séance carte du 2026-10-12 (flash SWD, après coup)
+
+- **P1 (0.16.87)** : 30/31 tests carte (`neotests.py --cd`) ; le seul échec, `fdate`, vient de l'horloge non remise après coupure secteur (T-93). Validé.
+- **D6** : RENDU.NEO, deux passes contre la 0.16.86 : indiscernables. La 0.16.86 n'a déjà presque aucun retard sous cette charge. Pas de gain mesurable : à abandonner, sauf charge plus dure.
+- **Mode 3 (T-131)** : 7 934 cycles par ligne en moyenne sur carte, contre 6 387 au banc PC (+24 % : contention et IRQ). Le budget est de 8 000 : l'écran est rouge au repos. Non viable tel quel.
+- **Leçon** : le banc PC donne un minimum. Sur cette carte, compter environ +25 % pour un encodeur du cœur 1 qui lit la SRAM entrelacée.
