@@ -44,6 +44,20 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.86** (2026-10-12) — **Noms de fichiers en Latin-1 (T-130, demande D-03 de NeoWin).** Sur la clé, les noms
+  longs sont en Unicode (`FF_LFN_UNICODE 2`, UTF-8 dans FatFs) et les noms 8.3 en CP850 ; la couche FIS convertit les
+  noms Latin-1 du 6502 (écran, locale `fr`) en UTF-8 et inversement (`filenames.cpp`, carte et `neo`). « md Été » écrit
+  le nom long « Été » qu'un PC lit tel quel (avant : « ╔tΘ », octets lus en CP437), et « cd été » trouve « Été » (la
+  casse des lettres accentuées est ignorée sur la clé, pas dans `neo` dont l'hôte la distingue). Nom 8.3 sans accent
+  (« ETE », table CP850 de FatFs). Un caractère hors Latin-1 se lit `?` : les noms déjà écrits en CP437 se lisent
+  « ?t? » et ne s'ouvrent plus par leur nom (à renommer depuis un PC). Décision bmarty (« go utf8 »). Flash +1 272
+  octets, RAM statique inchangée. Tests : `make test-noms` (conversion, et le FatFs du firmware sur une image FAT de
+  `mkfs.fat`, octets du disque compris ; contre-essai `make test-noms-ancien` : l'ancienne configuration échoue à
+  « cd été », diagnostic de NeoWin vérifié), test API `noms` (dans `neo`, noms UTF-8 sur le PC contrôlés par
+  `noms.fichiers` ; échec sur le `neo` de la 0.16.85). Phosphoneo doit appeler les deux fonctions dans son hôte. NeoDOS
+  0.32.1. `make test-api` 42/42, toolbox 14/14, `test-boot` 8/8, `test-snd`, `test-fonctions` (283), `test-coeur1`
+  OK. **Non essayé sur carte.**
+
 - **0.16.85** (2026-10-12) — **BUG-31 de Neo6502AGI : 39,7 Add Cel To Plane garde les lignes de contrôle du plan.**
   Sur un point dont la priorité en place est 0-3, seule la couleur de l'ajout est écrite ; la ligne de contrôle reste
   (`_AGIPutPlane`, `agipic.cpp`). Observé par Neo6502AGI sur l'interpréteur d'origine sous DOSBox : Police Quest PC,

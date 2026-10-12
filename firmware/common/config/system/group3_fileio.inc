@@ -261,6 +261,11 @@ GROUP 3 File I/O
 
         If there are no more items to read, this call fails and an error is flagged.
 
+        File names are Latin-1, as the screen and the fr locale, in every function of this group (Trinity T-130) :
+        they are stored as UTF-8 long names on the key (and on the emulator's host), so a PC reads the same name,
+        and upper and lower case are the same for accented letters too on the key ("été" finds "Été"). A name
+        written by another system with a character outside Latin-1 reads with "?" in its place.
+
     FUNCTION 19 Close Directory
         {
             *DERROR = FIOCloseDir();

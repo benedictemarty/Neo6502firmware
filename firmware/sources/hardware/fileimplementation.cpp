@@ -104,7 +104,7 @@ namespace {
 uint8_t FISRenameFile(const std::string& oldFilename, const std::string& newFilename) {
 	STOInitialise();
 	// CONWriteString("FISRenameFile('%s', '%s') -> ", oldFilename.c_str(), newFilename.c_str());
-	FRESULT result = f_rename(oldFilename.c_str(), newFilename.c_str());
+	FRESULT result = f_rename(FNMToStorage(oldFilename).c_str(), FNMToStorage(newFilename).c_str());
 	// CONWriteString("%d\r", result);
 	return convertError(result);
 }
@@ -130,11 +130,11 @@ uint8_t FISCopyFile(const std::string& oldFilename, const std::string& newFilena
 		return FIOERROR_UNKNOWN;
 	}
 
-	FRESULT result = f_open(&*oldFile, oldFilename.c_str(), FA_READ);
+	FRESULT result = f_open(&*oldFile, FNMToStorage(oldFilename).c_str(), FA_READ);
 	// CONWriteString("Opened '%s' for read -> %d\r", oldFilename.c_str(), result);
 	if (result == FR_OK)
 	{
-		result = f_open(&*newFile, newFilename.c_str(), FA_WRITE|FA_CREATE_ALWAYS);
+		result = f_open(&*newFile, FNMToStorage(newFilename).c_str(), FA_WRITE|FA_CREATE_ALWAYS);
 		// CONWriteString("Opened '%s' for write -> %d\r", newFilename.c_str(), result);
 		if (result == FR_OK)
 		{
@@ -171,7 +171,7 @@ uint8_t FISCopyFile(const std::string& oldFilename, const std::string& newFilena
 uint8_t FISDeleteFile(const std::string& filename) {
 	STOInitialise();
 	// CONWriteString("FISDeleteFile('%s') ->", filename.c_str());
-	FRESULT result = f_unlink(filename.c_str());
+	FRESULT result = f_unlink(FNMToStorage(filename).c_str());
 	// CONWriteString("%d\r", result);
 	return convertError(result);
 }
@@ -185,7 +185,7 @@ uint8_t FISDeleteFile(const std::string& filename) {
 uint8_t FISCreateDirectory(const std::string& filename) {
 	STOInitialise();
 	// CONWriteString("FISCreateDirectory('%s') ->", filename.c_str());
-	FRESULT result = f_mkdir(filename.c_str());
+	FRESULT result = f_mkdir(FNMToStorage(filename).c_str());
 	// CONWriteString("%d\r", result);
 	return convertError(result);
 }
@@ -199,7 +199,7 @@ uint8_t FISCreateDirectory(const std::string& filename) {
 uint8_t FISChangeDirectory(const std::string& filename) {
 	STOInitialise();
 	// CONWriteString("FISChangeDirectory('%s') ->", filename.c_str());
-	FRESULT result = f_chdir(filename.c_str());
+	FRESULT result = f_chdir(FNMToStorage(filename).c_str());
 	// CONWriteString("%d\r", result);
 	return convertError(result);
 }
@@ -211,10 +211,19 @@ uint8_t FISChangeDirectory(const std::string& filename) {
 // ***************************************************************************************
 
 uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
-	FRESULT result = f_getcwd(target,maxSize);
-	if (result == FR_OK && target[0] >= '0' && target[0] <= '9' && target[1] == ':')	// T-24 : "n:/dir" -> "/dir", relative to
-		memmove(target,target + 2,strlen(target + 2) + 1);  								// the volume root (as the emulators, 3,23)
-	return convertError(result);
+	if (maxSize <= 0) return FIOERROR_INVALID_PARAMETER;
+	int utfSize = maxSize * 2 + 2;  												// T-130 : UTF-8, at most 2 bytes per Latin-1
+	std::unique_ptr<char[]> utf(new (std::nothrow) char[utfSize]);					// character, + "n:" ; heap (small stack)
+	if (!utf) return FIOERROR_NOT_ENOUGH_CORE;
+	FRESULT result = f_getcwd(utf.get(),utfSize);
+	if (result != FR_OK) return convertError(result);
+	const char *p = utf.get();
+	if (p[0] >= '0' && p[0] <= '9' && p[1] == ':') p += 2;  						// T-24 : "n:/dir" -> "/dir", relative to
+																					// the volume root (as the emulators, 3,23)
+	std::string name = FNMFromStorage(p);
+	if ((int)name.size() >= maxSize) return FIOERROR_NOT_ENOUGH_CORE;  			// as f_getcwd when the buffer is short
+	strcpy(target,name.c_str());
+	return FIOERROR_OK;
 }
 
 // ***************************************************************************************
@@ -281,7 +290,7 @@ uint8_t FISStatFile(const std::string& filename, uint32_t* length, uint8_t* attr
 	STOInitialise();
 
 	FILINFO fno;
-	FRESULT result = f_stat(filename.c_str(), &fno);
+	FRESULT result = f_stat(FNMToStorage(filename).c_str(), &fno);
 
 	*length = fno.fsize;
 	*attribs = getAttributes(&fno);
@@ -310,7 +319,7 @@ uint8_t FISSetFileAttributes(const std::string& filename, uint8_t attribs) {
 		if (attribs & FIOATTR_SYSTEM)
 			fatattribs |= AM_SYS;
 		
-		FRESULT result = f_chmod(filename.c_str(), fatattribs, 0xff);
+		FRESULT result = f_chmod(FNMToStorage(filename).c_str(), fatattribs, 0xff);
 
 		return convertError(result);
 	#else
@@ -333,7 +342,7 @@ uint8_t FISOpenDir(const std::string& filename) {
 	if (readDir.obj.fs)
 		f_closedir(&readDir);
 
-	FRESULT result = f_opendir(&readDir, filename.c_str());
+	FRESULT result = f_opendir(&readDir, FNMToStorage(filename).c_str());
 	return convertError(result);
 }
 
@@ -345,7 +354,7 @@ uint8_t FISReadDir(std::string& filename, uint32_t* size, uint8_t* attribs) {
 	FILINFO fno;
 	FRESULT result = f_readdir(&readDir, &fno);
 	if ((result == FR_OK) && fno.fname[0]) {
-		filename = fno.fname;
+		filename = FNMFromStorage(fno.fname);  										// T-130 : UTF-8 -> Latin-1
 		*attribs = getAttributes(&fno);
 		*size = fno.fsize;
 		lastEntryDate = fno.fdate;lastEntryTime = fno.ftime;lastEntrySet = true;  		// T-91
@@ -392,7 +401,7 @@ uint8_t FISOpenFileHandle(uint8_t fileno, const std::string& filename, uint8_t m
 		return FIOERROR_INVALID_PARAMETER;
 
 	STOInitialise();
-	FRESULT result = f_open(f, filename.c_str(), modes[mode]);
+	FRESULT result = f_open(f, FNMToStorage(filename).c_str(), modes[mode]);
 	return convertError(result);
 }
 

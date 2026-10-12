@@ -1,0 +1,8 @@
+MD 00
+CD 00
+CWD 00 /Été
+SAVE 00
+CD 00
+REN 00
+DIR 00 00 À lire.txt
+END

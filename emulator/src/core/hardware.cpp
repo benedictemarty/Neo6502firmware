@@ -79,7 +79,7 @@ static int pathVolume(const std::string& path) {										// volume addressed by
 static std::string getAbspath(const std::string& path) {
 	std::filesystem::path newPath;
 	int volume = currentVolume;
-	std::string rest = path;
+	std::string rest = FNMToStorage(path);  										// T-130 : Latin-1 -> UTF-8 (host names)
 	if (rest.size() >= 2 && rest[1] == ':' && isdigit((unsigned char)rest[0])) {	// "n:" prefix (FatFs style)
 		volume = rest[0] - '0';
 		rest = rest.substr(2);
@@ -434,6 +434,7 @@ uint8_t FISGetCurrentDirectory(char *target,int maxSize) {
 	std::string cwd = currentPath.string();
 	std::string rel = (cwd.compare(0, root.size(), root) == 0) ? cwd.substr(root.size()) : cwd;
 	if (rel.empty() || rel[0] != '/') rel = "/" + rel;
+	rel = FNMFromStorage(rel.c_str());  											// T-130 : UTF-8 -> Latin-1
 	if (maxSize <= 0) return FIOERROR_INVALID_PARAMETER;
 	strncpy(target, rel.c_str(), maxSize);
 	target[maxSize-1] = '\0';
@@ -537,7 +538,7 @@ uint8_t FISReadDir(std::string& filename, uint32_t* size, uint8_t* attribs) {
 	if (readDirIterator != std::filesystem::directory_iterator()) {
 		const auto& de = *readDirIterator++;
 
-		filename = de.path().filename().string();
+		filename = FNMFromStorage(de.path().filename().string().c_str());  		// T-130 : UTF-8 -> Latin-1
 		*size = de.is_regular_file() ? de.file_size() : 0;
 		*attribs = getAttributes(de.path().string());
 		noteEntryTime(de.path().string());  										// T-91

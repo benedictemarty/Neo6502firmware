@@ -148,6 +148,29 @@ test-snd:
 	g++ -O2 -Wall -Itests/snd -Ifirmware/common/include tests/snd/test_sndcreator.cpp firmware/common/sources/interface/sndcreator.cpp -o build/test_sndcreator
 	build/test_sndcreator
 
+# Noms de fichiers en Latin-1 (T-130) : conversion Latin-1 <-> UTF-8 (filenames.cpp) et FatFs du firmware (son ffconf.h)
+# sur une image FAT faite par mkfs.fat. test-noms-ancien = contre-essai : ancien ffconf.h (CP437, FF_LFN_UNICODE 0, celui
+# de la 0.16.85) sans conversion, qui doit ÉCHOUER (« cd été » ne trouve pas « Été »).
+FATFS = firmware/lib/fatfs/source
+MKFSFAT ?= $(shell command -v mkfs.fat || echo /usr/sbin/mkfs.fat)
+test-noms:
+	@mkdir -p build
+	gcc -O1 -c -I$(FATFS) $(FATFS)/ff.c -o build/noms_ff.o && gcc -O1 -c -I$(FATFS) $(FATFS)/ffunicode.c -o build/noms_ffunicode.o
+	g++ -O1 -Wall -Ifirmware/common/include -I$(FATFS) tests/noms/test_noms.cpp firmware/common/sources/interface/filenames.cpp \
+		build/noms_ff.o build/noms_ffunicode.o -o build/test_noms
+	@rm -f build/noms.img && $(MKFSFAT) -C build/noms.img 1024 > /dev/null
+	build/test_noms build/noms.img
+
+test-noms-ancien:
+	@rm -rf build/noms-ancien && mkdir -p build/noms-ancien && cp $(FATFS)/* build/noms-ancien/
+	git show 3d8cebef:$(FATFS)/ffconf.h > build/noms-ancien/ffconf.h
+	gcc -O1 -c -Ibuild/noms-ancien build/noms-ancien/ff.c -o build/noms-ancien/ff.o
+	gcc -O1 -c -Ibuild/noms-ancien build/noms-ancien/ffunicode.c -o build/noms-ancien/ffunicode.o
+	g++ -O1 -Wall -DNOMS_ANCIEN -Ifirmware/common/include -Ibuild/noms-ancien tests/noms/test_noms.cpp \
+		firmware/common/sources/interface/filenames.cpp build/noms-ancien/ff.o build/noms-ancien/ffunicode.o -o build/noms-ancien/test_noms
+	@rm -f build/noms-ancien/noms.img && $(MKFSFAT) -C build/noms-ancien/noms.img 1024 > /dev/null
+	build/noms-ancien/test_noms build/noms-ancien/noms.img
+
 # Outils carte (tests/api/outils/*.asm) : assemblés puis emballés en .NEO dans ~/neo-carte/cle-usb.
 # Une cible, parce que la 0.10.5 a corrigé late.asm sans pouvoir le reconstruire (routine cr retirée
 # par erreur, assemblage cassé) et que la clé a gardé des mois un binaire périmé.

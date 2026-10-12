@@ -30,6 +30,15 @@ n=m[0x1FFE]|(m[0x1FFF]<<8)
 s=m[0x2000:n].decode('latin-1')
 print(s.replace('\x0c','').replace('\r','\n'),end='')
 PY
+if [ -r "$TDIR/$NAME.fichiers" ]; then                                       # T-130 : noms créés sur le PC (UTF-8), un par ligne
+    python3 - "$TDIR/$NAME.fichiers" "$OUT/storage" <<'PY' || { echo "ÉCHEC : $NAME (fichiers sur le PC)"; exit 1; }
+import os,sys
+noms=open(sys.argv[1],encoding='utf-8').read().splitlines()
+manque=[n for n in noms if not os.path.exists(os.path.join(sys.argv[2],n))]
+if manque: print("absents de storage :",manque,"\nprésents :",sorted(os.listdir(os.fsencode(sys.argv[2]))))
+sys.exit(1 if manque else 0)
+PY
+fi
 if [ $REF = 1 ]; then cp "$OUT/journal.txt" "$TDIR/$NAME.expected"; echo "référence écrite : $NAME.expected"; cat "$OUT/journal.txt"; exit 0; fi
 if [ -r "$TDIR/$NAME.expected.re" ]; then                                   # attendu en expressions régulières (une par ligne)
     python3 - "$TDIR/$NAME.expected.re" "$OUT/journal.txt" <<'PY' && echo "OK : $NAME" || { echo "ÉCHEC : $NAME"; exit 1; }
