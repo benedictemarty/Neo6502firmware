@@ -14,6 +14,7 @@
 #include <inttypes.h>
 
 static uint8_t FIOReadByte(uint8_t *commandPtr);
+static uint8_t FIOReadBlockAny(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue,bool fromFile);
 
 // ***************************************************************************************
 //
@@ -77,7 +78,7 @@ uint8_t FIOReadFile(const std::string& fileName,uint16_t loadAddress,uint8_t *co
 	TRACEF("Execute from $%x\n",execAddress);
 	bool processing = true; 
 	while (processing && error == 0) {
-		error = FIOReadBlock(FIOReadByte,commandPtr,&processing); 					// Read one block.
+		error = FIOReadBlockAny(FIOReadByte,commandPtr,&processing,true); 			// Read one block (data in one read, T-132).
 	}
 	if (error == 0) error = FIOCloseFileHandle(0);  								// Close the source file.
 	if (execAddress != 0xFFFF) {  													// Not the default $FFFF e.g. don't execute
@@ -96,7 +97,11 @@ uint8_t FIOReadFile(const std::string& fileName,uint16_t loadAddress,uint8_t *co
 
 static char commentBlock[32];  														// Space for comment text.
 
-uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {
+uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {  	// The emulator's loader (byte source)
+	return FIOReadBlockAny(readfn,commandPtr,pContinue,false);
+}
+
+static uint8_t FIOReadBlockAny(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue,bool fromFile) {
 	uint8_t contByte = (*readfn)(commandPtr);  										// Read the continuation byte
 	TRACEF("Control byte %x\n",contByte);
 	*pContinue = (contByte & 0x80) != 0;  											// Continue if control continue bit set
@@ -121,6 +126,18 @@ uint8_t FIOReadBlock(FILEREADBYTE readfn,uint8_t *commandPtr,bool *pContinue) {
 	commentBlock[count] = '\0';
 	TRACEF("Comment %s\n",commentBlock);
 	TRACEF("Loading bytes.\n");
+	if (fromFile) {
+		//		T-132 (P1) : the data of a block in ONE read of file handle 0, straight into its
+		//		destination, instead of one f_read per byte (~34 us a byte on the board, 0.16.41).
+		//		Same bounds as below (T-59) : what fits is written, then an error if the block
+		//		overflows. A file shorter than its header says now leaves the rest of the block
+		//		untouched (the byte loop used to repeat a stale byte there).
+		uint8_t *dest = (loadAddress == 0xFFFF) ? gfxObjectMemory : cpuMemory + loadAddress;
+		uint32_t room = (loadAddress == 0xFFFF) ? GFX_MEMORY_SIZE : MEMORY_SIZE - loadAddress;
+		uint16_t n = (loadSize < room) ? loadSize : (uint16_t)room;
+		if (n > 0) FISReadFileHandleBuffer(0,dest,&n);
+		return (loadSize > room) ? FIOERROR_INVALID_PARAMETER : 0;
+	}
 	//		T-59 : both destinations were unbounded. loadAddress and loadSize are 16 bit each,
 	//		so loadAddress+i reached 128 Ko — up to 64 Ko PAST the 6502 memory, over whatever
 	//		the linker had put next. Same for the graphics area, which is half the size.

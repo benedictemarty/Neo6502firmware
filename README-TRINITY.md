@@ -44,6 +44,19 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.87** (2026-10-12) — **Chargement des `.neo` par blocs (T-132, piste P1 de l'étude
+  `docs/ETUDE-PERF-MEMOIRE-2026-10-12.md`).** 3,2 Load File d'un exécutable `.neo` lisait chaque octet de données
+  par un `f_read` (≈ 34 µs l'octet sur carte, mesure de la 0.16.41) ; les données de chaque bloc sont maintenant lues
+  en une fois, directement dans la RAM du 6502 ou dans la mémoire des objets (`FISReadFileHandleBuffer`), avec les
+  mêmes bornes que T-59 (ce qui tient est écrit, puis erreur si le bloc déborde). L'en-tête et le commentaire de
+  chaque bloc restent lus octet par octet ; le chargeur de l'émulateur (`.neo` de la ligne de commande) est inchangé.
+  Seule différence : un fichier plus court que ce qu'annonce son bloc laisse la fin du bloc intacte (l'ancienne
+  boucle y répétait un octet périmé). Gain attendu ≈ ×20 sur le lancement d'un programme (estimation, **à mesurer sur
+  carte**). Test API `neoload` (3 blocs dont un vers $FFFF et un commentaire de 40 caractères, sommes 16 bits ;
+  référence produite par le `neo` de la 0.16.86, contre-essai : un octet de moins détecté), fichier
+  `tests/api/neoload.bin` fabriqué par `tests/tools/mkneoload.py`. NeoDOS 0.32.1. `make test-api` 43/43, toolbox 14/14,
+  `test-boot` 8/8, `test-snd`, `test-fonctions` (283), `test-noms`, `test-coeur1` OK. **Non essayé sur carte.**
+
 - **0.16.86** (2026-10-12) — **Noms de fichiers en Latin-1 (T-130, demande D-03 de NeoWin).** Sur la clé, les noms
   longs sont en Unicode (`FF_LFN_UNICODE 2`, UTF-8 dans FatFs) et les noms 8.3 en CP850 ; la couche FIS convertit les
   noms Latin-1 du 6502 (écran, locale `fr`) en UTF-8 et inversement (`filenames.cpp`, carte et `neo`). « md Été » écrit
