@@ -76,6 +76,13 @@ GROUP 5 Graphics
         as mode 0 ; no sprite layer (sprites are drawn in XOR as in mode 1), console 53x30. The blitter writes into it with
         12,3 target formats 5 and 6. (The fork's 320x256x16 mode 2 was removed on 2026-09-19.) Tilemaps are drawn in modes
         1 and 2 too (packed path of 5,8 ; 5,43).
+        3 is the colour text mode (Trinity T-131) : 80x25 cells of 8x8 (640x200 shown with doubled lines, as the CGA's 80
+        column text), an ink and a paper per cell, code page 437 glyphs. The console works as in the other modes (its 16
+        colours are palette entries 0-15, shown with 4 levels per component : 00/55/AA/FF, the CGA colours ; 5,32 on
+        entries 0-15 recolours the screen) ; its Latin-1 characters $A0-$FF are shown with the same CP437 glyph, or the
+        letter without its accent. There are no pixels : 5,10 returns 0 bits per pixel, drawing (5,2-5,8, 5,33, 5,36,
+        5,39, 5,43) and sprites (6,2, 6,7) set the error flag, the mouse pointer is not drawn (its position is still
+        reported, in 640x200). Pages : 0 only. User defined characters (2,5) and console fonts (2,21) do not apply.
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
     FUNCTION 10 Get Graphics Mode

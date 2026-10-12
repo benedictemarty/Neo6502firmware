@@ -42,6 +42,14 @@ void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 	palette[colour] = ((r >> 4) << 8) | (g & 0xF0) | (b >> 4);
 }
 
+//		Colour (0xRGB, 4 bits each) of a displayed pixel. T-131 : mode 3 has no pixels, its 640x200 picture comes
+//		from the text grid (text80.cpp), RGB222 levels 0-3 shown as 0, 5, 10, 15 as on the board (00/55/AA/FF).
+static int RNDDisplayColour(int x,int y) {
+	if (!GFXIsTextMode()) return palette[GFXReadDisplayPixelRaw(x,y)];
+	uint8_t c = T80PixelRGB222(x,y);
+	return (((c >> 4) & 3) * 5 << 8) | (((c >> 2) & 3) * 5 << 4) | ((c & 3) * 5);
+}
+
 // *******************************************************************************************************************************
 //
 //											Handle mode start
@@ -82,7 +90,7 @@ int RNDWriteScreenshot(const char *fileName) {
 	fprintf(f,"P6\n%d %d\n255\n",gMode.xGSize,gMode.yGSize);
 	for (int y = 0;y < gMode.yGSize;y++) {
 		for (int x = 0;x < gMode.xGSize;x++) {
-			uint16_t p = palette[GFXReadDisplayPixelRaw(x,y)];
+			uint16_t p = RNDDisplayColour(x,y);
 			fputc(((p >> 8) & 0x0F) * 17,f);fputc(((p >> 4) & 0x0F) * 17,f);fputc((p & 0x0F) * 17,f);
 		}
 	}
@@ -143,11 +151,17 @@ void DGBXGetActiveDisplayInfo(SDL_Rect *r,int *pxs,int *pys,int *pxc,int *pyc) {
 			int s = sw / (*pxc);if (sh / (*pyc) < s) s = sh / (*pyc);
 			if (s < 1) s = 1;
 			*pxs = *pys = s;
+			if (GFXIsTextMode()) {  												// T-131 : 640x200, lines shown twice
+				int s2 = sh / (2 * (*pyc));
+				if (s2 < s) s = (s2 < 1) ? 1 : s2;
+				*pxs = s;*pys = 2 * s;
+			}
 		} else {
 			*pxs = *pys = SCALE;
+			if (GFXIsTextMode()) *pys = 2 * SCALE;  								// T-131 : 640x200, lines shown twice (as the board)
 			sw = WIN_WIDTH;sh = WIN_HEIGHT;
-			if ((*pxc) * SCALE + 16 > sw) sw = (*pxc) * SCALE + 16;  				// Grow the window for wide/tall modes.
-			if ((*pyc) * SCALE + 16 > sh) sh = (*pyc) * SCALE + 16;
+			if ((*pxc) * (*pxs) + 16 > sw) sw = (*pxc) * (*pxs) + 16;  			// Grow the window for wide/tall modes.
+			if ((*pyc) * (*pys) + 16 > sh) sh = (*pyc) * (*pys) + 16;
 			GFXSetWindowSize(sw,sh);
 		}
 		r->w = (*pxs) * (*pxc);r->h = (*pys) * (*pyc);
@@ -295,7 +309,7 @@ void DBGXRender(int *address,int showDisplay) {
 			for (int y = 0;y < yc;y++) {
 				rc2.y = r.y + y*ys;rc2.x = r.x;
 				for (int x = 0;x < xc;x++) {
-					int col = palette[GFXReadDisplayPixelRaw(x,y)];
+					int col = RNDDisplayColour(x,y);
 					if (col != 0) GFXRectangle(&rc2,col);
 					rc2.x += xs;
 				}

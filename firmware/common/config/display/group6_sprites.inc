@@ -25,7 +25,7 @@ GROUP 6 Sprites
         back to $90, so that a program does not inherit them from the one run before.
 
     FUNCTION 2 Sprite Set
-        *DERROR = SPRUpdate(DPARAMS);
+        *DERROR = GFXIsTextMode() ? 1 : SPRUpdate(DPARAMS);  // T-131 : no sprites in mode 3
     DOCUMENTATION
         Set or update the sprite specified in Parameter:0.
 
@@ -67,7 +67,7 @@ GROUP 6 Sprites
         reset (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 1.
 
     FUNCTION 7 Sprite Set Image
-        *DERROR = SPRSetImage(DPARAMS);
+        *DERROR = GFXIsTextMode() ? 1 : SPRSetImage(DPARAMS);  // T-131
     DOCUMENTATION
         Trinity (T-113). Gives sprite Parameter:0 an image of any size taken in graphics memory (page $90) :
         Parameters:1,2 its offset, Parameter:3 its width and Parameter:4 its height (1-255), Parameter:5 its bits per

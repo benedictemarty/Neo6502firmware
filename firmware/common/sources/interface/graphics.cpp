@@ -30,6 +30,7 @@ const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT] = {
 	{ 320,240, 8, 320, 53,30, 6,8,  0, 0 },  									// 0 : original 320x240x256
 	{ 720,350, 1,  90, 80,25, 9,14, 1, 65 },  									// 1 : Hercules text 80x25 (9x14) / graphics 720x348, timing 720x480
 	{ 320,240, 4, 160, 53,30, 6,8,  0, 0 },  									// 2 : T-90, 320x240x16, two pages of 38 400 (mode 0 timing)
+	{ 640,200, 0,   0, 80,25, 8,8,  0, 20 },  									// 3 : T-131, colour text 80x25 in 8x8 cells, no pixels (text80.cpp)
 };
 
 static void GFXInitialiseMode(int mode) {
@@ -43,8 +44,9 @@ static void GFXInitialiseMode(int mode) {
 	gMode.bitsPerPixel = d->bitsPerPixel;
 	gMode.stride = d->stride;
 	gMode.pageSize = (uint32_t)d->stride * d->yGSize;  							// Pages (F-55) : as many as fit, at most 2.
+	if (d->bitsPerPixel == 0) gMode.pageSize = T80_GRID_BYTES + T80_HOST_BYTES;  	// T-131 : text, one page (grid + board area)
 	gMode.pageCount = MAXGRAPHICSMEMORY / gMode.pageSize;
-	if (gMode.pageCount > 2) gMode.pageCount = 2;
+	if (gMode.pageCount > 2 || d->bitsPerPixel == 0) gMode.pageCount = (d->bitsPerPixel == 0) ? 1 : 2;
 	gMode.drawPage = gMode.displayPage = 0;
 	gMode.displayMemory = graphicsMemory;
 }
@@ -74,6 +76,10 @@ uint8_t GFXReadDisplayPixelRaw(int x,int y) {
 
 int GFXGetMode(void) {
 	return gMode.modeID;
+}
+
+int GFXIsTextMode(void) {  														// T-131
+	return gMode.bitsPerPixel == 0;
 }
 
 int GFXIsPackedMode(void) {
@@ -155,6 +161,7 @@ void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 	currentPalette[colour].r = r;
 	currentPalette[colour].g = g;
 	currentPalette[colour].b = b;
+	if (colour < 16 && GFXIsTextMode()) CONRepaintAll();  							// T-131 : the cells hold RGB222, recolour them
 }
 
 // ***************************************************************************************

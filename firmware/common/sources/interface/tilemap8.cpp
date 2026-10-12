@@ -34,6 +34,7 @@ static uint16_t _TM8Word(const uint8_t *p) {
 // ***************************************************************************************
 
 uint8_t TM8Draw(uint16_t desc) {
+    if (GFXIsTextMode()) return 1;                                              // T-131 : mode 3 has no pixels
     if ((uint32_t)desc + TM8_DESC_SIZE > DEFAULT_PORT) return 1;                // Below the API page
     const uint8_t *d = cpuMemory + desc;
     uint8_t mapWidth = d[3],mapHeight = d[4],bpp = d[8],flags = d[9];
