@@ -27,7 +27,7 @@
 //
 #define GFX_MODE_320x240x256	(0)
 #define GFX_MODE_HERCULES		(1)												// 720x350, 1 bpp, text 80x25 in 9x14
-#define GFX_MODE_COUNT 			(3)												// T-90 : mode 2 = 320x240x16, two pages (kept for good, 2026-10-07) ; the fork's 320x256x16 was removed on 2026-09-19
+#define GFX_MODE_COUNT 			(4)  											// T-131 : mode 3 = colour text 80x25, 8x8 cells (text80.h)												// T-90 : mode 2 = 320x240x16, two pages (kept for good, 2026-10-07) ; the fork's 320x256x16 was removed on 2026-09-19
 
 struct GraphicsModeDescriptor {
 	uint16_t xGSize,yGSize;														// Pixels
@@ -106,6 +106,7 @@ int  GFXGetMode(void);
 void GFXWritePixelRaw(int x,int y,uint8_t colour); 								// Any mode, no clipping, no sprite layer.
 uint8_t GFXReadPixelRaw(int x,int y);
 int  GFXIsPackedMode(void); 													// 1 if bitsPerPixel != 8 (generic slow paths only)
+int  GFXIsTextMode(void);  														// T-131 : 1 in mode 3 (no pixels : bitsPerPixel 0)
 int  GFXSetDrawPage(int page);  												// F-55 : 0 if ok, 1 if no such page
 int  GFXSetDisplayPage(int page);
 uint8_t GFXReadDisplayPixelRaw(int x,int y);  									// Pixel of the displayed page (renderers)

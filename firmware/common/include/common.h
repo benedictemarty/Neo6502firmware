@@ -69,6 +69,7 @@
 #include "interface/fdebug.h"
 #include "interface/filesystem.h"
 #include "interface/filenames.h"
+#include "interface/text80.h"
 #include "interface/miscellany.h"
 #include "interface/mos.h"
 #include "interface/sprites.h"

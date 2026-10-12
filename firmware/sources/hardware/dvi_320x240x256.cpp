@@ -43,6 +43,18 @@ extern "C" {
 #include "system/common_dvi_pin_configs.h"
 #include "hardware/structs/bus_ctrl.h"
 
+//		T-131 : mode 3, colour text 80x25 in 8x8 cells (text80.cpp keeps the grid). Encoder : tmds_encode_font_2bpp
+//		of PicoDVI's colour_terminal (BSD-3, tmds_encode_font_2bpp.S, in scratch_x), three passes per line, one per
+//		TMDS lane, on doubled lines. Its 2 Ko table and its font (row by row, bit 0 = left pixel) are built in the
+//		board area after the grid (T80HostArea) when the mode starts : scratch_x has no room for the table next to
+//		the core 1 stack. Measured on the board (essai c1086931) : 7 400 of the 16 000 cycles of a line, no late line.
+extern "C" {
+void tmds_encode_font_2bpp(const uint8_t *charbuf, const uint32_t *colourbuf, uint32_t *tmdsbuf, uint n_pix, const uint8_t *font_line);
+extern const uint32_t palettised_1bpp_tables[512];  								// Flash : copied by core 0
+const uint32_t *tmdsFontLut;  													// Read by the encoder (RAM copy)
+}
+#define T80_TEXT_LINES 	(T80_ROWS * 8)  												// 200 logical lines
+
 // ***************************************************************************************
 //
 //                      Configuration for DVI
@@ -80,6 +92,7 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	//		tension, ni le contenu n'expliquent l'ecart : quelque chose est calibre pour CE timing.
 	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
 	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 2 (T-90) : as mode 0, 4 bpp lines
+	{ &dvi_timing_640x480p_60hz, 2, 240, 20 },  									// Mode 3 (T-131) : 200 text lines centred in 240
 };
 
 // ***************************************************************************************
@@ -269,6 +282,8 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (currentMode->bitsPerPixel == 1) scanline = (uint32_t)monoLine[lineCounter & monoLineMask];
 	if (lineCounter < currentTiming->yOffset ||  									// Outside the framebuffer : black line.
 			lineCounter >= currentTiming->yOffset + currentMode->yGSize) scanline = 0;
+	else if (currentMode->bitsPerPixel == 0)  										// T-131 : mode 3, the text line + 1 (1-200),
+		scanline = (uint32_t)(lineCounter - currentTiming->yOffset + 1);  			// decoded by the encoder loop
 	if (!queue_try_add_u32(&dvi0.q_colour_valid, &scanline)) publishRejects = publishRejects + 1;  	// T-71 : NEVER block here (see above)
 
 	lineCounter++;               												// Adjust line and frame.
@@ -284,6 +299,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		xCursor = c->x;yCursor = c->y;wCursor = c->w;hCursor = c->h;  			// RAM (T-44), never read from flash here
 		skipXCursor = c->skipX;skipYCursor = c->skipY;
 	}
+	if (currentMode->bitsPerPixel == 0) { CB_END();return; }  					// T-131 : mode 3, nothing to prepare
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
 
@@ -386,7 +402,16 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
 		uint pixwidth = dvi0.timing->h_active_pixels;
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
-		if (currentMode->bitsPerPixel == 1) {  										// 1 bpp : one encode into channel 0 ; the lanes point to it
+		if (currentMode->bitsPerPixel == 0 && scanbuf != 0 && scanbuf <= T80_TEXT_LINES) {  	// T-131 : mode 3. Only a line
+			uint32_t y = scanbuf - 1;  												// token is text : DVIStart queues two junk lines that
+			const uint8_t *glyphs = T80Grid() + (y >> 3) * T80_COLS;  				// are buffer ADDRESSES (seen on the board, essai 2389c3fc).
+			const uint32_t *planes = T80Planes() + (y >> 3) * T80_ROW_WORDS;
+			const uint8_t *fontLine = T80HostArea() + 2048 + (y & 7) * 256;
+			for (int plane = 0;plane < 3;plane++)
+				tmds_encode_font_2bpp(glyphs, planes + plane * T80_PLANE_WORDS, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
+			queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+			continue;
+		} else if (currentMode->bitsPerPixel == 1) {  								// 1 bpp : one encode into channel 0 ; the lanes point to it
 			tmds_encode_1bpp(scanbuf ? (const uint32_t *)scanbuf : MONO_BLACK, tmdsbuf, pixwidth);   // (lit) or to the black channel 2 (dark, prefilled)
 		} else if (scanbuf == 0) {  												// Black line : fill the three channels with the
 			uint32_t *p = tmdsbuf;  												// constant pair (stores only, no table : T-13).
@@ -687,10 +712,26 @@ void RNDFlashResume(void) {
 	while (core1InFlashPause && TMRRead() - t0 < 20) tight_loop_contents();
 }
 
+//		T-131 : mode 3 encoder data, built by core 0 with the display stopped : the 2 Ko table (flash -> RAM) and
+//		the font row by row, bit 0 = left pixel (font_cp437_8x8.h is glyph by glyph, MSB = left).
+static void _T80PrepareEncoder(void) {
+	uint8_t *host = T80HostArea();  												// Word aligned (grid of 5 000 bytes)
+	memcpy(host,palettised_1bpp_tables,2048);
+	const uint8_t *font = T80Font();
+	for (int row = 0;row < 8;row++)
+		for (int c = 0;c < 256;c++) {
+			uint8_t b = font[c * 8 + row],r = 0;
+			for (int k = 0;k < 8;k++) r |= ((b >> k) & 1) << (7 - k);
+			host[2048 + row * 256 + c] = r;
+		}
+	tmdsFontLut = (const uint32_t *)host;
+}
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.
 	if (restart) DVIStopMode();
+	if (gMode->bitsPerPixel == 0) _T80PrepareEncoder();  							// T-131 : mode 3
 	screenMemory = gMode->graphicsMemory;                             			// Remember where drawing.
 	currentMode = gMode;
 	currentTiming = t;

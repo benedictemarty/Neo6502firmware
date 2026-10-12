@@ -58,6 +58,7 @@ void TMPSelectTileMap(uint8_t *data,uint16_t xOffset,uint16_t yOffset) {
 // ***************************************************************************************
 
 uint8_t TMPDrawTileMap(uint8_t *data) {
+	if (GFXIsTextMode()) return 1;  											// T-131 : mode 3 has no pixels
 
 	int xPos = xTilePos,yPos = yTilePos;
 

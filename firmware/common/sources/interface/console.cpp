@@ -184,6 +184,10 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  	if (x < graphMode->xCSize && y < graphMode->yCSize) {  						// Coords in range.
  		uint16_t ch = graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH];		// Character data
  		uint8_t fcol = (ch >> 8) & 0x0F,bcol = (ch >> 12) & 0x0F; 				// Extract colours
+ 		if (graphMode->bitsPerPixel == 0) {  									// T-131 : mode 3, the cell of the text grid
+ 			T80PutCell(x,y,T80Glyph(ch & 0xFF),T80Colour(fcol),T80Colour(bcol));
+ 			return;
+ 		}
  		uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight; 
  		ch = ch & 0xFF;  														// Character #
 
@@ -226,9 +230,15 @@ static void CONDrawCharacter(uint16_t x,uint16_t y,uint16_t ch,uint16_t fcol,uin
 //
 // ***************************************************************************************
 
+void CONRepaintAll(void) {  													// T-131
+	if (graphMode == NULL) return;
+	for (int y = 0;y < graphMode->yCSize;y++)
+		for (int x = 0;x < graphMode->xCSize;x++) CONPaintCharacter(x,y);
+}
+
 void CONClearScreen(void) {
 	graphMode->xCursor = graphMode->yCursor = 0;  								// Home cursor
-	if (graphMode->xGSize != 0) {  												// Graphics present ?
+	if (graphMode->xGSize != 0 && graphMode->bitsPerPixel != 0) {  				// Graphics present ? (not the text grid of mode 3, painted below)
 		if (SPRSpritesInUse() && !GFXIsPackedMode()) {  												// Sprites present, only delete that layer
 			for (int i = 0;i < gMode.xGSize*gMode.yGSize;i++) {
 				graphMode->graphicsMemory[i] &= 0xF0;
@@ -248,6 +258,7 @@ void CONClearScreen(void) {
 	for (int y = 0;y < graphMode->yCSize;y++) {  								// No extended lines.
 		graphMode->isExtLine[y] = 0;
 	}
+	if (graphMode->bitsPerPixel == 0) CONRepaintAll();  						// T-131 : mode 3, every cell of the grid
 	CONSetCursorVisible(1);														// Cursor now visible again.
 	GFXResetDefaults(); 														// Reset graphics defaults.
 }
@@ -407,6 +418,10 @@ void CONSetCursorVisible(uint8_t vFlag) {
 // ***************************************************************************************
 
 void CONReverseCursorBlock(void) {
+	if (graphMode->bitsPerPixel == 0) {  										// T-131 : mode 3, swap ink and paper of the cell
+		if (graphMode->isCursorVisible != 0) T80InvertCell(graphMode->xCursor,graphMode->yCursor);
+		return;
+	}
 	if (graphMode->isCursorVisible != 0 && graphMode->bitsPerPixel != 8) { 		// Packed modes : generic path.
 		int xOrg = graphMode->xCursor * graphMode->fontWidth +
 					(graphMode->xGSize - graphMode->xCSize * graphMode->fontWidth) / 2;

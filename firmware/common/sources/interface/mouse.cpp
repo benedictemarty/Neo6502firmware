@@ -99,7 +99,8 @@ void MSESetVisible(bool isVisible) {
 
 bool MSEGetCursorDrawInformation(uint16_t *pX, uint16_t *pY) {
     *pX = xCursor; *pY = yCursor;                                               // This is top left - so crosshairs will need adjusting for example.
-    return isCursorVisible && xCursor < gMode.xGSize && yCursor < gMode.yGSize; // On and on screen.
+    return isCursorVisible && xCursor < gMode.xGSize && yCursor < gMode.yGSize  // On and on screen ;
+                                                    && !GFXIsTextMode();        // T-131 : not drawn in mode 3 (position still tracked)
 }
 
 // ***************************************************************************************

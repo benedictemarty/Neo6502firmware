@@ -21,6 +21,7 @@ void CONResetUserFont(void);  														// Latin-1 letters in $C0-$FF (T-20)
 uint8_t CONSetFont(uint16_t addr,uint16_t addr14);  									// 2,21 console font
 void CONSetDebugEcho(uint8_t on);  													// 2,20 echo to the debug port
 void CONInitialise(struct GraphicsMode *gMode);
+void CONRepaintAll(void);  														// T-131 : repaint every cell (mode 3 palette change)
 void CONBlinkSync(void);  													// Blink attribute (monochrome), call periodically
 void CONWrite(int c);
 void CONSetQuiet(bool quiet);  													// T-66 : drop output while the logos show

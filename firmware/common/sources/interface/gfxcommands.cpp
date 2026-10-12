@@ -327,6 +327,7 @@ void GFXDrawImage(struct GraphicsMode *gMode,int x,int y,int id,int scale,int fl
 // ***************************************************************************************
 
 void GFXGraphicsCommand(uint8_t cmd,uint8_t *data) {
+	if (GFXIsTextMode()) { data[2] = 1;return; }  								// T-131 : mode 3 has no pixels (5,2-5,7, 5,33, 5,36, 5,39)
 	
 	int16_t x1 = data[4]+(data[5] << 8);
 	int16_t y1 = data[6]+(data[7] << 8);
