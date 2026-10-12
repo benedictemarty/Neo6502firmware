@@ -52,7 +52,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   Piles : aucune n'a de garde ; au démarrage, avant le cœur 1, `stacks.cpp` remplit d'un motif la pile du cœur 0 et sa
   marge (scratch_y entier) et celle du cœur 1 (scratch_x après les encodeurs) ; 5,42 sélecteurs 10 et 11 rendent la
   plus grande profondeur atteinte depuis la mise sous tension (octets ; 2 048 réservés chacune). NeoDOS **0.33.0**
-  (mode 3 : `MODE`, `EDIT` à la taille de 5,10).
+  (mode 3 : `MODE`, `EDIT` à la taille de 5,10). **Carte (flash SWD, 2026-10-12)** : `neotests` 30/31 (`fdate` : horloge
+  non remise après coupure secteur, T-93) ; piles après les 31 tests : **cœur 0 1 212 octets, cœur 1 300** (sur 2 048) ;
+  recette NeoDOS d'`EDIT` en mode 3 réussie (mise en page 80 × 25, défilements, ligne > 80 colonnes, retour d'un
+  programme en mode 3, vitesse égale au mode 0, bmarty : « vitesse acceptable »).
 
 - **0.16.89** (2026-10-12) — **Mode 3 : écriture directe dans la grille (T-131, interface de NeoBBS D-01).** 5,13 Text
   Write (chaîne à longueur à (x, y) avec un attribut papier << 4 | encre, entrées 0-15 de la palette ; chaque octet est un
