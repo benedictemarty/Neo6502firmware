@@ -161,7 +161,7 @@ void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 	currentPalette[colour].r = r;
 	currentPalette[colour].g = g;
 	currentPalette[colour].b = b;
-	if (colour < 16 && GFXIsTextMode()) CONRepaintAll();  							// T-131 : the cells hold RGB222, recolour them
+	if (colour < 16 && GFXIsTextMode()) T80RecolourAll();  							// T-131 : the cells hold RGB222, recolour them
 }
 
 // ***************************************************************************************

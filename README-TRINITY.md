@@ -44,6 +44,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.89** (2026-10-12) — **Mode 3 : écriture directe dans la grille (T-131, interface de NeoBBS D-01).** 5,13 Text
+  Write (chaîne à longueur à (x, y) avec un attribut papier << 4 | encre, entrées 0-15 de la palette ; chaque octet est un
+  glyphe CP437, codes $00-$1F et $80-$FF compris, sans transcription ; coupée en fin de rangée), 5,14 Text Scroll
+  (rangées haut-bas, nombre signé : positif vers le haut, rangées libérées remplies d'espaces dans un attribut), 5,15
+  Text Clear (rectangle d'espaces dans un attribut). Erreur hors du mode 3 ou hors 80 × 25. Elles ne passent pas par la
+  console (sa mémoire est inchangée). La grille gagne un tableau d'attributs (2 000 octets à $80:1388), référence des
+  plans de couleur : 5,32 recolore aussi ce qu'elles ont écrit. Test API `text3` (écriture coupée, codes bruts,
+  rectangle, défilements +2 et −1, refus, recoloration, refus hors du mode 3) ; contre-essai sur le `neo` de la 0.16.88
+  (fonctions inconnues, grille inchangée) ; liste des fonctions : 286 (+5,13-5,15). La tortue (groupe 9) est aussi
+  refusée en mode 3 (signalé par NeoBASIC : elle n'écrivait rien, faute de pixels, mais ne levait pas d'erreur).
+  `make test-api` 45/45, `test-fonctions` (286), `test-coeur1` OK ; RAM 233 720 (+256).
+
 - **0.16.88** (2026-10-12) — **Mode 3 : texte couleur 80 × 25 (T-131, demande D-01 de NeoBBS).** 5,9 P0=3 : 80 × 25 cellules
   8 × 8, 640 × 200 affichés en lignes doublées dans 640x480p60 (le texte 80 colonnes de la carte CGA), une encre et un
   papier par cellule en RGB222 (niveaux 00/55/AA/FF, les couleurs CGA/ANSI exactes), glyphes CP437 (police 8 × 8 de la

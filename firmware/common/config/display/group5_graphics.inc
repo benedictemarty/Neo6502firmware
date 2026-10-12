@@ -81,7 +81,7 @@ GROUP 5 Graphics
         colours are palette entries 0-15, shown with 4 levels per component : 00/55/AA/FF, the CGA colours ; 5,32 on
         entries 0-15 recolours the screen) ; its Latin-1 characters $A0-$FF are shown with the same CP437 glyph, or the
         letter without its accent. There are no pixels : 5,10 returns 0 bits per pixel, drawing (5,2-5,8, 5,33, 5,36,
-        5,39, 5,43) and sprites (6,2, 6,7) set the error flag, the mouse pointer is not drawn (its position is still
+        5,39, 5,43), sprites (6,2, 6,7) and the turtle (group 9) set the error flag, the mouse pointer is not drawn (its position is still
         reported, in 640x200). Pages : 0 only. User defined characters (2,5) and console fonts (2,21) do not apply.
         Sets the error flag if the mode is unknown or not supported by this hardware.
 
@@ -108,6 +108,38 @@ GROUP 5 Graphics
     DOCUMENTATION
         Select the page (Parameter:0) shown on screen from the next frame (F-55). Use Function 37 (Frame Count) to wait for the swap.
         Sets the error flag if the page does not exist.
+
+    FUNCTION 13 Text Write
+        {
+            uint16_t a = DSPGetInt16(DPARAMS,3);
+            *DERROR = (!GFXIsTextMode() || a >= 0xFF00) ? 1 : T80Write(DPARAMS[0],DPARAMS[1],DPARAMS[2],cpuMemory+a+1,cpuMemory[a]);
+        }
+    DOCUMENTATION
+        Mode 3 only (Trinity T-131, 0.16.89 : the interface asked by NeoBBS). Writes the length-prefixed string at
+        Parameters:3,4 in the text grid from column Parameter:0, row Parameter:1, with the attribute Parameter:2 (paper in
+        the high nibble, ink in the low one : palette entries 0-15, as a PC attribute). Every byte is a code page 437
+        glyph, $00-$1F and $80-$FF included (box drawing, blocks...) : nothing is interpreted, no Latin-1 conversion.
+        Clipped at the end of the row ; the console cursor does not move and the console memory is unchanged (a console
+        clear or scroll repaints what the console holds). Error if not in mode 3 or if the position is outside 80x25.
+
+    FUNCTION 14 Text Scroll
+        {
+            int8_t n = (int8_t)DPARAMS[2];
+            *DERROR = GFXIsTextMode() ? T80Scroll(DPARAMS[0],DPARAMS[1],n,DPARAMS[3]) : 1;
+        }
+    DOCUMENTATION
+        Mode 3 only (Trinity T-131). Scrolls the whole-width rows Parameter:0 (top) to Parameter:1 (bottom, included) by
+        the signed count Parameter:2 : positive moves the text up (a terminal's line feed at the bottom of its scrolling
+        region), negative moves it down. The rows freed are filled with spaces in the attribute Parameter:3. A count as
+        large as the region clears it. Error if not in mode 3 or if the rows are not 0 <= top <= bottom <= 24.
+
+    FUNCTION 15 Text Clear
+        *DERROR = GFXIsTextMode() ? T80Clear(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],DPARAMS[4]) : 1;
+    DOCUMENTATION
+        Mode 3 only (Trinity T-131). Fills the rectangle from column Parameter:0, row Parameter:1 to column Parameter:2,
+        row Parameter:3 (included) with spaces in the attribute Parameter:4. Error if not in mode 3 or if the rectangle is
+        empty or outside 80x25. The grid can be read back with 12,2 from $80:0000 : 2 000 glyph codes, 3 colour planes
+        (3 x 1 000 bytes), then 2 000 attribute bytes at $80:1388.
 
     FUNCTION 32 Set Palette
         GFXSetPalette(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3]);

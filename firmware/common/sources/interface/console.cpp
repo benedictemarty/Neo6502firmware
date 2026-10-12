@@ -185,7 +185,7 @@ static void CONPaintCharacter(uint16_t x,uint16_t y) {
  		uint16_t ch = graphMode->consoleMemory[x + y * MAXCONSOLEWIDTH];		// Character data
  		uint8_t fcol = (ch >> 8) & 0x0F,bcol = (ch >> 12) & 0x0F; 				// Extract colours
  		if (graphMode->bitsPerPixel == 0) {  									// T-131 : mode 3, the cell of the text grid
- 			T80PutCell(x,y,T80Glyph(ch & 0xFF),T80Colour(fcol),T80Colour(bcol));
+ 			T80PutCell(x,y,T80Glyph(ch & 0xFF),(bcol << 4) | fcol);
  			return;
  		}
  		uint16_t cWidth = graphMode->fontWidth,cHeight = graphMode->fontHeight; 
