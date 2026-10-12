@@ -89,6 +89,7 @@ L'option effective est `-O2` (`firmware/CMakeLists.txt:41`). Passer certains fic
 | D3 | Mode 2, version légère : table de paires de 1 Ko | ≈ −1 400 cycles par ligne logique | faible ; 1 Ko de RAM |
 | D4 | Mode 0 : encodeur 8 bpp direct (table de 3 Ko) | gain net modeste | moyen à élevé (3 Ko de tas) |
 | D5 | Alléger l'IRQ DMA de PicoDVI de l'instrumentation de T-77 (`_dvi_ctrl_audit` ×3 par ligne) | quelques centaines de cycles par ligne, en IRQ | faible à moyen ; on perd `RNDCtrlOverrun*` |
+| D6 | SRAM non entrelacée, `cpuMemory` seule dans le banc 3 : la boucle de bus (≈ 6,8 M accès/s) ne touche plus les bancs du cœur 1 et du DMA (demande bmarty, 2026-10-12) | inconnu : hypothèse T-58 (bande passante SRAM) | élevé : toute la carte mémoire change (T-48) ; **essai prêt** : branche `essai/bancs-sram` `18d320db`, script de liens seul, `test-coeur1` OK ; UF2 et procédure (RENDU.NEO contre la 0.16.86) dans `~/neo-carte/essais/bancs-sram-t132/` ; limite : le code en RAM des deux cœurs partage encore le banc 0 |
 
 **À ne pas reproposer :**
 - T-56 : priorité au DMA ;
