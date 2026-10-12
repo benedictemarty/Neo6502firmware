@@ -44,6 +44,18 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.91** (2026-10-12) — **Dessin au bord de l'écran (T-132, défauts relevés par l'étude, reproduits par un test).**
+  (1) 5,7 Draw Image à l'échelle 1 posait ses pixels sans contrôle (`GFXPlotPixel`) : une image qui dépasse à droite
+  rebouclait sur la ligne suivante, et une image au-dessus ou au-dessous de l'écran écrivait hors de la mémoire vidéo (sur
+  la carte, `gfxObjectMemory` la précède) ; elle passe par `GFXPlotPixelChecked`, comme aux autres échelles par le
+  rectangle. (2) `GFXFastLine` rejetait toute ligne dont une extrémité sortait de l'écran (5,2 de (-10,50) à (100,50) ne
+  traçait rien, les rangées d'une ellipse pleine qui déborde disparaissaient) : la ligne est maintenant **découpée** au
+  bord (Cohen-Sutherland, intersections entières) et sa partie visible tracée. **Changement visible** pour les programmes :
+  ces lignes et ellipses apparaissent désormais, coupées au bord. Le point d'arrivée d'une ligne reste non tracé, comme
+  toujours, sauf s'il a été ramené au bord par le découpage. Test API `clipimg` (image à droite, image au-dessus, ligne
+  coupée à gauche et à droite) ; contre-essai : la 0.16.90 échoue. La corruption au-dessus de l'écran n'est pas visible
+  dans `neo` (autre rangement des tableaux), seulement déduite pour la carte.
+
 - **0.16.90** (2026-10-12) — **RAM −2 352 octets et profondeur des piles (T-132, pistes M1 et « piles » de l'étude
   `docs/ETUDE-PERF-MEMOIRE-2026-10-12.md`).** `dispatch.cpp` compilé en `-mlong-calls` : `DSPHandler`, en RAM, appelait
   les fonctions de l'API en flash par 206 relais de 16 octets ajoutés en RAM par l'éditeur de liens ; il charge

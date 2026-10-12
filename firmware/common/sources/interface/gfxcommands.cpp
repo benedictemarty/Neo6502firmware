@@ -311,7 +311,8 @@ void GFXDrawImage(struct GraphicsMode *gMode,int x,int y,int id,int scale,int fl
 				int x1 = x + (xc ^ xFlip) * scale;
 				int y1 = y + (yc ^ yFlip) * scale;
 				if (scale == 1) {
-					GFXPlotPixel(gMode,x1,y1);
+					GFXPlotPixelChecked(gMode,x1,y1);  								// T-132 (0.16.91) : was unchecked, an image
+																					// over an edge wrapped or wrote outside the screen
 				} else {
 					GFXRectangle(gMode,x1,y1,x1+scale-1,y1+scale-1,true,false);
 				}
