@@ -54,7 +54,10 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   ces lignes et ellipses apparaissent désormais, coupées au bord. Le point d'arrivée d'une ligne reste non tracé, comme
   toujours, sauf s'il a été ramené au bord par le découpage. Test API `clipimg` (image à droite, image au-dessus, ligne
   coupée à gauche et à droite) ; contre-essai : la 0.16.90 échoue. La corruption au-dessus de l'écran n'est pas visible
-  dans `neo` (autre rangement des tableaux), seulement déduite pour la carte.
+  dans `neo` (autre rangement des tableaux), seulement déduite pour la carte. **Carte (flash SWD, 2026-10-12)** :
+  `neotests` 30/31 (`fdate` : horloge) ; ont aussi tourné sur cette version : `AUTOEXEC.BAT` de NeoDOS (PATH \BIN,
+  accueil), et la validation NeoBASIC US-15 (`vmode3.bas`, `tortue3.bas` : « stable, couleurs ok », « carré jaune ok » ;
+  un « E » parasite en tête de trois lignes de `vmode3.bas`, écrit par le programme, signalé à NeoBASIC).
 
 - **0.16.90** (2026-10-12) — **RAM −2 352 octets et profondeur des piles (T-132, pistes M1 et « piles » de l'étude
   `docs/ETUDE-PERF-MEMOIRE-2026-10-12.md`).** `dispatch.cpp` compilé en `-mlong-calls` : `DSPHandler`, en RAM, appelait
