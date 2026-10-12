@@ -54,6 +54,16 @@ void GFXFastLine(struct GraphicsMode *gMode,int x, int y, int x2, int y2) {
 	if (!_GFXClipLine(gMode,&x,&y,&x2,&y2,&endClipped)) return;  					// T-132 : clipped, not dropped
 	if (endClipped) GFXPlotPixel(gMode,x2,y2);  									// The loop below stops BEFORE (x2,y2), as it always
 																					// has ; once clipped, that end is the visible edge
+	//		T-132 (0.16.92) : horizontal and vertical lines (rows of filled ellipses...) take the byte at a time
+	//		paths of the rectangles : the same pixels as the loop below, (x2,y2) excluded.
+	if (y == y2) {
+		if (x2 > x) GFXHLine(gMode,x,x2 - 1,y); else if (x2 < x) GFXHLine(gMode,x2 + 1,x,y);
+		return;
+	}
+	if (x == x2) {
+		if (y2 > y) GFXVLine(gMode,x,y,y2 - 1); else GFXVLine(gMode,x,y2 + 1,y);
+		return;
+	}
 
 	bool yLonger=false;
 	int incrementVal, endVal;

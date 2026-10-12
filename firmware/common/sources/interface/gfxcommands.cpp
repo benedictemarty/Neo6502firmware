@@ -113,10 +113,59 @@ void GFXPlotPixelChecked(struct GraphicsMode *gMode,int x,int y) {
 //
 // ***************************************************************************************
 
+//		T-132 (P2, 0.16.92) : packed modes, a byte at a time. A pixel becomes (old & pixelAnd) ^ pixelXor,
+//		masked to its bits, exactly as GFXPlotPixel -> GFXWritePixelRaw does : 4 bpp handles two pixels per
+//		byte (high nibble = left), with the odd nibbles of the ends apart ; 1 bpp up to 8 pixels per byte
+//		(MSB = left). They were one GFXPlotPixel each (read + write through a switch). Same pixels : test
+//		API fastdraw (checksums of the video RAM against the 0.16.91).
+static void hline_packed(struct GraphicsMode *gMode, int xMin, int xMax, int y) {
+	uint8_t *line = gMode->graphicsMemory + y * gMode->stride;
+	if (gMode->bitsPerPixel == 4) {
+		uint8_t a = pixelAnd & 0x0F,x = pixelXor & 0x0F;
+		int px = xMin;
+		if (px & 1) {  																// Odd first pixel : low nibble
+			uint8_t *b = line + (px >> 1);
+			*b = (*b & 0xF0) | (((*b & 0x0F) & a) ^ x);
+			px++;
+		}
+		uint8_t aa = a | (a << 4),xx = x | (x << 4);
+		for (;px + 1 <= xMax;px += 2) { uint8_t *b = line + (px >> 1);*b = (*b & aa) ^ xx; }
+		if (px == xMax) {  															// Even last pixel : high nibble
+			uint8_t *b = line + (px >> 1);
+			*b = (*b & 0x0F) | ((((*b >> 4) & a) ^ x) << 4);
+		}
+	} else if (gMode->bitsPerPixel == 1) {
+		uint8_t a = (pixelAnd & 1) ? 0xFF : 0x00,x = (pixelXor & 1) ? 0xFF : 0x00;
+		for (int px = xMin;px <= xMax;) {
+			int bit0 = px & 7,n = 8 - bit0;
+			if (n > xMax - px + 1) n = xMax - px + 1;
+			uint8_t m = (uint8_t)((0xFF >> bit0) & (0xFF << (8 - bit0 - n)));
+			uint8_t *b = line + (px >> 3);
+			*b = (*b & ~m) | (((*b & a) ^ x) & m);
+			px += n;
+		}
+	}  																				// 0 bpp (mode 3) : no pixels
+}
+
+static void vline_packed(struct GraphicsMode *gMode, int x, int yMin, int yMax) {
+	uint8_t *b = gMode->graphicsMemory + yMin * gMode->stride;
+	if (gMode->bitsPerPixel == 4) {
+		uint8_t a = pixelAnd & 0x0F,xr = pixelXor & 0x0F;
+		b += x >> 1;
+		for (int y = yMin;y <= yMax;y++,b += gMode->stride)
+			if (x & 1) *b = (*b & 0xF0) | (((*b & 0x0F) & a) ^ xr);
+			else *b = (*b & 0x0F) | ((((*b >> 4) & a) ^ xr) << 4);
+	} else if (gMode->bitsPerPixel == 1) {
+		uint8_t m = 0x80 >> (x & 7),a = (pixelAnd & 1) ? 0xFF : 0x00,xr = (pixelXor & 1) ? 0xFF : 0x00;
+		b += x >> 3;
+		for (int y = yMin;y <= yMax;y++,b += gMode->stride) *b = (*b & ~m) | (((*b & a) ^ xr) & m);
+	}
+}
+
 // Helper to draw a horizontal line (without safety checks!)
 static void hline_noclip(struct GraphicsMode *gMode, int xMin, int xMax, int y) {
-	if (gMode->bitsPerPixel != 8) {  											// Packed modes : generic slow path.
-		for (int x = xMin; x <= xMax; ++x) GFXPlotPixel(gMode,x,y);
+	if (gMode->bitsPerPixel != 8) {  											// Packed modes : a byte at a time (T-132)
+		hline_packed(gMode,xMin,xMax,y);
 		return;
 	}
 	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
@@ -134,8 +183,8 @@ static void hline_noclip(struct GraphicsMode *gMode, int xMin, int xMax, int y) 
 
 // Helper to draw a vertical line (without safety checks!)
 static void vline_noclip(struct GraphicsMode *gMode, int x, int yMin, int yMax) {
-	if (gMode->bitsPerPixel != 8) {  											// Packed modes : generic slow path.
-		for (int y = yMin; y <= yMax; ++y) GFXPlotPixel(gMode,x,y);
+	if (gMode->bitsPerPixel != 8) {  											// Packed modes : direct (T-132)
+		vline_packed(gMode,x,yMin,yMax);
 		return;
 	}
 	uint8_t sprAnd = (SPRSpritesInUse() ? pixelAnd | 0xF0 : pixelAnd);
@@ -146,6 +195,10 @@ static void vline_noclip(struct GraphicsMode *gMode, int x, int yMin, int yMax) 
 	}
 }
 
+
+//		T-132 (0.16.92) : public, for GFXFastLine's horizontal and vertical lines (efla.cpp). On screen, inclusive.
+void GFXHLine(struct GraphicsMode *gMode,int xMin,int xMax,int y) { hline_noclip(gMode,xMin,xMax,y); }
+void GFXVLine(struct GraphicsMode *gMode,int x,int yMin,int yMax) { vline_noclip(gMode,x,yMin,yMax); }
 
 void GFXRectangle(struct GraphicsMode *gMode,int x1,int y1,int x2,int y2,int solid,bool setZero) {
 	int xMin, xMax, yMin, yMax;

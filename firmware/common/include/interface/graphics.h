@@ -119,6 +119,8 @@ void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b);
 void GFXGetPalette(uint8_t colour,uint8_t *r,uint8_t *g,uint8_t *b);
 void GFXGraphicsCommand(uint8_t cmd,uint8_t *data);
 void GFXFastLine(struct GraphicsMode *gMode,int x, int y, int x2, int y2);
+void GFXHLine(struct GraphicsMode *gMode,int xMin,int xMax,int y);  					// T-132 : on screen, inclusive
+void GFXVLine(struct GraphicsMode *gMode,int x,int yMin,int yMax);
 void GFXPlotPixel(struct GraphicsMode *gMode,int x,int y);
 void GFXPlotPixelChecked(struct GraphicsMode *gMode,int x,int y);
 void GFXEllipse(struct GraphicsMode *gMode,int x1,int y1,int x2,int y2,int useSolidFill);

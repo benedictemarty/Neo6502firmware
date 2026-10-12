@@ -44,6 +44,16 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.92** (2026-10-13) — **Dessin rapide des modes compacts (T-132, pistes P2 et P3 de l'étude).** Modes 1 et 2 : les
+  lignes horizontales et verticales des rectangles (pleins et vides) écrivent un octet à la fois (deux pixels en mode 2,
+  jusqu'à huit en mode 1, demi-octets et bits des bords à part) au lieu d'un `GFXPlotPixel` par pixel (lecture + écriture
+  par un aiguillage) ; les lignes purement horizontales et verticales du traceur (`GFXFastLine` : rangées des ellipses
+  pleines…) prennent le même chemin, dans tous les modes ; les glyphes de la console (modes 1 et 2) sont écrits dans la
+  ligne directement, l'adresse calculée une fois par rangée. **Mêmes pixels** : test API `fastdraw` (15 formes, XOR
+  compris, et du texte en couleur, dans les modes 0, 1 et 2 ; sommes de Fletcher de la mémoire vidéo égales à celles de
+  la 0.16.91 ; deux mutations détectées). Gain estimé par l'étude (×50 à ×100 sur les remplissages, moins sur le texte) ;
+  **mesure carte à faire** avec l'outil `PERFDRAW.NEO` (`tests/api/outils/perfdraw.asm`, 0.16.91 contre 0.16.92).
+
 - **0.16.91** (2026-10-12) — **Dessin au bord de l'écran (T-132, défauts relevés par l'étude, reproduits par un test).**
   (1) 5,7 Draw Image à l'échelle 1 posait ses pixels sans contrôle (`GFXPlotPixel`) : une image qui dépasse à droite
   rebouclait sur la ligne suivante, et une image au-dessus ou au-dessous de l'écran écrivait hors de la mémoire vidéo (sur

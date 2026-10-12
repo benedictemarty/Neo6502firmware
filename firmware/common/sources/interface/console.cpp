@@ -155,9 +155,25 @@ static void CONPaintCharacterPacked(uint16_t x,uint16_t y,uint16_t ch,uint8_t fc
 		}
 		if (attr & MDA_ATTR_BRIGHT) b |= (b >> 1);  									// Bold : double strike.
 		if ((attr & MDA_ATTR_UNDERLINE) && y1 == cHeight - 2) b = 0xFF;  			// Underline row (MDA : row 12 of 14).
-		for (uint16_t x1 = 0;x1 < cWidth;x1++) {
-			GFXWritePixelRaw(xOrg + x1,yOrg + y1,(b & 0x80) ? fcol : bcol);
-			b = b << 1;
+		//		T-132 (P3, 0.16.92) : written in the line directly, the address computed once per row, instead of
+		//		a GFXWritePixelRaw (call, switch, multiply) per pixel. Same rule : pixel x1 is on when bit 7 of
+		//		b << x1 is set (so a 9th column, mode 1, is always paper). Same pixels : test API fastdraw.
+		uint8_t *line = graphMode->graphicsMemory + (yOrg + y1) * graphMode->stride;
+		if (graphMode->bitsPerPixel == 1) {
+			for (uint16_t x1 = 0;x1 < cWidth;x1++) {
+				int px = xOrg + x1;
+				uint8_t m = 0x80 >> (px & 7);
+				if (((b & 0x80) ? fcol : bcol) & 1) line[px >> 3] |= m; else line[px >> 3] &= ~m;
+				b = b << 1;
+			}
+		} else {  																	// 4 bpp
+			for (uint16_t x1 = 0;x1 < cWidth;x1++) {
+				int px = xOrg + x1;
+				uint8_t c = ((b & 0x80) ? fcol : bcol) & 0x0F;
+				uint8_t *p = line + (px >> 1);
+				*p = (px & 1) ? (uint8_t)((*p & 0xF0) | c) : (uint8_t)((*p & 0x0F) | (c << 4));
+				b = b << 1;
+			}
 		}
 	}
 }
