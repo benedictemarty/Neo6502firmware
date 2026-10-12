@@ -50,8 +50,8 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   le nom long « Été » qu'un PC lit tel quel (avant : « ╔tΘ », octets lus en CP437), et « cd été » trouve « Été » (la
   casse des lettres accentuées est ignorée sur la clé, pas dans `neo` dont l'hôte la distingue). Nom 8.3 sans accent
   (« ETE », table CP850 de FatFs). Un caractère hors Latin-1 se lit `?` : les noms déjà écrits en CP437 se lisent
-  « ?t? » et ne s'ouvrent plus par leur nom (à renommer depuis un PC). Décision bmarty (« go utf8 »). Flash +1 272
-  octets, RAM statique inchangée. Tests : `make test-noms` (conversion, et le FatFs du firmware sur une image FAT de
+  « ?t? » et ne s'ouvrent plus par leur nom (à renommer depuis un PC). Décision bmarty (« go utf8 »). Flash +1 248
+  octets (ELF taguée), RAM statique inchangée. Tests : `make test-noms` (conversion, et le FatFs du firmware sur une image FAT de
   `mkfs.fat`, octets du disque compris ; contre-essai `make test-noms-ancien` : l'ancienne configuration échoue à
   « cd été », diagnostic de NeoWin vérifié), test API `noms` (dans `neo`, noms UTF-8 sur le PC contrôlés par
   `noms.fichiers` ; échec sur le `neo` de la 0.16.85). Phosphoneo doit appeler les deux fonctions dans son hôte. NeoDOS
