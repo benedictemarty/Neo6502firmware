@@ -85,13 +85,27 @@ static uint8_t _WMVisibleFront(void) {
 //
 // ***************************************************************************************
 
-static void _WMDrawFrame(const struct Window *w,bool isFront) {
-    struct QDRect screen = { 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize };
+//      T-133 (0.16.93) : limit, if not NULL, restricts every drawing of the frame to that rectangle (34,9 draws
+//      the frame of a window that may be covered piece by piece : its visible parts only).
+static struct QDRect _WMLimit(struct QDRect r,const struct QDRect *limit) {
+    if (limit == NULL) return r;
+    if (r.left < limit->left) r.left = limit->left;
+    if (r.top < limit->top) r.top = limit->top;
+    if (r.right > limit->right) r.right = limit->right;
+    if (r.bottom > limit->bottom) r.bottom = limit->bottom;
+    if (r.right < r.left) r.right = r.left;  									// Empty : nothing drawn
+    if (r.bottom < r.top) r.bottom = r.top;
+    return r;
+}
+
+static void _WMDrawFrame(const struct Window *w,bool isFront,const struct QDRect *limit = NULL) {
+    struct QDRect screen = _WMLimit({ 0,0,(int16_t)gMode.xGSize,(int16_t)gMode.yGSize },limit);
     QDSetClipRaw(&screen);
     QDFrameRaw(&w->frame,WM_COL_FRAME);
     if (w->flags & WM_FLAG_TITLE) {
         struct QDRect bar = { (int16_t)(w->frame.left+1),(int16_t)(w->frame.top+1),(int16_t)(w->frame.right-1),(int16_t)(w->frame.top+1+WM_TITLE_HEIGHT) };
-        QDSetClipRaw(&bar);
+        struct QDRect barClip = _WMLimit(bar,limit);
+        QDSetClipRaw(&barClip);
         QDFillRaw(&bar,isFront ? WM_COL_TITLE_ON : WM_COL_TITLE_OFF);
         int x = bar.left + 2;
         if (w->flags & WM_FLAG_CLOSE) {                                         // Close box : 7x7 square
@@ -104,7 +118,8 @@ static void _WMDrawFrame(const struct Window *w,bool isFront) {
     if (w->flags & WM_FLAG_GROW) {                                              // Grow box : bottom right of the content
         struct QDRect c = _WMContentRect(w);
         struct QDRect g = { (int16_t)(c.right-WM_GROW_SIZE),(int16_t)(c.bottom-WM_GROW_SIZE),c.right,c.bottom };
-        QDSetClipRaw(&c);
+        struct QDRect cClip = _WMLimit(c,limit);
+        QDSetClipRaw(&cClip);
         QDFrameRaw(&g,WM_COL_FRAME);
     }
 }
@@ -274,10 +289,47 @@ uint8_t WMGetContentRect(uint8_t id,uint16_t rectAddr) {
     return 0;
 }
 
+//      T-133 (0.16.93, D-06 of NeoWin, option b chosen by bmarty) : the frame used to be drawn whole, over the
+//      windows in front. Its visible parts are now computed — the frame rectangle minus the frames of the visible
+//      windows above it — and drawn one by one (QuickDraw clips to one rectangle). Past WM_VISIBLE_PIECES pieces
+//      nothing is drawn (the new title shows when the window comes to the front, its frame is redrawn then).
+#define WM_VISIBLE_PIECES 32
+
+static int _WMSubtract(const struct QDRect *a,const struct QDRect *b,struct QDRect *out) {  	// a - b : 0 to 4 rects
+    if (!_WMIntersects(a,b)) { out[0] = *a;return 1; }
+    int n = 0;
+    int16_t top = a->top,bottom = a->bottom;
+    if (b->top > a->top) { out[n++] = { a->left,a->top,a->right,b->top };top = b->top; }  			// Band above b
+    if (b->bottom < a->bottom) { out[n++] = { a->left,b->bottom,a->right,a->bottom };bottom = b->bottom; }	// Band below
+    if (b->left > a->left) out[n++] = { a->left,top,b->left,bottom };  								// Left of b
+    if (b->right < a->right) out[n++] = { b->right,top,a->right,bottom };  							// Right of b
+    return n;
+}
+
 uint8_t WMSetTitle(uint8_t id,uint16_t titleAddr) {
     struct Window *w = _WMGet(id);
     if (w == NULL || !_WMReadTitle(titleAddr,w)) return 1;
-    if (w->visible) { struct QDRect save;QDGetClipRaw(&save);_WMDrawFrame(w,id == _WMVisibleFront());QDSetClipRaw(&save); }
+    if (!w->visible) return 0;
+    struct QDRect pieces[WM_VISIBLE_PIECES],next[WM_VISIBLE_PIECES];
+    int n = 1;pieces[0] = w->frame;
+    for (int i = _WMZIndex(id) + 1;i < zCount && n > 0;i++) {  				// Remove each visible window above
+        struct Window *above = &windows[zOrder[i]-1];
+        if (!above->visible) continue;
+        int m = 0;
+        for (int k = 0;k < n;k++) {
+            struct QDRect part[4];
+            int c = _WMSubtract(&pieces[k],&above->frame,part);
+            if (m + c > WM_VISIBLE_PIECES) { m = 0;n = 0;break; }  				// Too many : draw nothing (option a)
+            for (int j = 0;j < c;j++) next[m++] = part[j];
+        }
+        if (n == 0) break;
+        n = m;
+        for (int k = 0;k < n;k++) pieces[k] = next[k];
+    }
+    struct QDRect save;QDGetClipRaw(&save);
+    bool front = (id == _WMVisibleFront());
+    for (int k = 0;k < n;k++) _WMDrawFrame(w,front,&pieces[k]);
+    QDSetClipRaw(&save);
     return 0;
 }
 

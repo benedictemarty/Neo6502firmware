@@ -44,6 +44,15 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.93** (2026-10-13) — **34,9 Set Window Title ne dessine plus par-dessus les fenêtres de devant (T-133, D-06 de
+  NeoWin, option b choisie par bmarty).** Le cadre (bordure et barre de titre) d'une fenêtre recouverte était redessiné en
+  entier, par-dessus les fenêtres placées devant elle (vu par NeoWin dans Phosphoneo). `WMSetTitle` calcule maintenant ses
+  parties visibles — le rectangle du cadre moins les cadres des fenêtres visibles au-dessus, au plus 32 morceaux — et
+  dessine le cadre une fois par morceau, avec ce morceau pour découpage ; au-delà de 32 morceaux rien n'est dessiné (le
+  nouveau titre apparaît quand la fenêtre passe devant). Test toolbox `wmtitle` (Alpha derrière Beta, nouveau titre
+  d'Alpha : la zone de Beta inchangée, la partie visible de la barre d'Alpha changée) ; contre-essai : l'ancien code
+  abîme Beta. `make test-toolbox` 15/15, `test-api` 47/47.
+
 - **0.16.92** (2026-10-13) — **Dessin rapide des modes compacts (T-132, pistes P2 et P3 de l'étude).** Modes 1 et 2 : les
   lignes horizontales et verticales des rectangles (pleins et vides) écrivent un octet à la fois (deux pixels en mode 2,
   jusqu'à huit en mode 1, demi-octets et bits des bords à part) au lieu d'un `GFXPlotPixel` par pixel (lecture + écriture
