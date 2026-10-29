@@ -48,7 +48,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
   Aucun changement du firmware lui-même : seule l'image de NeoDOS (`neodos_binary.h`, issue de
   `~/Neo6502Msdos/build/neodos.bin`) change. `LOCALE de` choisit le clavier allemand (idem `fr us gb it sw fi ch fm`) par
   `1,6` ; sans argument ou avec autre chose que deux lettres : message d'usage ; code inconnu : `ERRORLEVEL` 1 (NeoDOS `87ca7ea`, 11 092 octets). Non mémorisé (points 2 et 3 de T-134 non
-  lancés). Validé seulement dans Phosphoneo (test `57_locale` de NeoDOS) ; clavier réel, `ä ö ü ß` non vérifiés.
+  lancés). Test `timezone` corrigé : il jugeait la zone de Paris sur l'horloge du PC (échec depuis la fin de l'heure d'été, 2026-10-25) ; `make test-api` 47/47. Validé seulement dans Phosphoneo (test `57_locale` de NeoDOS) ; clavier réel, `ä ö ü ß` non vérifiés.
 
 - **0.16.93** (2026-10-13) — **34,9 Set Window Title ne dessine plus par-dessus les fenêtres de devant (T-133, D-06 de
   NeoWin, option b choisie par bmarty).** Le cadre (bordure et barre de titre) d'une fenêtre recouverte était redessiné en

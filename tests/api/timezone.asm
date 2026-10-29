@@ -27,6 +27,9 @@ start:
   sta logLen+1
   lda #12
   jsr wchar
+  lda #23                   ; 1,23 silencieux d'abord : sans lui la zone de Paris se jugeait sur l'horloge du PC
+  ldx #1                    ; (hiver depuis le 25/10 : 003C 00 au lieu de 0078 01) — l'heure du modem factice fixe le 15/09/2026
+  jsr api
   ldx #<zparis              ; ZONE Europe/Paris
   ldy #>zparis
   jsr setzone
