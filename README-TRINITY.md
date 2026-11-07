@@ -44,6 +44,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.95** (2026-11-07, **à valider sur carte**) — **Manettes USB : débranchement et rebranchement (T-136).** `GamepadController::remove` n'était appelé nulle part : une manette débranchée restait comptée par 7,2, et son rebranchement, qui reprend la même adresse USB, était refusé (`insert` sur une clé existante) avec le message trompeur `No driver found for 054C09CC` alors que le pilote existe. `tuh_hid_umount_cb` retire désormais la manette et `add` remplace l'entrée. Cause observée sur le clone de PS4 de bmarty ; **non essayé sur carte**. RAM inchangée (231 368).
 - **0.16.94** (2026-10-29, **à valider sur carte**) — **NeoDOS 0.34.0 embarqué : commande `LOCALE xx` (T-134, point 1).**
   Aucun changement du firmware lui-même : seule l'image de NeoDOS (`neodos_binary.h`, issue de
   `~/Neo6502Msdos/build/neodos.bin`) change. `LOCALE de` choisit le clavier allemand (idem `fr us gb it sw fi ch fm`) par
