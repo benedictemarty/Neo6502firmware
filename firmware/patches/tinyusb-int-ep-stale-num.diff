@@ -1,0 +1,30 @@
+diff --git a/src/portable/raspberrypi/rp2040/hcd_rp2040.c b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+--- a/src/portable/raspberrypi/rp2040/hcd_rp2040.c
++++ b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+@@ -289,7 +289,9 @@
+     const uint8_t epnum = idx >> 1u;
+     for (size_t e = 0; e < TU_ARRAY_SIZE(ep_pool); e++) {
+       hw_endpoint_t *ep = &ep_pool[e];
+-      if (ep->interrupt_num == epnum) {
++      // Trinity T-137 : only an endpoint in use may take the completion ; a freed one with a stale
++      // interrupt_num earlier in the pool swallowed the reports of the device now on that slot.
++      if (ep->max_packet_size > 0 && ep->interrupt_num == epnum) {
+         io_rw_32  *ep_reg  = dpram_int_ep_ctrl(ep->interrupt_num);
+         io_rw_32  *buf_reg = dpram_int_ep_buffer_ctrl(ep->interrupt_num);
+         const bool done    = rp2usb_xfer_continue(ep, ep_reg, buf_reg, 0, tu_edpt_dir(ep->ep_addr) == TUSB_DIR_IN);
+@@ -501,6 +503,7 @@
+         io_rw_32 *buf_reg = dpram_int_ep_buffer_ctrl(ep->interrupt_num);
+         *buf_reg          = 0;
+         *ep_reg           = 0;
++        ep->interrupt_num = 0; // Trinity T-137 : a freed slot must not keep its hardware index (TinyUSB #4173)
+       }
+ 
+       ep->max_packet_size = 0; // mark as unused
+@@ -551,6 +554,7 @@
+   ep->next_pid        = 0u;
+ 
+   if (ep->transfer_type != TUSB_XFER_INTERRUPT) {
++    ep->interrupt_num = 0; // Trinity T-137 : EPX endpoint, never an interrupt slot (TinyUSB #4173)
+     ep->dpram_buf = usbh_dpram->epx_data;
+   } else {
+     // from 15 interrupt endpoints pool

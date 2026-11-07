@@ -44,6 +44,7 @@ Règle : une nouvelle fonctionnalité prend sa mémoire dans `graphicsMemory` (7
 
 ## Versions
 
+- **0.16.96** (2026-11-08, **essai sur carte sans effet sur les manettes**) — **Correctif TinyUSB #4173 (T-137).** Un point libéré gardait son numéro de slot d'interruption et pouvait capter les paquets du périphérique suivant sur ce slot (`hcd_rp2040.c`, patch `firmware/patches/tinyusb-int-ep-stale-num.diff`). Les manettes DS4 restent muettes : elles répondent NAK en permanence (mesuré par SWD). RAM inchangée (231 368).
 - **0.16.95** (2026-11-07, **à valider sur carte**) — **Manettes USB : débranchement et rebranchement (T-136).** `GamepadController::remove` n'était appelé nulle part : une manette débranchée restait comptée par 7,2, et son rebranchement, qui reprend la même adresse USB, était refusé (`insert` sur une clé existante) avec le message trompeur `No driver found for 054C09CC` alors que le pilote existe. `tuh_hid_umount_cb` retire désormais la manette et `add` remplace l'entrée. Cause observée sur le clone de PS4 de bmarty ; **non essayé sur carte**. RAM inchangée (231 368).
 - **0.16.94** (2026-10-29, **à valider sur carte**) — **NeoDOS 0.34.0 embarqué : commande `LOCALE xx` (T-134, point 1).**
   Aucun changement du firmware lui-même : seule l'image de NeoDOS (`neodos_binary.h`, issue de
