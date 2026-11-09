@@ -116,6 +116,7 @@ static void DSPResetP0(void) {  												// P0 : hardware and firmware state 
 	CTReset();                                                                  // No controls
 	DLReset();                                                                  // No dialogs
 	RSReset();                                                                  // No resource file
+	DBReset();                                                                  // No database (T-138)
 	BNKReset();                                                                 // No bank mapped (T-17)
 	CONResetUserFont();                                                         // Latin-1 letters in $C0-$FF (T-20)
 	IRQSetTick(0);                                                              // No interrupt tick, no frame IRQ (T-14)
@@ -164,7 +165,7 @@ void DSPSoftReset(void) {
 	SPRReset();
 	SPRSetDrawMode(0);  														// T-111
 	SPRSetImagePage(0x90);  													// T-116
-	QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();  // Toolbox (T-88)
+	QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();DBReset();  // Toolbox (T-88, T-138)
 	BNKReset();  																// No bank mapped (T-17)
 	IRQSetTick(0);IRQSetFrame(0);  												// No interrupt tick, no frame IRQ (T-14)
 	SNDResetAll();  															// Channels, queues, stream (T-79)

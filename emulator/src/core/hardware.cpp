@@ -696,6 +696,22 @@ uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size) {
 	return convertError(errno);
 }
 
+// T-138 : write from a host buffer.
+uint8_t FISWriteFileHandleBuffer(uint8_t fileno, const uint8_t* src, uint16_t* size) {
+	FILE* f = getF(fileno);
+	if (!f)
+		return FIOERROR_INVALID_PARAMETER;
+
+	errno = 0;
+	size_t result = fwrite(src, 1, *size, f);
+	fflush(f);
+	if (result != *size) {
+		*size = result;
+		return convertError(errno ? errno : ENOSPC);
+	}
+	return FIOERROR_OK;
+}
+
 uint8_t FISGetSizeFileHandle(uint8_t fileno, uint32_t* size) {
 	FILE* f = getF(fileno);
 	if (!f)

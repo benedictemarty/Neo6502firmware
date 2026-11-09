@@ -11,8 +11,8 @@ Demande de bmarty (2026-11-09) : « un système de bd avec seek, search, update,
 - `FIO_NUM_FILES` = 8 canaux ouverts en même temps, partagés par tout le système (`filesystem.h:92`).
 - Groupe 38 (ressources NR1) : table de ressources, « rien n'est mis en cache dans le RP2040 », lecture à la demande.
   C'est le précédent à suivre : tampon fixe, accès par seek.
-- Groupes toolbox 32 à 38 : le prochain numéro libre est le 39 (non vérifié côté protocole : à confirmer avant de
-  réserver le numéro).
+- Groupes toolbox 32 à 38 et 39 (AGI Pictures, T-107) : le prochain numéro libre est le **40** (vérifié dans
+  `dispatch.config` ; correction : l'étude disait 39).
 - Il n'existe aucune notion d'enregistrement, de recherche ni de verrou dans le firmware.
 
 ## 2. Contraintes
@@ -31,7 +31,7 @@ Demande de bmarty (2026-11-09) : « un système de bd avec seek, search, update,
 | # | Niveau | Apport | Coût | Risque |
 |---|---|---|---|---|
 | A | Bibliothèque 6502 (BASIC, assembleur) au-dessus du groupe 3 | Aucun changement de firmware, aucune RAM prise | Chaque appel traverse l'API : plus lent ; code à écrire par langage | Faible |
-| B | Groupe toolbox 39 dans Trinity | Appel unique create/open/seek/search/update/delete, recherche dans le firmware, utilisable par tout programme | Nouvelle version, tests, une partie de la marge RAM | Moyen : marge RAM, temps de blocage |
+| B | Groupe toolbox 40 dans Trinity | Appel unique create/open/seek/search/update/delete, recherche dans le firmware, utilisable par tout programme | Nouvelle version, tests, une partie de la marge RAM | Moyen : marge RAM, temps de blocage |
 | C | Format de fichier + outil PC (Python) | Bases préparables sur PC, vérifiables sans carte | Aucun usage sur carte tant que A ou B n'existe pas | Faible |
 
 Recommandation : **C puis A**, mesurer, et ne faire B que si les mesures montrent que A est trop lent. C'est le plus
@@ -79,7 +79,7 @@ sans table d'offsets).
 
 ## 7. Décision et usage précisés par bmarty (2026-11-09)
 
-- Niveau retenu : **B**, un groupe toolbox 39 dans Trinity.
+- Niveau retenu : **B**, un groupe toolbox 40 dans Trinity.
 - Projets visés : Neo6502Tyrann, Neo6502AigleDorEngine, et d'autres (non précisés).
 - Besoin : **les données restent sur la clé USB et ne sont pas chargées en mémoire** ; le programme va chercher ce dont
   il a besoin à la demande.
@@ -100,4 +100,13 @@ Conséquences sur la conception (propositions, à valider) :
   (comme la table de 38,x), est à reconsidérer pour les données quasi en lecture seule. L'insertion réécrit l'index :
   acceptable si create est rare.
 - Format commun possible avec NR1 (groupe 38) à examiner avant de créer un second format.
-- Les builds Oric d'AigleDorEngine n'utilisent pas Trinity : ils ne profiteraient pas du groupe 39.
+- Les builds Oric d'AigleDorEngine n'utilisent pas Trinity : ils ne profiteraient pas du groupe 40.
+
+## 8. Lot 1 livré (0.16.97, 2026-11-09, hors carte)
+
+Groupe **40** : 40,1 Create, 40,2 Open, 40,3 Close, 40,4 Info, 40,5 Read, 40,6 Update, 40,7 Append, 40,8 Delete,
+40,9 Search. Format ND1 : en-tête de 16 octets (`ND`, version 1, taille d'enregistrement 2..4096, nombre
+d'enregistrements u32, limité à 65535 par le firmware), enregistrements de longueur fixe, octet 0 = statut (1 actif,
+0 supprimé). Statique RAM : 5 octets ; recherche : tampon de 96 octets sur la pile (champ dans les 96 premiers octets).
+Écarté pour l'instant : index trié et lecture par clé, qui restent à faire si les mesures sur carte montrent que la
+recherche séquentielle est trop lente. Mesure à faire : temps de 40,9 sur clé USB (inconnu).

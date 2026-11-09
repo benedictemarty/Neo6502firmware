@@ -88,6 +88,7 @@
 #include "interface/controls.h"  														// 36 Control Manager
 #include "interface/dialogs.h"  														// 37 Dialog Manager
 #include "interface/resources.h"  														// 38 Resource Manager
+#include "interface/database.h"  														// 40 Database (T-138)
 #include "interface/agipic.h"  															// 39 AGI pictures (T-107)
 #include "interface/clock.h"  															// Date and time (T-18, F-14 of the fork)
 #include "interface/banks.h"  															// Memory banks in flash (T-17)

@@ -83,6 +83,7 @@ uint8_t FISTellFileHandle(uint8_t fileno, uint32_t* offset);
 uint8_t FISReadFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
 uint8_t FISReadFileHandleBuffer(uint8_t fileno, uint8_t* dest, uint16_t* size);	// T-12 (F-16 of the fork) : read into any host buffer, bounds checked by the caller
 uint8_t FISWriteFileHandle(uint8_t fileno, uint16_t address, uint16_t* size);
+uint8_t FISWriteFileHandleBuffer(uint8_t fileno, const uint8_t* src, uint16_t* size);	// T-138 : write from any host buffer (database header, status byte)
 uint8_t FISGetSizeFileHandle(uint8_t fileno, uint32_t* size);
 uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size);
 uint8_t FISSetFileAttributes(const std::string& filename, uint8_t attribs);
