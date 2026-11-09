@@ -14,7 +14,7 @@ GROUP 38 Resource Manager
         *DERROR = RSOpen(DPARAMS[0],DSPGetInt16(DPARAMS,1));
     DOCUMENTATION
         Toolbox (Trinity, T-12, ADR-01 of the fork). Opens on file channel Parameter:0 the resource file whose length-prefixed
-        name is at Parameters:1,2 (format NR1, built by tools/mkres.py of the fork archive : a table of resources, each
+        name is at Parameters:1,2 (format NR1, built by tools/toolbox/mkres.py : a table of resources, each
         with a 4 character type, a 16 bit id, an offset and a size, then the data). One resource file is open at
         a time (opening another closes it) ; nothing is cached in the RP2040, the table is read from storage on
         each call. Errors : 1 bad channel or not a resource file, 2 storage error. Resources are numbered 1..count
