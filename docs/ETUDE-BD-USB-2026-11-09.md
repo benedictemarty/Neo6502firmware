@@ -76,3 +76,28 @@ sans table d'offsets).
 - Usage visé (quel programme, combien d'enregistrements, quelle taille) : cela fixe la taille d'enregistrement et
   l'importance de la vitesse de search.
 - Les types de champs et le format ci-dessus conviennent-ils ?
+
+## 7. Décision et usage précisés par bmarty (2026-11-09)
+
+- Niveau retenu : **B**, un groupe toolbox 39 dans Trinity.
+- Projets visés : Neo6502Tyrann, Neo6502AigleDorEngine, et d'autres (non précisés).
+- Besoin : **les données restent sur la clé USB et ne sont pas chargées en mémoire** ; le programme va chercher ce dont
+  il a besoin à la demande.
+
+Constats sur les deux projets (lecture de leurs docs) :
+- Tyrann charge aujourd'hui son paquet à la compilation (`mkneo`) ; ses sauvegardes sont 3 emplacements avec somme de
+  contrôle.
+- AigleDorEngine décrit salles, costumes, scripts et verbes dans un fichier de données ; 3 emplacements de sauvegarde.
+- Je n'ai pas trouvé dans leurs docs de besoin de recherche ou de mise à jour des données de jeu : c'est une demande de
+  bmarty, pas un constat.
+
+Conséquences sur la conception (propositions, à valider) :
+- Le groupe sert d'abord à **lire un enregistrement par numéro ou par clé et à le déposer directement dans une page
+  mémoire** (comme 3,27 et 38,7), sans tampon en RAM 6502 : cela répond à « pas en mémoire » et à la marge RAM de
+  3 920 o.
+- create et update servent aux données qui changent (sauvegardes, états de partie) ; la lecture reste le cas courant.
+- La recherche par clé doit éviter le parcours complet : un **index trié par clé en tête du fichier**, relu à la demande
+  (comme la table de 38,x), est à reconsidérer pour les données quasi en lecture seule. L'insertion réécrit l'index :
+  acceptable si create est rare.
+- Format commun possible avec NR1 (groupe 38) à examiner avant de créer un second format.
+- Les builds Oric d'AigleDorEngine n'utilisent pas Trinity : ils ne profiteraient pas du groupe 39.
