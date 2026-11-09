@@ -105,7 +105,7 @@ GROUP 32 QuickDraw
         Selects the proportional font at page Parameter:0, address Parameters:1,2 (pages of Function 12,2 : $00 6502
         RAM, $90 graphics RAM ; load a font file there with Function 3,2 or 12,1). Page 0 address 0
         restores the built in 6x8 font. The font is read in place at each call, without copy. NF1 format (made by
-        tools/mkfont.py of the fork archive) : "NF", version 1, height, first character, character count, spacing, bytes per
+        tools/toolbox/mkfont.py) : "NF", version 1, height, first character, character count, spacing, bytes per
         row (1 or 2), then one glyph per character of width byte plus height rows, bit 7 = left pixel. Error 1 if
         the header or the size is invalid.
 
