@@ -110,3 +110,24 @@ d'enregistrements u32, limité à 65535 par le firmware), enregistrements de lon
 0 supprimé). Statique RAM : 5 octets ; recherche : tampon de 96 octets sur la pile (champ dans les 96 premiers octets).
 Écarté pour l'instant : index trié et lecture par clé, qui restent à faire si les mesures sur carte montrent que la
 recherche séquentielle est trop lente. Mesure à faire : temps de 40,9 sur clé USB (inconnu).
+
+## 9. Mesures sur carte (2026-11-09, Trinity 0.16.97, clé USB de bmarty)
+
+Programme `tools/toolbox/dbperf.asm` (minuteur 1,1 à 100 Hz, résolution 10 ms ; le minuteur de la carte a été vérifié
+par SWD : 10,28 s pour 10,50 s d'horloge du PC). Carte flashée et pilotée par RP3Sonde. Une seule série (la mesure
+est répétée trois fois pour READ et APPEND, avec les mêmes valeurs à l'unité près), sur une seule clé : à confirmer
+sur d'autres clés.
+
+| Opération | Total | Par opération |
+|---|---|---|
+| 40,7 Append, 500 enregistrements de 64 octets | 26,15 s | **52 ms** |
+| 40,5 Read, 500 lectures de 64 octets (séquentielles) | 0,43 s | **0,86 ms** |
+| 40,9 Search, 500 enregistrements (champ de 2 octets, dernier enregistrement) | 0,42 s | **0,84 ms par enregistrement** |
+| 40,5 Read, 200 lectures de 676 octets (20 enregistrements en rotation) | 1,81 s | **9 ms** |
+
+Lecture : la lecture est rapide quand les enregistrements sont petits et voisins (le secteur est déjà en mémoire
+côté FatFs) ; 676 octets coûtent 10 fois plus, probablement parce que chaque lecture touche plusieurs secteurs
+(non vérifié). L'écriture est lente : 52 ms par ajout (écriture de l'enregistrement puis réécriture du compteur
+de l'en-tête, avec les écritures FatFs de la clé) ; un programme qui ajoute beaucoup d'enregistrements doit le
+faire hors du jeu. Une recherche sur 500 enregistrements de 64 octets bloque l'API environ 0,4 s.
+Non mesuré : Update et Delete (même chemin d'écriture, sans réécriture du compteur), clés USB différentes.
