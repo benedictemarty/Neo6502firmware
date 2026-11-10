@@ -385,6 +385,12 @@ GROUP 3 File I/O
         not (no wrap-around, no crossing from $80 to $81 : use two calls). A full 320x240 frame
         is read with 65536 bytes into page $80 then 11264 bytes into page $81.
 
+        Speed (Trinity T-144, 0.16.102) : clusters that follow each other on the key are read in one USB transfer
+        (up to 64 Ko), so one big call is much faster than several calls of one cluster. Measured on the board
+        (FAT32 key, 4 Ko clusters, 64000 bytes into $80) : 83 ms from a 4096-aligned position, 100 ms otherwise ;
+        it was 167 and 190 ms, and 15 x 4096 + 2560 bytes still take 167 ms. The 65C02 is stopped during the call
+        (Function 3,28 lets it run).
+
     FUNCTION 28 File Read Background
         *DERROR = FIOReadFileHandleBackground(DPARAMS[0],DPARAMS[1],DSPGetInt16(DPARAMS,2),DSPGetInt16(DPARAMS,4),DSPGetInt16(DPARAMS,6));
     DOCUMENTATION

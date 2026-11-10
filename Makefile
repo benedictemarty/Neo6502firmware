@@ -171,6 +171,24 @@ test-noms-ancien:
 	@rm -f build/noms-ancien/noms.img && $(MKFSFAT) -C build/noms-ancien/noms.img 1024 > /dev/null
 	build/noms-ancien/test_noms build/noms-ancien/noms.img
 
+# T-144 : f_read lit les grappes contiguës en un seul disk_read (au plus FF_TRINITY_RUN secteurs). FatFs du firmware sur
+# deux images : FAT16 à grappes de 4 Ko (comme la clé A: de la carte) et FAT32 à grappes de 512 o. test-grappes-ancien =
+# contre-essai : ff.c d'avant T-144 (commit a7a017c6), qui doit ÉCHOUER aux tailles de disk_read.
+GRAPPES_FF ?= $(FATFS)/ff.c
+test-grappes:
+	@mkdir -p build/grappes
+	gcc -O1 -c -I$(FATFS) $(GRAPPES_FF) -o build/grappes/ff.o && gcc -O1 -c -I$(FATFS) $(FATFS)/ffunicode.c -o build/grappes/ffunicode.o
+	g++ -O1 -Wall -I$(FATFS) tests/grappes/test_grappes.cpp build/grappes/ff.o build/grappes/ffunicode.o -o build/grappes/test_grappes
+	@rm -f build/grappes/f16.img build/grappes/f32.img
+	@$(MKFSFAT) -F 16 -s 8 -C build/grappes/f16.img 20480 > /dev/null && $(MKFSFAT) -F 32 -s 1 -C build/grappes/f32.img 40960 > /dev/null
+	build/grappes/test_grappes build/grappes/f16.img && build/grappes/test_grappes build/grappes/f32.img
+
+test-grappes-ancien:
+	@mkdir -p build/grappes
+	git show a7a017c6:$(FATFS)/ff.c > build/grappes/ff_ancien.c
+	cp $(FATFS)/ff.h $(FATFS)/diskio.h $(FATFS)/ffconf.h build/grappes/
+	$(MAKE) --no-print-directory test-grappes GRAPPES_FF=build/grappes/ff_ancien.c
+
 # Outils carte (tests/api/outils/*.asm) : assemblés puis emballés en .NEO dans ~/neo-carte/cle-usb.
 # Une cible, parce que la 0.10.5 a corrigé late.asm sans pouvoir le reconstruire (routine cr retirée
 # par erreur, assemblage cassé) et que la clé a gardé des mois un binaire périmé.

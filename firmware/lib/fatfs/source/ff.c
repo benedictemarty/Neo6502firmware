@@ -3960,7 +3960,24 @@ FRESULT f_read (
 			cc = btr / SS(fs);					/* When remaining bytes >= sector size, */
 			if (cc > 0) {						/* Read maximum contiguous sectors directly */
 				if (csect + cc > fs->csize) {	/* Clip at cluster boundary */
+#if !FF_USE_FASTSEEK
+					/* Trinity T-144 (AigleDorEngine, 2026-11-10) : when the next clusters follow this one on the
+					   disk, read them in the same disk_read (one USB transaction costs ~6 ms on the board, plus
+					   ~0.4 ms a sector). At most FF_TRINITY_RUN sectors ; fp->clust ends on the last cluster read,
+					   as the loop expects. The run stops at the first cluster that is not the next one. */
+					UINT want = cc;
+					if (want > FF_TRINITY_RUN) want = FF_TRINITY_RUN;
 					cc = fs->csize - csect;
+					while (cc < want) {
+						DWORD nxt = get_fat(&fp->obj, fp->clust);
+						if (nxt == 0xFFFFFFFF) ABORT(fs, FR_DISK_ERR);
+						if (nxt != fp->clust + 1 || nxt >= fs->n_fatent) break;	/* Not contiguous, or end of chain */
+						fp->clust = nxt;
+						cc += (want - cc < fs->csize) ? want - cc : fs->csize;
+					}
+#else
+					cc = fs->csize - csect;
+#endif
 				}
 				if (disk_read(fs->pdrv, rbuff, sect, cc) != RES_OK) ABORT(fs, FR_DISK_ERR);
 #if !FF_FS_READONLY && FF_FS_MINIMIZE <= 2		/* Replace one of the read sectors with cached data if it contains a dirty sector */
