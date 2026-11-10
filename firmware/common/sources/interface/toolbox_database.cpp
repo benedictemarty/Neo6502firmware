@@ -35,7 +35,10 @@ static uint8_t _DBWriteCount(void) {                                            
     return (FISWriteFileHandleBuffer(dbChannel,raw,&n) == 0) ? DB_ERR_OK : DB_ERR_IO;
 }
 
-void DBReset(void) { dbChannel = 0xFF;dbCount = 0;dbSize = 0; }
+void DBReset(void) {                                                            // T-142 : a program that ended without 40,3 Close left its file channel open
+    if (dbChannel != 0xFF) FIOCloseFileHandle(dbChannel);                       // (the next Create / Open on it failed on the board)
+    dbChannel = 0xFF;dbCount = 0;dbSize = 0;
+}
 
 uint8_t DBCreate(uint8_t channel,uint16_t nameAddr,uint16_t recSize) {
     if (channel >= FIO_NUM_FILES || recSize < 2 || recSize > DB_MAX_RECORD) return DB_ERR_PARAM;
@@ -70,8 +73,7 @@ uint8_t DBOpen(uint8_t channel,uint16_t nameAddr) {
 
 uint8_t DBClose(void) {
     if (dbChannel == 0xFF) return DB_ERR_PARAM;
-    FIOCloseFileHandle(dbChannel);
-    DBReset();
+    DBReset();                                                                  // closes the channel
     return DB_ERR_OK;
 }
 

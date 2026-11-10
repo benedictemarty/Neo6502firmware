@@ -140,7 +140,7 @@ GROUP 32 QuickDraw
         QDInitGraf();EVTReset();WMReset();MNReset();CTReset();DLReset();RSReset();DBReset();
     DOCUMENTATION
         Puts the whole toolbox back in its start up state (Trinity T-88) : no window, no menu (and the menu bar back to the
-        full width, Function 35,9), no control, no dialog, event manager off, no resource file, no database, QuickDraw as after 32,1.
+        full width, Function 35,9), no control, no dialog, event manager off, no resource file, no database (their file channels are closed since Trinity 0.16.100, T-142 : a program that ended without 38,2 or 40,3 no longer leaves a channel open), QuickDraw as after 32,1.
         Nothing is drawn or erased. The toolbox otherwise keeps its state from one program to the next : NeoDOS is to call
         this when a program returns to it (T-88, asked of NeoDOS), so the next program does not inherit its menus or windows. A program may call
         it first thing as well. Unlike 32,1, which a program may call again while its windows exist.

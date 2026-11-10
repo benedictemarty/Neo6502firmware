@@ -36,7 +36,10 @@ static uint8_t _RSEntry(uint8_t index,struct RSEntry *e) {                      
     return RS_ERR_OK;
 }
 
-void RSReset(void) { rsChannel = 0xFF;rsCount = 0; }
+void RSReset(void) {                                                            // T-142 : same as DBReset, the resource file channel stayed open
+    if (rsChannel != 0xFF) FIOCloseFileHandle(rsChannel);
+    rsChannel = 0xFF;rsCount = 0;
+}
 
 uint8_t RSOpen(uint8_t channel,uint16_t nameAddr) {
     if (channel >= FIO_NUM_FILES || nameAddr > 0xFF00 - 1) return RS_ERR_PARAM;
@@ -58,8 +61,7 @@ uint8_t RSOpen(uint8_t channel,uint16_t nameAddr) {
 
 uint8_t RSClose(void) {
     if (rsChannel == 0xFF) return RS_ERR_PARAM;
-    FIOCloseFileHandle(rsChannel);
-    rsChannel = 0xFF;rsCount = 0;
+    RSReset();                                                                  // closes the channel
     return RS_ERR_OK;
 }
 
