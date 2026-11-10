@@ -48,6 +48,7 @@ uint8_t BLTSimpleCopy(uint8_t pageFrom,uint16_t addressFrom, uint8_t pageTo, uin
 #define BLTACT_SOLID 2		// Fill with constant srcarea.solid value, but only where src != srcarea.transparent
 #define BLTACT_TRANSLATE 3	// Trinity T-115 : target = table[src] (12,3 only, table of 256 bytes)
 #define BLTACT_TRANSLATE_MASK 4	// Same, but only where src != srcarea.transparent
+#define BLTACT_STRETCH 0x80		// Trinity T-143 : OR'ed with 0-4, 12,3 only : nearest neighbour to the target area's width x height
 
 uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget,uint16_t aTable,uint8_t tablePage);
 

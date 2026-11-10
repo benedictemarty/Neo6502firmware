@@ -742,6 +742,104 @@ static uint8_t _BLTTranslateCopy(uint8_t action,const struct BlitterArea *source
 	return 0;
 }
 
+//		T-143 (Neo6502Tyrann D-01) : stretched copy, nearest neighbour. Action | BLTACT_STRETCH (actions 0-4 :
+//		copy, mask, solid, translate, translatemasked). The TARGET area's height (byte 9, 1-255) and width
+//		(bytes 10-11, values) give the size drawn ; the source's height and width (values, partial source bytes
+//		allowed) the part read. Target value (i,j) takes source value (i * sw / tw, j * sh / th), sampled at the
+//		centre of the target pixel in 16.16 fixed point. Source formats 0-2, target formats 0, 3, 4, 5, 6. Every
+//		source and target line is checked against both ends of its area (negative strides included) ; error 1
+//		and nothing more written as soon as one does not fit. Firmwares before T-143 return 0 and draw nothing
+//		for an action >= 5 to a target 0, 3 or 4 : read the version (1,11) first.
+static const uint8_t *_BLTAreaStart(uint8_t page) {
+	switch(page) {
+		case 0x00: return cpuMemory;
+		case 0x80:
+		case 0x81: return graphicsMemory;
+		case 0x90: return gfxObjectMemory;
+	}
+	if (page >= BANK_PAGE && page < BANK_PAGE + BANK_COUNT) return (const uint8_t *)BNKStorage(page - BANK_PAGE);
+	return NULL;
+}
+
+static inline bool _BLTStretchFits(const uint8_t *p,const uint8_t *start,const uint8_t *end,uint16_t bytes) {
+	return p >= start && p < end && (size_t)(end - p) >= bytes;
+}
+
+static uint8_t _BLTStretchCopy(uint8_t action,const struct BlitterArea *source,const struct BlitterArea *target,
+							   uint16_t aTable,uint8_t tablePage) {
+	uint8_t sf = source->format,tf = target->format;
+	if (sf != BLTFMT_BYTE && sf != BLTFMT_PAIR && sf != BLTFMT_BITS) return 1;
+	if (tf != BLTFMT_BYTE && tf != BLTFMT_HIGH && tf != BLTFMT_LOW && tf != BLTFMT_PACKED && tf != BLTFMT_PACKED_ODD) return 1;
+	if (action > BLTACT_TRANSLATE_MASK) return 1;
+	uint32_t sw = source->width,sh = source->height,tw = target->width,th = target->height;
+	if (sw == 0 || sh == 0 || tw == 0 || th == 0) return 1;
+	const uint8_t *table = NULL;
+	if (action >= BLTACT_TRANSLATE) {
+		table = BLTGetRealAddress(tablePage,aTable);
+		if (!_BLTLineFits(table,_BLTAreaEnd(tablePage),256)) return 1;
+	}
+	const uint8_t *src0 = BLTGetRealAddress(source->page,source->address);
+	uint8_t *tgt0 = BLTGetRealAddress(target->page,target->address);
+	if (src0 == NULL || tgt0 == NULL) return 1;
+	const uint8_t *srcStart = _BLTAreaStart(source->page),*srcEnd = _BLTAreaEnd(source->page);
+	const uint8_t *tgtStart = _BLTAreaStart(target->page),*tgtEnd = _BLTAreaEnd(target->page);
+	uint16_t srcBytes = (sf == BLTFMT_BITS) ? (uint16_t)((sw + 7) / 8) : (sf == BLTFMT_PAIR) ? (uint16_t)((sw + 1) / 2) : (uint16_t)sw;
+	bool packed = (tf == BLTFMT_PACKED || tf == BLTFMT_PACKED_ODD);
+	uint16_t tgtBytes = packed ? _BLTPackedBytes(tf,(uint16_t)tw) : (uint16_t)tw;
+	uint32_t xStep = (sw << 16) / tw,yStep = (sh << 16) / th;
+	bool masked = (action == BLTACT_MASK || action == BLTACT_SOLID || action == BLTACT_TRANSLATE_MASK);
+	uint8_t transparent = source->transparent,solid = source->solid;
+	uint32_t y = yStep >> 1;
+	for (uint32_t r = 0;r < th;r++,y += yStep) {
+		const uint8_t *src = src0 + (int32_t)(y >> 16) * source->stride;
+		uint8_t *tgt = tgt0 + (int32_t)r * target->stride;
+		if (!_BLTStretchFits(src,srcStart,srcEnd,srcBytes) || !_BLTStretchFits(tgt,tgtStart,tgtEnd,tgtBytes)) return 1;
+		uint32_t x = xStep >> 1;
+		if (sf == BLTFMT_BYTE && tf == BLTFMT_BYTE) {  							// The fast path (Tyrann : 8 bit texture to mode 0)
+			switch (action) {
+				case BLTACT_COPY:
+					for (uint32_t i = 0;i < tw;i++,x += xStep) tgt[i] = src[x >> 16];
+					break;
+				case BLTACT_MASK:
+					for (uint32_t i = 0;i < tw;i++,x += xStep) { uint8_t v = src[x >> 16];if (v != transparent) tgt[i] = v; }
+					break;
+				case BLTACT_SOLID:
+					for (uint32_t i = 0;i < tw;i++,x += xStep) if (src[x >> 16] != transparent) tgt[i] = solid;
+					break;
+				case BLTACT_TRANSLATE:
+					for (uint32_t i = 0;i < tw;i++,x += xStep) tgt[i] = table[src[x >> 16]];
+					break;
+				default:
+					for (uint32_t i = 0;i < tw;i++,x += xStep) { uint8_t v = src[x >> 16];if (v != transparent) tgt[i] = table[v]; }
+					break;
+			}
+			continue;
+		}
+		uint32_t nib = (tf == BLTFMT_PACKED_ODD) ? 1 : 0;
+		for (uint32_t i = 0;i < tw;i++,x += xStep,nib++) {  						// Generic path, every other format
+			uint32_t c = x >> 16;
+			uint8_t v;
+			switch (sf) {
+				case BLTFMT_BITS: v = (src[c >> 3] >> (7 - (c & 7))) & 1;break;
+				case BLTFMT_PAIR: v = (c & 1) ? (src[c >> 1] & 0x0F) : (src[c >> 1] >> 4);break;
+				default:          v = src[c];break;
+			}
+			if (masked && v == transparent) continue;
+			uint8_t w = (action == BLTACT_SOLID) ? solid : (table != NULL) ? table[v] : v;
+			switch (tf) {
+				case BLTFMT_BYTE: tgt[i] = w;break;
+				case BLTFMT_HIGH: tgt[i] = (tgt[i] & 0x0F) | (uint8_t)(w << 4);break;
+				case BLTFMT_LOW:  tgt[i] = (tgt[i] & 0xF0) | (w & 0x0F);break;
+				default: {
+					uint8_t *t = tgt + (nib >> 1);
+					*t = (nib & 1) ? ((*t & 0xF0) | (w & 0x0F)) : ((*t & 0x0F) | (uint8_t)(w << 4));
+				}
+			}
+		}
+	}
+	return 0;
+}
+
 static uint8_t internalBLTComplexCopy(uint8_t action, const struct BlitterArea *source, const struct BlitterArea *target) {
 	if (target->format == BLTFMT_PACKED || target->format == BLTFMT_PACKED_ODD)  	// T-90
 		return _BLTPackedCopy(action,source,target,_BLTAreaEnd(source->page),_BLTAreaEnd(target->page));
@@ -820,6 +918,8 @@ uint8_t BLTComplexCopy(uint8_t action,uint16_t aSource,uint16_t aTarget,uint16_t
 	_BLTLoadBlitterAreaObject(aSource,&source);
 	_BLTLoadBlitterAreaObject(aTarget,&target);
 	if (target.page >= BANK_PAGE) return 1;  										// T-17 : banks are read only (flash)
+	if (action & BLTACT_STRETCH)  													// T-143
+		return _BLTStretchCopy(action & 0x7F,&source,&target,aTable,tablePage);
 	if (action == BLTACT_TRANSLATE || action == BLTACT_TRANSLATE_MASK)  			// T-115
 		return _BLTTranslateCopy(action,&source,&target,aTable,tablePage);
 	return internalBLTComplexCopy(action, &source, &target);

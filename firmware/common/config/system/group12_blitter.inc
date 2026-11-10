@@ -51,6 +51,19 @@ GROUP 12 Blitter
                                low nibble, packed 5/6). Source formats 0-2, target formats 0, 3, 4, 5, 6 ; error 1 otherwise.
                            4 = translatemasked (Trinity T-115) - the same, but only where src is not the transparent value.
                            See below for transparent/solid values.
+                           +$80 = stretch (Trinity T-143, 0.16.101) : OR'ed with 0-4 ($80 copy, $81 copymasked,
+                               $82 solidmasked, $83 translate, $84 translatemasked). Nearest neighbour copy : the
+                               source's height and width (values, partial source bytes allowed) are read, the TARGET's
+                               height (byte 9, 1-255) and width (bytes 10-11) are drawn. Target value (i,j) takes source
+                               value (i * sw / tw, j * sh / th), sampled at the centre of the target pixel (16.16 fixed
+                               point) ; both enlarging and shrinking. Source formats 0-2, target formats 0, 3, 4, 5, 6 ; a
+                               negative target stride is allowed. Error 1 for any zero size, an unknown base action, or
+                               a line (source or target) outside its area ; the lines before it are already drawn.
+                               Measured on the board (0.16.101, page $90 to mode 0, 100 calls) : 64 x 64 to 179 x 143
+                               = 1.6 ms (copy), 1.9 ms (copymasked, translate), 2.2 ms (translatemasked).
+                               Older firmwares : with a target of format 0, 3 or 4 an action >= 5 draws NOTHING and
+                               returns 0 (no error), with a target of format 5 or 6 it returns 1. Read the version
+                               (Function 1,11 : 0.16.101 or later) before using it.
 
             Parameters (1,2) address of the source rectangle data.
 
@@ -91,11 +104,11 @@ GROUP 12 Blitter
                 8       A constant to use as the "solid" value for BLTACT_SOLID. Source only. Not used in target.
 
                 9       Height. The number of lines to copy.
-                        Source only. Not used in target.
+                        Source only. Not used in target, except by the stretch actions (+$80, T-143).
                         The copy is driven by the source height.
 
                 10-11   Width. The number of values to copy for each line.
-                        Source only. Not used in target.
+                        Source only. Not used in target, except by the stretch actions (+$80, T-143).
                         The copy is driven by the source width.
 
     FUNCTION 4 Blit Image
