@@ -115,7 +115,11 @@ build: prelim always
 #				l'attente USB : HWBusServeBurst (256 o) et la reprise des commandes mises de côté dans
 #				CPUExecute (+64 o) sont en RAM, comme tout ce qui sert le bus. Marge vérifiée : 25,4 Ko de
 #				tas restants pour un pic mesuré de 15 380 o (T-79).
-RAM_LIMIT ?= 237060
+#
+#				2026-11-10 (T-124, décision bmarty « go SRAM ») : 237060 -> 239600. La banque RAM $80 (1,18 / 1,22 / 1,26)
+#				est un tampon statique de 8 192 o (.bss) : RAM 231 372 -> 239 564, tas libre 30 772 -> 22 580 o pour un
+#				pic mesuré de 15 380 o (T-79, quelques cas seulement) : marge ≈ 7,2 Ko. À valider sur carte (hub, clés, modem).
+RAM_LIMIT ?= 239600
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

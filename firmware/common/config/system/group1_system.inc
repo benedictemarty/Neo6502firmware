@@ -114,6 +114,8 @@ GROUP 1 System
         it does not change the bank (see Function 1,22). Bank $FF forgets the mapping and leaves the window as it is.
         Sets the error flag if the bank or the address is invalid. A bank never written reads as $FF. The banks are
         also blitter pages $A0 (bank 0) to $BF, read only, for Function 12,2 (bank to video RAM for instance).
+        Bank $80 is the RAM bank (Trinity T-124) : 8k in the RP2040 SRAM, same call, copied in about a millisecond ; it reads
+        as $FF until written, is lost at power off (not at a program load or a reset of the 65C02) and is not a blitter page.
 
     FUNCTION 19 Get Bank Info
         {
@@ -134,6 +136,8 @@ GROUP 1 System
         a written bank survives resets and reflashing of the firmware (it lives in the top 256k of the flash). The
         emulators keep the banks in the file "banks.flash" of the storage directory. Sets the error flag if the bank or
         the address is invalid or the verification fails (Trinity T-17). Flash wears : write banks once, not in loops.
+        Bank $80 (RAM bank, T-124) is written by the same call with a plain 8k copy into SRAM : no flash, no display pause, no
+        wear, so it can be rewritten as often as needed ; its content is lost at power off.
 
     FUNCTION 27 Apply Boot Choice
         DPARAMS[0] = BOOTLoadChoice() ? 1 : 0;
@@ -150,7 +154,7 @@ GROUP 1 System
             DSPSetInt16(DPARAMS,0,s1);DSPSetInt16(DPARAMS,2,s2);
         }
     DOCUMENTATION
-        Returns the Fletcher 16 checksum of bank Parameter:0 (0-31) as stored in flash, without copying it to 6502 RAM
+        Returns the Fletcher 16 checksum of bank Parameter:0 (0-31, or $80 for the RAM bank) as stored in flash (or SRAM), without copying it to 6502 RAM
         (Trinity T-81) : s1 = sum of the 8192 bytes modulo 65536 in Parameters:0,1, s2 = sum of the successive values of s1
         modulo 65536 in Parameters:2,3. A bank never written reads as $FF (s1 = $E000). Sets the error flag if the bank is
         invalid (the parameters are then zero). The 65C02 waits for the call ; it avoids copying each bank with Function

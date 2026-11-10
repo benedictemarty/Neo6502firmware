@@ -11,6 +11,8 @@
 //                  write back (the window is a copy). 1,22 Write Bank programs a bank from a
 //                  window (erase + program, the display pauses meanwhile) ; a written bank
 //                  survives resets. The emulators keep the "flash" in a host file.
+//                  T-124 : one more bank, BANK_RAM ($80), lives in SRAM (8k of .bss) : same functions
+//                  (1,18 / 1,22 / 1,26), no flash wear, no display pause, volatile, kept across program loads.
 //
 // ***************************************************************************************
 // ***************************************************************************************
@@ -19,6 +21,7 @@
 
 #define BANK_SIZE   0x2000                                                      // 8k window / bank
 #define BANK_COUNT  32                                                          // 256k of flash (top of the 2 MB)
+#define BANK_RAM    0x80                                                        // RAM bank (T-124) : 8k in the RP2040 SRAM, lost at power off, read as $FF until written
 #define BANK_NONE   0xFF                                                        // No bank mapped
 #define BANK_PAGE   0xA0                                                        // Blitter page of bank n = $A0+n (read only)
 

@@ -14,6 +14,9 @@
 
 #include "common.h"
 
+static uint8_t ramBank[BANK_SIZE] __attribute__((aligned(4)));                  // T-124 : the RAM bank (8k of .bss)
+static bool ramBankInit = false;                                                  // Filled with $FF on first use (as a flash bank never written)
+
 static uint8_t currentBank = BANK_NONE;                                          // Bank mapped in the window
 static uint16_t currentAddress = 0;                                              // Window address
 
@@ -26,11 +29,16 @@ static bool _BNKWindowOk(uint16_t address) {
     return (address & 0xFF) == 0 && (uint32_t)address + BANK_SIZE <= 0xFF00;    // Page aligned, below the API page
 }
 
+static const uint8_t *_BNKRam(void) {
+    if (!ramBankInit) { memset(ramBank,0xFF,BANK_SIZE);ramBankInit = true; }
+    return ramBank;
+}
+
 // 1,18 : copy bank into the window (BANK_NONE : forget the mapping, the window keeps its content)
 uint8_t BNKSelect(uint8_t bank,uint16_t address) {
     if (bank == BANK_NONE) { currentBank = BANK_NONE;return 0; }
-    if (bank >= BANK_COUNT || !_BNKWindowOk(address)) return 1;
-    const uint8_t *src = HWBankStorage(bank);
+    if ((bank >= BANK_COUNT && bank != BANK_RAM) || !_BNKWindowOk(address)) return 1;
+    const uint8_t *src = BNKStorage(bank);
     if (src == NULL) return 1;
     memcpy(cpuMemory + address,src,BANK_SIZE);
     currentBank = bank;currentAddress = address;
@@ -44,6 +52,12 @@ void BNKGetState(uint8_t *bank,uint16_t *address) {
 
 // 1,22 : program bank from the 8k at address (flash erase + program on the board)
 uint8_t BNKWrite(uint8_t bank,uint16_t address) {
+    if (bank == BANK_RAM) {                                                      // RAM bank : plain copy, no flash, no display pause
+        if (!_BNKWindowOk(address)) return 1;
+        _BNKRam();
+        memcpy(ramBank,cpuMemory + address,BANK_SIZE);
+        return 0;
+    }
     if (bank >= BANK_COUNT || !_BNKWindowOk(address)) return 1;
     return HWBankWrite(bank,cpuMemory + address) ? 1 : 0;
 }
@@ -59,5 +73,6 @@ uint8_t BNKChecksum(uint8_t bank,uint16_t *s1,uint16_t *s2) {
 }
 
 const uint8_t *BNKStorage(uint8_t bank) {
+    if (bank == BANK_RAM) return _BNKRam();
     return (bank < BANK_COUNT) ? HWBankStorage(bank) : NULL;
 }
