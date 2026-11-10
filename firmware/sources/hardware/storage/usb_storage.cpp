@@ -96,8 +96,9 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_dat
         return false;
     }
 
-    char s[2];
-    if (FR_OK != f_getcwd(s, 2)) {                                              // No current drive yet : this key
+    char s[4];                                                                  // "0:/" and the NUL : FatFs (ff.c f_getcwd) needs 4 characters
+    if (FR_OK != f_getcwd(s, 4)) {                                              // No current drive yet : this key (T-141 : with 2 characters
+                                                                                // f_getcwd failed always and the LAST key mounted became current)
         f_chdrive(drive_path);
         f_chdir("/");
         FISNoteCurrentVolume(drive);
