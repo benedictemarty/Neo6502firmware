@@ -577,7 +577,7 @@ uint8_t FISSetSizeFileHandle(uint8_t fileno, uint32_t size) {
 //
 // ***************************************************************************************
 
-#define DIAG_UP_CHUNK	(8192)
+#define DIAG_UP_CHUNK	(4096)
 
 volatile uint32_t diagUpCmd,diagUpLen,diagUpStatus;
 uint8_t * volatile diagUpBuffer;

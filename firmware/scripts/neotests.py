@@ -41,7 +41,7 @@ def symbols():
 
 
 QUEUE, TAIL, CPU, UP = symbols()
-CHUNK = 8192                                                                    # DIAG_UP_CHUNK, fileimplementation.cpp
+CHUNK = 4096                                                                    # DIAG_UP_CHUNK, fileimplementation.cpp
 
 
 def openocd(tcl):
