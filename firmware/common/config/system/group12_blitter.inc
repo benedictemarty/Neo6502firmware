@@ -59,8 +59,9 @@ GROUP 12 Blitter
                                point) ; both enlarging and shrinking. Source formats 0-2, target formats 0, 3, 4, 5, 6 ; a
                                negative target stride is allowed. Error 1 for any zero size, an unknown base action, or
                                a line (source or target) outside its area ; the lines before it are already drawn.
-                               Measured on the board (0.16.101, page $90 to mode 0, 100 calls) : 64 x 64 to 179 x 143
-                               = 1.6 ms (copy), 1.9 ms (copymasked, translate), 2.2 ms (translatemasked).
+                               Measured on the board (0.16.101, page $90 to mode 0, 100 calls, two runs, +-0.1 ms) :
+                               64 x 64 to 179 x 143 = 1.5-1.6 ms (copy), 1.9-2.0 ms (copymasked), 1.8-1.9 ms
+                               (translate), 2.2-2.3 ms (translatemasked) ; to 53 x 43 = 0.1-0.2 ms (copy).
                                Older firmwares : with a target of format 0, 3 or 4 an action >= 5 draws NOTHING and
                                returns 0 (no error), with a target of format 5 or 6 it returns 1. Read the version
                                (Function 1,11 : 0.16.101 or later) before using it.
