@@ -12,6 +12,7 @@
 #                  send "texte"        envoie du texte (\n = Entrée, ! = commande firmware)
 #                  watch [secondes]    capture pendant N secondes puis affiche
 #
+#      T-145 : le port est muet au démarrage ; ce script le réveille (!!DBG). Sous picocom, taper !!DBG.
 #      Interactif : picocom -b 115200 /dev/ttyUSB0   (Ctrl-A Ctrl-X pour sortir)
 #
 #      Commandes du firmware : !s famines, !m mémoire, !z remise à zéro, !! un vrai '!'
@@ -24,7 +25,16 @@ BAUD = 115200
 
 
 def open_port():
-    return serial.Serial(PORT, BAUD, timeout=0.2)
+    # T-145 : le port est muet tant qu'il n'a pas reçu !!DBG (un module WiFi sur l'UEXT ne doit pas
+    # recevoir la trace). Réveil sans effet s'il est déjà éveillé : '!' '!' 'D' 'B' 'G' est alors
+    # un '!' envoyé au 6502 suivi de DBG, que l'on évite en n'envoyant le réveil que s'il se tait.
+    port = serial.Serial(PORT, BAUD, timeout=0.2)
+    port.reset_input_buffer()
+    time.sleep(1.2)  # la télémétrie d'un port éveillé revient chaque seconde
+    if not port.in_waiting:
+        port.write(b"!!DBG")
+        port.flush()
+    return port
 
 
 def capture(path=None, seconds=None):

@@ -35,11 +35,13 @@
 //		(firmware/scripts/neopilot.sh), which does not touch this ring at all. 1536 bytes paid
 //		for the lane guards that T-77 needs. The port does talk since T-75 (UEXT pin 3 = GPIO 28,
 //		board 2026-09-26) : if the trace comes up short, this is the number to raise.
+#define DBG_WAKE4 		(0x21444247UL)  										// T-145 : "!DBG", the last four bytes received wake the port (the PC sends !!DBG)
 #define DBG_RING 		(512)  												// Power of two
 
 static char ring[DBG_RING];
 static volatile uint16_t head = 0,tail = 0;  									// head = write, tail = read
-static bool dbgOn = false;
+static bool dbgOn = false;  													// Port initialised (pins reserved, RX polled)
+static bool dbgTalk = false;  													// T-145 : the port transmits and listens only once the PC has woken it
 volatile uint32_t stoSectorCount = 0;  											// T-73 : sectors moved (storage drivers add to it)
 volatile uint32_t stoFileCalls = 0,stoFileUs = 0;  								// T-82 : file reads and seeks (3,6 3,8 3,27), time inside them
 volatile uint32_t stoDiskWaitMaxUs = 0,stoDiskTimeouts = 0;  						// T-34 : longest USB wait, waits cut short
@@ -57,7 +59,10 @@ void DBGInitialise(void) {
 	uart_set_fifo_enabled(DBG_UART,true);  										// 32 bytes of hardware buffer
 	uart_set_format(DBG_UART,8,1,UART_PARITY_NONE);
 	dbgOn = true;
-	DBGWrite("\r\n-- Trinity debug port (T-73), built " __DATE__ " --\r\n");
+	//		T-145 : silent by default. UEXT TX/RX are also where a WiFi module (Olimex
+	//		MOD-WIFI-ESP8266, AT firmware, 115 200 baud) is plugged : our trace made it answer ERROR
+	//		and its answers came back as keystrokes (DBGPoll), a feedback loop through NeoDOS.
+	//		The port wakes up on DBG_WAKE (neoterm.py sends it), and not otherwise.
 }
 
 //		The video mode sets clk_sys (252 or 270 MHz), and clk_peri follows it — so the UART
@@ -83,7 +88,7 @@ void DBGClockChanged(void) {
 //		core 0, including from an interrupt. Full ring drops the character rather than wait.
 
 void __not_in_flash_func(DBGWrite)(const char *s) {
-	if (!dbgOn) return;
+	if (!dbgTalk) return;
 	while (*s != '\0') {
 		uint16_t next = (head + 1) & (DBG_RING - 1);
 		if (next == tail) return;  												// Full : drop, never block
@@ -102,7 +107,7 @@ void DBGWriteNumber(const char *label,uint32_t value) {
 //		register writes and the bus loop never waits on the wire.
 
 void __not_in_flash_func(DBGFlush)(void) {
-	if (!dbgOn) return;
+	if (!dbgTalk) return;
 	while (tail != head && uart_is_writable(DBG_UART)) {
 		uart_get_hw(DBG_UART)->dr = (uint8_t)ring[tail];
 		tail = (tail + 1) & (DBG_RING - 1);
@@ -148,7 +153,7 @@ void __not_in_flash_func(DBGTelemetry)(uint32_t late,uint32_t rejects,uint32_t s
 
 void __not_in_flash_func(DBGTelemetryTick)(void) {
 	static uint16_t ticks = 0;
-	if (!dbgOn) return;
+	if (!dbgTalk) return;
 	if (++ticks < 95) return;
 	ticks = 0;
 	DBGTelemetry(RNDLateScanlines(),RNDPublishRejects(),stoSectorCount,(uint32_t)GFXGetMode());
@@ -333,6 +338,12 @@ void __not_in_flash_func(DBGPoll)(void) {
 	if (!dbgOn) return;
 	while (uart_is_readable(DBG_UART)) {
 		uint8_t c = (uint8_t)uart_get_hw(DBG_UART)->dr;
+		if (!dbgTalk) {  														// T-145 : dormant, the bytes only feed the wake-up matcher
+			static uint32_t last4 = 0;
+			last4 = (last4 << 8) | c;
+			if (last4 == DBG_WAKE4) dbgTalk = true;
+			continue;
+		}
 		if (escaped) { escaped = false;DBGCommand(c);continue; }
 		if (c == '!') { escaped = true;continue; }
 		if (c == 10) continue;  												// LF : the terminal sends CR LF, the Neo wants CR

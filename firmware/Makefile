@@ -119,7 +119,10 @@ build: prelim always
 #				2026-11-10 (T-124, décision bmarty « go SRAM ») : 237060 -> 239600. La banque RAM $80 (1,18 / 1,22 / 1,26)
 #				est un tampon statique de 8 192 o (.bss) : RAM 231 372 -> 239 564, tas libre 30 772 -> 22 580 o pour un
 #				pic mesuré de 15 380 o (T-79, quelques cas seulement) : marge ≈ 7,2 Ko. À valider sur carte (hub, clés, modem).
-RAM_LIMIT ?= 239600
+#
+#				2026-11-13 (T-145) : 239600 -> 239640. Le port de debug muet au démarrage (réveil par !!DBG) ajoute 52 o de code
+#				et d'état en RAM (DBGPoll part de DSPSync) : RAM 239 564 -> 239 616, tas libre 22 528 o. À valider sur carte.
+RAM_LIMIT ?= 239640
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "
