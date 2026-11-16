@@ -218,6 +218,10 @@ n'écrivent que dans les 4 bits hauts (§ 1 à 2 bis) et abîment un tel fond. *
   (le masque `$F0` du § 4 ne s'applique plus) ; l'effacement d'écran refait les sauvegardes comme 6,10 ; 5,33
   rend l'octet entier (sprites compris), 5,36 rend 0. **6,1** remet le fond sous les sprites (il n'efface plus les
   4 bits hauts de tout l'écran), revient au mode 0 et oublie la zone de 6,9 ; un reset (1,0) fait de même.
+- **Piège de l'ordre** (constat NeoWoW, vérifié dans Phosphoneo 0.16.104 le 2026-11-16) : 6,1 appelé **avant** le mode 2
+  (mode 0 ou 1) efface les 4 bits hauts de **tout l'écran** (§ 3) ; un fond 8 bits déjà dessiné retombe alors sur les
+  entrées 0-15 et paraît « en palette par défaut ». La palette n'est pas touchée (5,32 n'a pas à être refait). Ordre :
+  **6,1, 6,9, 6,6 = 2, puis dessiner le fond** (et 6,10 s'il y a déjà des sprites).
 - **Coût** (lu dans le code, **non mesuré sur la carte**) : un sprite 16 × 16 déplacé qui ne touche aucun autre
   sprite = 256 octets remis (copie par lignes), 256 sauvegardés, 256 pixels lus dans l'image et écrits ; chaque
   sprite du groupe touché ajoute la même chose. Le tracé passe pixel par pixel (comme les images de 6,7).
