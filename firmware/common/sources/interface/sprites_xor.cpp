@@ -26,7 +26,7 @@ static const int16_t clipRight = 319;
 //
 // ***************************************************************************************
 
-static inline uint8_t _SPRPix(const SPRITE_ACTION *s,int xi,int yi) {
+static inline uint8_t _SPRPixFull(const SPRITE_ACTION *s,int xi,int yi) {  		// T-146 : whole value 0-255
 	const uint8_t *line = s->image + yi * s->stride;
 	uint8_t v;
 	switch (s->bpp) {
@@ -37,7 +37,11 @@ static inline uint8_t _SPRPix(const SPRITE_ACTION *s,int xi,int yi) {
 	}
 	if (v == 0) return 0;
 	if (s->map != NULL) v = s->map[v];
-	return v & 0x0F;
+	return v;
+}
+
+static inline uint8_t _SPRPix(const SPRITE_ACTION *s,int xi,int yi) {  			// The sprite layer : 4 bits
+	return _SPRPixFull(s,xi,yi) & 0x0F;
 }
 
 // ***************************************************************************************
@@ -218,10 +222,53 @@ void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1) {
 
 // ***************************************************************************************
 //
+//		T-146 (NeoWoW) : byte sprites over an 8 bit background, 8 bit modes. The visible part of the
+//		sprite rectangle (clipped to the screen) is copied line by line to save, then every pixel of
+//		the image that is not 0 is written over the whole byte (colour table[v] or v, 0 = transparent).
+//		SPRPHYRestoreByte copies the same part back. The caller (sprites.cpp) keeps the order.
+//
+// ***************************************************************************************
+
+static bool _SPRByteArea(const SPRITE_ACTION *s,int *xa,int *ya,int *xb,int *yb) {
+	*xa = (s->x > 0) ? s->x : 0;*ya = (s->y > 0) ? s->y : 0;
+	*xb = s->x + s->xSize - 1;*yb = s->y + s->ySize - 1;
+	if (*xb >= gMode.xGSize) *xb = gMode.xGSize-1;
+	if (*yb >= gMode.yGSize) *yb = gMode.yGSize-1;
+	return *xa <= *xb && *ya <= *yb;
+}
+
+void SPRPHYDrawByte(SPRITE_ACTION *s,uint8_t *save) {
+	int xa,ya,xb,yb;
+	if (!_SPRByteArea(s,&xa,&ya,&xb,&yb)) return;
+	int w = xb-xa+1;
+	for (int y = ya;y <= yb;y++) {
+		uint8_t *display = gMode.graphicsMemory + y * gMode.xGSize + xa;
+		memcpy(save,display,w);save += w;
+		int yImg = (s->flip & 2) ? s->ySize-1-(y-s->y) : y-s->y;
+		for (int x = xa;x <= xb;x++,display++) {
+			int xImg = (s->flip & 1) ? s->xSize-1-(x-s->x) : x-s->x;
+			uint8_t p = _SPRPixFull(s,xImg,yImg);
+			if (p != 0) *display = p;
+		}
+	}
+}
+
+void SPRPHYRestoreByte(SPRITE_ACTION *s,const uint8_t *save) {
+	int xa,ya,xb,yb;
+	if (!_SPRByteArea(s,&xa,&ya,&xb,&yb)) return;
+	int w = xb-xa+1;
+	for (int y = ya;y <= yb;y++) {
+		memcpy(gMode.graphicsMemory + y * gMode.xGSize + xa,save,w);save += w;
+	}
+}
+
+// ***************************************************************************************
+//
 //		Date 		Revision
 //		==== 		========
 //		15/01/24 	Fixes for better sprite clipping
 //		07/10/26 	T-111 : opaque drawing (bmarty).
 //		07/10/26 	T-113 : images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
+//		16/11/26 	T-146 : byte sprites with a saved background (bmarty).
 //
 // ***************************************************************************************

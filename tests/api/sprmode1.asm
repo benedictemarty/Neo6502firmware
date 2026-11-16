@@ -1,7 +1,7 @@
 ; sprmode1.asm — T-111 : sprites opaques (6,6 = 1), relus sur un pixel du mode 0.
 ; Images 16 x 16 : n° 0 couleur 1, n° 1 couleur 2, n° 2 vide (tout transparent).
 ; Pixel relu : (100,200), octet $FA64 de la VRAM, copié par 12,2 en $3200. Ligne : « lettre erreur octet ».
-;   A 6,6 mode 2                                        -> 01 00 (refusé)
+;   A 6,6 mode 3                                        -> 01 00 (refusé ; mode 2 : T-146)
 ;   B 6,6 mode 1 ; sprite 1 (couleur 2) en (100,200)     -> 00 20
 ;   C sprite 0 (couleur 1) au même endroit               -> 00 10 (le plus petit numéro devant ; XOR : 30)
 ;   D 6,3 sprite 0                                       -> 00 20 (sprite 1 redessiné dessous)
@@ -257,7 +257,7 @@ entete: .byte 1, 0, 3, 0    ; graphismes présents, 0 tuile, 3 sprites 16 x 16, 
 ; fonction, puis paramètres (6,2 : numéro, x, y, image, retournement, ancre)
 mode0:  .byte 6, 0, 0,0,0,0,0,0,0
 mode1:  .byte 6, 1, 0,0,0,0,0,0,0
-mode2:  .byte 6, 2, 0,0,0,0,0,0,0
+mode2:  .byte 6, 3, 0,0,0,0,0,0,0   ; T-146 : le mode 2 existe, le 3 est refusé
 s0:     .byte 2, 0, <100, >100, <200, >200, 0, 0, 7
 s0f:    .byte 2, 0, <100, >100, <200, >200, 0, 0, $47
 s1:     .byte 2, 1, <100, >100, <200, >200, 1, 0, 7

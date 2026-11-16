@@ -16,7 +16,7 @@ static int16_t spriteVisibleCount; 												// How many currently visible ?
 static int16_t turtleSpriteID = -1; 											// Sprite allocated to rotation
 static int16_t turtleRotation = 0; 												// Rotation of turtle.
 static int16_t turtleColour = 7; 												// Turtle drawing colour.
-static uint8_t drawMode = 0; 													// T-111 : 0 XOR (upstream), 1 opaque
+static uint8_t drawMode = 0; 													// T-111 : 0 XOR (upstream), 1 opaque, 2 byte (T-146)
 static uint8_t imagePage = 0x90;  												// T-116 : page of the images of 6,7 ($90 or a bank)
 
 // ***************************************************************************************
@@ -30,6 +30,13 @@ static uint8_t turtleImage[16*16/2];
 static SPRITE_ACTION saHide;
 static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p);
 static void _SPRUndraw(SPRITE_INTERNAL *p);
+static bool _SPRDraw(SPRITE_INTERNAL *p);
+
+//		T-146 : byte mode, the background under each drawn sprite is kept in graphics memory (page $90),
+//		in the area given by 6,9. A slot is kept by its sprite until 6,3, 6,1 or 6,9 (saveLen 0 : none).
+static uint16_t saveBase = 0,saveSize = 0;
+static uint16_t saveOff[MAX_SPRITES],saveLen[MAX_SPRITES];
+static void _SPRByteRestoreAll(void);
 
 // ***************************************************************************************
 //
@@ -79,8 +86,10 @@ static void _SPRResetSprite(int n) {
 //
 // ***************************************************************************************
 
+//		"The sprite layer (high nibbles) is in use" : the drawing of group 5 and the console then keep the
+//		high nibbles. Not in byte mode (T-146) : the background uses all 8 bits.
 bool SPRSpritesInUse(void) {
-	return spriteVisibleCount > 0;
+	return spriteVisibleCount > 0 && !(drawMode == 2 && !GFXIsPackedMode());
 }
 
 // ***************************************************************************************
@@ -110,8 +119,18 @@ void SPRReset(void) {
 		spriteVisibleCount = 0;
 		SPRResetAll();
 		drawMode = 0;imagePage = 0x90;  										// T-121 : 6,6 and 6,8 back to their boot value
+		saveBase = saveSize = 0;memset(saveLen,0,sizeof(saveLen));  			// T-146
 		return;
 	}
+	if (drawMode == 2) {  														// T-146 : byte mode, the background is put back
+		_SPRByteRestoreAll();
+		spriteVisibleCount = 0;
+		SPRResetAll();
+		drawMode = 0;imagePage = 0x90;
+		saveBase = saveSize = 0;memset(saveLen,0,sizeof(saveLen));
+		return;
+	}
+	saveBase = saveSize = 0;memset(saveLen,0,sizeof(saveLen));  				// T-146
 	spriteVisibleCount = 0;
 	SPRResetAll();  	
 	drawMode = 0;imagePage = 0x90;  											// T-121
@@ -144,6 +163,7 @@ void SPRSetTurtleSprite(int16_t spriteID,int16_t rotation,int16_t colour) {
 //		mark them not drawn so that the next update does not XOR garbage back in.
 //
 void SPRScreenCleared(void) {
+	if (drawMode == 2 && !GFXIsPackedMode()) { SPRBackgroundRedrawn();return; } // T-146 : saved again, drawn again
 	if (!GFXIsPackedMode()) return;
 	for (int i = 0;i < MAX_SPRITES;i++) {
 		if (sprites[i].isDrawn) { sprites[i].isDrawn = false;spriteVisibleCount--; }
@@ -194,7 +214,92 @@ static void _SPRRefresh(int x0,int y0,int x1,int y1) {
 	}
 }
 
+// ***************************************************************************************
+//
+//		T-146 (NeoWoW) : byte sprites over an 8 bit background. A sprite is drawn over the whole
+//		byte after its rectangle was saved, and erased by putting the save back. Saves only stay
+//		right if, in each group of drawn sprites whose rectangles touch (step by step), the sprites
+//		were drawn from the highest number to the lowest : so any change restores the whole group,
+//		lowest number first (reverse order of drawing), and draws it again highest number first.
+//		The lowest number ends in front, colour 0 of an image stays transparent.
+//
+// ***************************************************************************************
+
+static bool _SPRByte(void) {
+	return drawMode == 2 && !GFXIsPackedMode();
+}
+
+static bool _SPRTouches(const SPRITE_INTERNAL *q,int x0,int y0,int x1,int y1) {
+	return !(q->x > x1 || q->y > y1 || q->x+q->xSize-1 < x0 || q->y+q->ySize-1 < y0);
+}
+
+static void _SPRByteGroup(const SPRITE_INTERNAL *p,bool *in) {  				// Drawn sprites touching p, step by step
+	uint8_t queue[MAX_SPRITES];
+	int head = 0,tail = 0;
+	memset(in,0,MAX_SPRITES*sizeof(bool));
+	for (int i = 0;i < MAX_SPRITES;i++) {
+		if (sprites[i].isDrawn && _SPRTouches(&sprites[i],p->x,p->y,p->x+p->xSize-1,p->y+p->ySize-1)) {
+			in[i] = true;queue[tail++] = i;
+		}
+	}
+	while (head < tail) {
+		const SPRITE_INTERNAL *q = &sprites[queue[head++]];
+		for (int i = 0;i < MAX_SPRITES;i++) {
+			if (!in[i] && sprites[i].isDrawn && _SPRTouches(&sprites[i],q->x,q->y,q->x+q->xSize-1,q->y+q->ySize-1)) {
+				in[i] = true;queue[tail++] = i;
+			}
+		}
+	}
+}
+
+static void _SPRByteRestore(int n) {
+	SPRITE_ACTION sa;
+	SPRSetupAction(&sa,&sprites[n]);
+	SPRPHYRestoreByte(&sa,gfxObjectMemory + saveOff[n]);
+}
+
+static void _SPRByteSaveDraw(int n) {
+	SPRITE_ACTION sa;
+	SPRSetupAction(&sa,&sprites[n]);
+	SPRPHYDrawByte(&sa,gfxObjectMemory + saveOff[n]);
+}
+
+static void _SPRByteRestoreAll(void) {  										// Every drawn sprite erased (groups do not touch)
+	for (int i = 0;i < MAX_SPRITES;i++) {
+		if (sprites[i].isDrawn) { _SPRByteRestore(i);sprites[i].isDrawn = false;spriteVisibleCount--; }
+	}
+}
+
+static bool _SPRByteSlot(int n) {  												// A save of xSize x ySize bytes, first fit
+	uint32_t need = (uint32_t)sprites[n].xSize * sprites[n].ySize;
+	if (saveLen[n] != 0 && saveLen[n] >= need) return true;  					// The slot it has is big enough
+	saveLen[n] = 0;
+	if (need == 0 || need > saveSize) return false;
+	uint32_t cand = saveBase,end = (uint32_t)saveBase + saveSize;
+	bool moved = true;
+	while (moved) {
+		moved = false;
+		if (cand + need > end) return false;
+		for (int j = 0;j < MAX_SPRITES;j++) {
+			if (saveLen[j] != 0 && cand < (uint32_t)saveOff[j] + saveLen[j] && saveOff[j] < cand + need) {
+				cand = (uint32_t)saveOff[j] + saveLen[j];moved = true;
+			}
+		}
+	}
+	saveOff[n] = cand;saveLen[n] = need;
+	return true;
+}
+
 static void _SPRUndraw(SPRITE_INTERNAL *p) {  									// Erase a drawn sprite
+	if (_SPRByte()) {  															// T-146
+		bool in[MAX_SPRITES];
+		_SPRByteGroup(p,in);
+		for (int i = 0;i < MAX_SPRITES;i++) if (in[i]) _SPRByteRestore(i);
+		p->isDrawn = false;
+		spriteVisibleCount--;
+		for (int i = MAX_SPRITES-1;i >= 0;i--) if (in[i] && &sprites[i] != p) _SPRByteSaveDraw(i);
+		return;
+	}
 	p->isDrawn = false;
 	spriteVisibleCount--;
 	if (_SPROpaque()) {
@@ -205,7 +310,19 @@ static void _SPRUndraw(SPRITE_INTERNAL *p) {  									// Erase a drawn sprite
 	}
 }
 
-static void _SPRDraw(SPRITE_INTERNAL *p) {  									// Draw a sprite not drawn
+static bool _SPRDraw(SPRITE_INTERNAL *p) {  									// Draw a sprite not drawn
+	if (_SPRByte()) {  															// T-146 : false if no room to save
+		int n = p - sprites;
+		if (!_SPRByteSlot(n)) return false;
+		bool in[MAX_SPRITES];
+		_SPRByteGroup(p,in);
+		for (int i = 0;i < MAX_SPRITES;i++) if (in[i]) _SPRByteRestore(i);
+		p->isDrawn = true;
+		spriteVisibleCount++;
+		in[n] = true;
+		for (int i = MAX_SPRITES-1;i >= 0;i--) if (in[i]) _SPRByteSaveDraw(i);
+		return true;
+	}
 	p->isDrawn = true;
 	spriteVisibleCount++;
 	if (_SPROpaque()) {
@@ -214,11 +331,12 @@ static void _SPRDraw(SPRITE_INTERNAL *p) {  									// Draw a sprite not drawn
 		SPRSetupAction(&saHide,p);
 		SPRPHYDraw(&saHide);
 	}
+	return true;
 }
 
 //		6,6 : the drawn sprites are erased the old way and drawn back the new way.
 int SPRSetDrawMode(uint8_t mode) {
-	if (mode > 1) return 1;
+	if (mode > 2) return 1;
 	if (mode == drawMode) return 0;
 	bool wasDrawn[MAX_SPRITES];
 	for (int i = 0;i < MAX_SPRITES;i++) {
@@ -244,6 +362,7 @@ void SPRHide(uint8_t *paramData) {
 		SPRITE_INTERNAL *s = &sprites[spriteID];
 		if (s->isDrawn) _SPRUndraw(s);  										// If drawn, erase it and mark not drawn.
 		sprites[spriteID].isVisible = false;  									// Mark not visible.
+		saveLen[spriteID] = 0;  												// T-146 : its save slot is free
 	}
 }
 
@@ -357,7 +476,7 @@ int SPRUpdate(uint8_t *paramData) {
 			p->isVisible = true;
 		}
 
-		if (p->isVisible) _SPRDraw(p);  										// Redraw if possible, mark as drawn.
+		if (p->isVisible && !_SPRDraw(p)) return 3;  							// Redraw if possible ; T-146 : 3 no room to save
 	}
 
 	return 0; 
@@ -394,7 +513,48 @@ int SPRSetImage(uint8_t *paramData) {
 		p->x = p->xc - anchorX[p->anchor] * p->xSize / 2;
 		p->y = p->yc - anchorY[p->anchor] * p->ySize / 2;
 	}
-	if (p->isVisible) _SPRDraw(p);
+	if (p->isVisible && !_SPRDraw(p)) return 3;  								// T-146 : no room to save
+	return 0;
+}
+
+// ***************************************************************************************
+//
+//		T-146 : 6,9, area of graphics memory (page $90) where byte mode saves the background :
+//		offset (2 bytes), size (2 bytes). xSize x ySize bytes a sprite (256 for 16 x 16).
+//		Sprites drawn in byte mode are erased and drawn again with the new area.
+//
+// ***************************************************************************************
+
+int SPRSetSaveArea(uint8_t *paramData) {
+	uint16_t offset = paramData[0] + (paramData[1] << 8);
+	uint16_t size = paramData[2] + (paramData[3] << 8);
+	if ((uint32_t)offset + size > GFX_MEMORY_SIZE) return 1;
+	bool wasDrawn[MAX_SPRITES];
+	bool byteMode = _SPRByte();
+	for (int i = 0;i < MAX_SPRITES;i++) wasDrawn[i] = byteMode && sprites[i].isDrawn;
+	if (byteMode) _SPRByteRestoreAll();
+	memset(saveLen,0,sizeof(saveLen));
+	saveBase = offset;saveSize = size;
+	for (int i = MAX_SPRITES-1;i >= 0;i--) {
+		if (wasDrawn[i]) _SPRDraw(&sprites[i]);  								// No room : stays hidden until 6,2
+	}
+	return 0;
+}
+
+// ***************************************************************************************
+//
+//		T-146 : 6,10, the program has drawn a new background under the sprites (12,3, group 5...) :
+//		the saves are forgotten without being put back, the new background is saved and the
+//		sprites drawn again. Every pixel under every drawn sprite must have been redrawn,
+//		otherwise the old sprite pixels left there are saved as background. No effect in modes 0 and 1.
+//
+// ***************************************************************************************
+
+int SPRBackgroundRedrawn(void) {
+	if (!_SPRByte()) return 0;
+	for (int i = MAX_SPRITES-1;i >= 0;i--) {
+		if (sprites[i].isDrawn) _SPRByteSaveDraw(i);
+	}
 	return 0;
 }
 
@@ -440,5 +600,6 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 //		07/10/26 	T-113 : 6,7 images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
 //		07/10/26 	T-116 : 6,8 images of 6,7 taken in a flash bank (bmarty).
 //		07/10/26 	T-121 : 6,1 also sets 6,6 back to 0 and 6,8 back to $90 (bmarty).
+//		16/11/26 	T-146 : 6,6 mode 2 byte sprites with a saved background, 6,9, 6,10 (bmarty).
 //
 // ***************************************************************************************

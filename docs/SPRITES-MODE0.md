@@ -2,7 +2,8 @@
 
 Lu dans les sources de Trinity 0.16.76 (`sprites.cpp`, `sprites_xor.cpp`, `gfxcommands.cpp`, `graphics.cpp`,
 `tilemap.cpp`, `blitter.cpp`, `console.cpp`). Tout y est le comportement du code amont, sauf le redessin forcé
-(§ 3, Trinity 0.16.73), le mode opaque (§ 2 bis, Trinity 0.16.74) et les images libres (§ 6, Trinity 0.16.76).
+(§ 3, Trinity 0.16.73), le mode opaque (§ 2 bis, Trinity 0.16.74), les images libres (§ 6, Trinity 0.16.76) et
+l'octet entier avec sauvegarde (§ 7, Trinity 0.16.104).
 Demande de Neo6502AigleDor (2026-10-05) : le portage de L'Aigle d'Or a dû découvrir tout cela dans le source.
 Ce document décrit l'existant ; les améliorations proposées sont T-112, T-116 et T-118 (`docs/BACKLOG.md`).
 
@@ -48,7 +49,7 @@ exclusif au pixel entier (`_SPXORDrawPacked`), exact sur fond noir seulement.
 ## 2 bis. Mode opaque (Trinity 0.16.74, T-111)
 
 **6,6** choisit le mode de dessin : `Parameter:0` = 0 pour le OU exclusif (amont, par défaut), 1 pour le mode
-opaque ; toute autre valeur rend l'erreur 1. Les sprites déjà affichés sont effacés à l'ancienne et redessinés dans
+opaque, 2 pour l'octet entier avec sauvegarde (§ 7, Trinity 0.16.104) ; toute autre valeur rend l'erreur 1. Les sprites déjà affichés sont effacés à l'ancienne et redessinés dans
 le nouveau mode. 6,1 (depuis la 0.16.81, T-121), une remise à zéro du système (1,0) et le démarrage reviennent au
 OU exclusif ; 6,1 remet aussi la page des images de 6,7 (6,8) à `$90`. Les
 modes à pixels empaquetés (1 et 4 bits par pixel) ne sont pas concernés : ils restent en OU exclusif.
@@ -184,3 +185,41 @@ Dans 6,2, l'octet `[5]` vaut `numéro | $40` pour un 32 × 32, `numéro` pour un
 - Erreur 1 : sprite, taille ou bits par pixel invalides ; erreur 2 : image ou table hors de la RAM graphique.
 - Fonctionne en OU exclusif comme en mode opaque, retournements compris. Les images classiques gardent le tracé
   rapide de l'amont ; les images de 6,7 passent par un tracé pixel par pixel, non mesuré sur la carte.
+
+## 7. Octet entier avec sauvegarde du fond (Trinity 0.16.104, T-146)
+
+Demande NeoWoW (D-01) : un fond 8 bits (palette 0-255 par 5,32) sous des sprites qui bougent. Les modes 0 et 1
+n'écrivent que dans les 4 bits hauts (§ 1 à 2 bis) et abîment un tel fond. **6,6 avec 2** choisit le mode
+« octet entier » (modes à 8 bits par pixel seulement ; dans les modes empaquetés, les sprites restent en OU exclusif).
+
+| Appel | Paramètres | Effet |
+|---|---|---|
+| 6,9 Sprite Save Area | `[0..1]` adresse dans la page `$90`, `[2..3]` taille | zone où le firmware sauvegarde le fond ; erreur 1 si elle dépasse les 32 Ko ; taille 0 = aucune zone |
+| 6,6 | `[0]` = 2 | mode octet entier |
+| 6,10 Sprite Background Redrawn | aucun | le programme a redessiné le fond sous les sprites : sauvegardes oubliées sans restauration, nouveau fond sauvegardé, sprites redessinés |
+
+- **Dessin** : avant d'écrire un sprite, le firmware copie les octets de son rectangle (partie visible à l'écran)
+  dans la zone de 6,9 ; puis chaque pixel non nul de l'image est écrit **sur l'octet entier** : `table[v]` (table
+  de 6,7) ou v sans table, donc **n'importe quelle valeur 0-255** ; `table[v] = 0` reste transparent. Les images
+  classiques (numéros de 6,2, 4 bits) écrivent 1 à 15.
+- **Effacement** : les octets sauvegardés sont remis. Un sprite déplacé (6,2) est effacé puis redessiné.
+- **Priorité** : le plus petit numéro est devant, comme en mode opaque. Toute modification d'un sprite restaure,
+  du plus petit numéro au plus grand, le groupe des sprites affichés dont les rectangles se touchent (de proche en
+  proche), puis le redessine du plus grand au plus petit en refaisant les sauvegardes.
+- **Place** : `largeur × hauteur` octets par sprite affiché (256 pour 16 × 16, 1 024 pour 32 × 32), prise à la
+  première place libre de la zone et gardée par le sprite jusqu'à 6,3 (masquer), 6,1 ou 6,9. Sans place, 6,2 et 6,7
+  rendent l'**erreur 3** et le sprite n'est pas dessiné. Exemple NeoWoW : 25 sprites 16 × 16 = 6 400 o.
+- **La zone appartient au programme** : rien n'empêche d'y charger des images ; elle doit éviter les images et les
+  tables utilisées. 6,9 pendant que des sprites sont affichés les efface et les redessine dans la nouvelle zone.
+- **Fond redessiné** : après une copie 12,2 / 12,3 ou un tracé sous les sprites, appeler **6,10**. Il suppose que
+  tout pixel sous chaque sprite affiché a été redessiné ; un reste de sprite serait sauvegardé comme fond. Sans
+  6,10, le prochain effacement remet l'ancien fond.
+- **Autres fonctions** en mode 2 : le tracé du groupe 5 et l'effacement d'écran (console) écrivent l'octet entier
+  (le masque `$F0` du § 4 ne s'applique plus) ; l'effacement d'écran refait les sauvegardes comme 6,10 ; 5,33
+  rend l'octet entier (sprites compris), 5,36 rend 0. **6,1** remet le fond sous les sprites (il n'efface plus les
+  4 bits hauts de tout l'écran), revient au mode 0 et oublie la zone de 6,9 ; un reset (1,0) fait de même.
+- **Coût** (lu dans le code, **non mesuré sur la carte**) : un sprite 16 × 16 déplacé qui ne touche aucun autre
+  sprite = 256 octets remis (copie par lignes), 256 sauvegardés, 256 pixels lus dans l'image et écrits ; chaque
+  sprite du groupe touché ajoute la même chose. Le tracé passe pixel par pixel (comme les images de 6,7).
+- Vérifié dans l'émulateur `neo` par `tests/api/sprbyte.asm` (contre-essai : sans le groupe, H et I échouent).
+  **Non vérifié sur la carte.**

@@ -122,7 +122,11 @@ build: prelim always
 #
 #				2026-11-13 (T-145) : 239600 -> 239640. Le port de debug muet au démarrage (réveil par !!DBG) ajoute 52 o de code
 #				et d'état en RAM (DBGPoll part de DSPSync) : RAM 239 564 -> 239 616, tas libre 22 528 o. À valider sur carte.
-RAM_LIMIT ?= 239640
+#
+#				2026-11-16 (T-146, demande NeoWoW D-01) : 239640 -> 240200. Les sprites « octet entier » gardent pour chaque
+#				sprite la place de sa sauvegarde (saveOff, saveLen : 2 x 128 x 2 o en .bss) ; avec le code, RAM 239 616 -> 240 196,
+#				tas libre 22 528 -> 21 948 o. Les sauvegardes elles-mêmes sont dans la page $90 (6,9), pas dans le tas. À valider sur carte.
+RAM_LIMIT ?= 240200
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

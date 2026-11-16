@@ -60,6 +60,10 @@ void SPRPHYDrawOpaque(SPRITE_ACTION *s,int x0,int y0,int x1,int y1); 		// T-111 
 int SPRSetDrawMode(uint8_t mode); 												// T-111 : 0 XOR (default), 1 opaque
 int SPRSetImage(uint8_t *paramData);  											// T-113 : 6,7
 int SPRSetImagePage(uint8_t page);  												// T-116 : 6,8, $90 or bank page $A0+n
+void SPRPHYDrawByte(SPRITE_ACTION *s,uint8_t *save);  							// T-146 : whole byte, background saved
+void SPRPHYRestoreByte(SPRITE_ACTION *s,const uint8_t *save);  					// T-146 : background put back
+int SPRSetSaveArea(uint8_t *paramData);  										// T-146 : 6,9
+int SPRBackgroundRedrawn(void);  												// T-146 : 6,10
 
 #endif
 

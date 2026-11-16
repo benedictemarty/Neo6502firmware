@@ -41,6 +41,9 @@ GROUP 6 Sprites
         Note : the position is compared with the top left corner, so with an anchor other than 7 every call with
         a position redraws the sprite.
 
+        Trinity (T-146) : error 3 in byte mode (6,6 = 2) if the save area (6,9) has no room for the sprite ; it
+        is then not drawn.
+
     FUNCTION 3 Sprite Hide
         SPRHide(DPARAMS);
     DOCUMENTATION
@@ -64,7 +67,16 @@ GROUP 6 Sprites
         transparent, the sprite with the lowest number is in front, and erasing a sprite clears the high nibble
         of its area then draws back the other sprites there, so it does not depend on what was in the layer.
         Sprites already drawn are erased and drawn again in the new mode. Set back to 0 by 6,1 (T-121) and by a
-        reset (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 1.
+        reset (1,0). No effect in packed modes (1 and 4 bits per pixel). Error 1 if Parameter:0 is above 2.
+
+        Trinity (T-146) : Parameter:0 = 2, byte mode, for a background using all 8 bits of the pixels. Before a
+        sprite is drawn, the bytes of its rectangle are saved in the area given by 6,9, then every pixel of the
+        image that is not 0 is written over the whole byte : colour table[v] of 6,7, or v (standard images : 1-15),
+        any value 0-255 (table[v] = 0 is transparent). Erasing puts the saved bytes back. The sprite with the
+        lowest number is in front ; a change restores and draws again the sprites whose rectangles touch it.
+        After the program has redrawn the background under the sprites, call 6,10. In byte mode, drawing
+        (group 5) and clearing the screen no longer keep the high nibbles ; 5,33 returns the whole byte, 5,36
+        returns 0. Drawing under a shown sprite is lost at its next move (or saved by 6,10).
 
     FUNCTION 7 Sprite Set Image
         *DERROR = GFXIsTextMode() ? 1 : SPRSetImage(DPARAMS);  // T-131
@@ -88,3 +100,20 @@ GROUP 6 Sprites
         Sprites already set keep their image. Rewriting with 1,22 a bank whose image a sprite shows changes the sprite at
         its next drawing ; erase the sprite before (6,3), as an image rewritten in graphics memory. Set back to $90
         by 6,1 (T-121) and by a reset (1,0). Error 1 for any other page.
+
+    FUNCTION 9 Sprite Save Area
+        *DERROR = SPRSetSaveArea(DPARAMS);
+    DOCUMENTATION
+        Trinity (T-146). Sets the area of graphics memory (page $90) where byte mode (6,6 = 2) saves the
+        background under the sprites : Parameters:0,1 its offset, Parameters:2,3 its size in bytes. A sprite
+        needs width x height bytes (256 for 16 x 16, 1024 for 32 x 32), kept until it is hidden (6,3). Sprites
+        drawn in byte mode are erased and drawn again in the new area. Size 0 : no area. Set back to none by
+        6,1 and by a reset (1,0). Error 1 if the area goes beyond the 32 Ko of graphics memory.
+
+    FUNCTION 10 Sprite Background Redrawn
+        *DERROR = SPRBackgroundRedrawn();
+    DOCUMENTATION
+        Trinity (T-146). Byte mode (6,6 = 2) : the program has drawn a new background under the sprites (12,3,
+        group 5...). The saved bytes are forgotten without being put back, the new background is saved and the
+        sprites are drawn again. Every pixel under every shown sprite must have been redrawn, otherwise sprite
+        pixels left there are saved as background. No effect in the other modes.
