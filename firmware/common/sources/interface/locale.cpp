@@ -26,6 +26,7 @@ static const uint8_t _KBDLocaleData[] = {
 };
 
 static const uint8_t *_KBDLocaleCurrent = NULL;
+static uint8_t _KBDLocaleCode[2] = { 0,0 };								// T-149 : upper-case letters of the current locale, 0,0 if none
 
 // ***************************************************************************************
 //
@@ -33,21 +34,25 @@ static const uint8_t *_KBDLocaleCurrent = NULL;
 //
 // ***************************************************************************************
 
-void LOCSetLocale(char c1,char c2) {
+uint8_t LOCSetLocale(char c1,char c2) {
 	bool succeed = false;
 	c1 = tolower(c1);c2 = tolower(c2);	
 	const uint8_t *search = _KBDLocaleData;
-	_KBDLocaleCurrent = NULL;
+	_KBDLocaleCurrent = NULL;_KBDLocaleCode[0] = _KBDLocaleCode[1] = 0;
 	while (search[0] != 0) {  													// Look through the locale table
 		if (c1 == search[1] && c2 == search[2]) {  								// Found the locale, use it
 			_KBDLocaleCurrent = search+3;	
 			CONWriteString("Locale is now '%c%c'\r", c1, c2);
+			_KBDLocaleCode[0] = toupper(c1);_KBDLocaleCode[1] = toupper(c2);
 			succeed = true;
 		}  	
 		search += search[0];													// Follow the list.
 	}
 	if (!succeed) CONWriteString("Setting the locale failed.\r");
+	return succeed ? 0 : 1;													// T-149 : error 1 if the locale is unknown
 }
+
+void LOCGetLocale(uint8_t *c1,uint8_t *c2) { *c1 = _KBDLocaleCode[0];*c2 = _KBDLocaleCode[1]; }
 
 // ***************************************************************************************
 //

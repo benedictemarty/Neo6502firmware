@@ -57,12 +57,15 @@ GROUP 1 System
         Check the serial port to see if there is a data transmission.
 
     FUNCTION 6 Locale
-        LOCSetLocale(DPARAMS[0],DPARAMS[1]);
+        *DERROR = LOCSetLocale(DPARAMS[0],DPARAMS[1]);
     DOCUMENTATION
         Set the locale code specified in Parameters:0,1 as upper-case ASCII letters.
         Parameter:0 takes the first letter and Parameter:1 takes the second letter.
 
         For example: French (FR) would require Parametr 0 being $46 and Parameter 1 being $52
+
+        Trinity (T-149) : sets the error flag (1) if the locale is unknown ; the keyboard then has no locale
+        conversion and Function 1,28 returns 0,0. Firmware before 0.16.106 never set the flag.
 
     FUNCTION 7 System Reset
         ResetSystem();
@@ -225,3 +228,10 @@ GROUP 1 System
         Writes the current time zone name into the length-prefixed buffer at Parameters:0,1 ("UTC" by default), the current
         offset from UTC in minutes (signed, daylight saving included) in Parameters:2,3 and whether daylight saving time is
         in force in Parameter:4 (Trinity T-26).
+
+    FUNCTION 28 Get Locale
+        LOCGetLocale(&DPARAMS[0],&DPARAMS[1]);
+    DOCUMENTATION
+        Trinity (T-149). Returns in Parameters:0,1 the two upper-case ASCII letters of the keyboard locale set by
+        Function 1,6, or 0,0 if none is set (power on, or the last Function 1,6 failed). The locale is not kept over a
+        restart. Check the firmware version (1,11) first : before 0.16.106 Parameters:0,1 are returned unchanged.
