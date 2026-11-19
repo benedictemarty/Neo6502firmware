@@ -126,7 +126,11 @@ build: prelim always
 #				2026-11-16 (T-146, demande NeoWoW D-01) : 239640 -> 240200. Les sprites « octet entier » gardent pour chaque
 #				sprite la place de sa sauvegarde (saveOff, saveLen : 2 x 128 x 2 o en .bss) ; avec le code, RAM 239 616 -> 240 196,
 #				tas libre 22 528 -> 21 948 o. Les sauvegardes elles-mêmes sont dans la page $90 (6,9), pas dans le tas. À valider sur carte.
-RAM_LIMIT ?= 240200
+#				2026-11-19 (T-152, demande bmarty « libérer de la place », RAM à 240 200 = marge nulle en 0.16.106) : 240200 -> 238800.
+#				RAM 240 200 -> 238 560 (-1 640 o) : `__atexit0` retiré (-400, `__register_exitproc` neutre dans main.cpp), tampon de
+#				ligne de TMPDrawTileMap sur le tas par appel (-720), `currentPalette` de 768 o remplacé par 256 o de bits bas
+#				(palette RGB565 + paletteLow, reconstruction vérifiée sur les 16 777 216 couleurs). Tas libre 21 944 -> 23 584 o.
+RAM_LIMIT ?= 238800
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

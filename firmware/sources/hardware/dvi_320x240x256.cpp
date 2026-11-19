@@ -769,7 +769,19 @@ int  RNDGetFrameCount(void) {
 //
 // ***************************************************************************************
 
+//		T-152 : the 8-bit values are not stored twice. palette[] (RGB565) holds the high bits, paletteLow the bits RGB565 drops
+//		(3 of red, 2 of green, 3 of blue) : 256 bytes instead of a 768-byte copy.
+static uint8_t paletteLow[256];
+
+void RNDGetPalette(uint8_t colour,uint8_t *r,uint8_t *g,uint8_t *b) {
+	uint16_t p = palette[colour];uint8_t l = paletteLow[colour];
+	*r = ((p >> 8) & 0xF8) | (l >> 5);
+	*g = ((p >> 3) & 0xFC) | ((l >> 3) & 3);
+	*b = ((p << 3) & 0xF8) | (l & 7);
+}
+
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
+	paletteLow[colour] = ((r & 7) << 5) | ((g & 3) << 3) | (b & 7);
 	palette[colour] = ((r & 0xF8) << (11-3)) + ((g & 0xFC) << (5-2)) + (b >> 3);
 	if (colour == 1) {
 		inkChannels = (b >= 128 ? 1 : 0) | (g >= 128 ? 2 : 0) | (r >= 128 ? 4 : 0);

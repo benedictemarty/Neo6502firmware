@@ -62,3 +62,7 @@ void FDBWrite(uint8_t c) {
 //
 // ***************************************************************************************
 
+
+// T-152 : le firmware ne sort jamais ; newlib n'a donc rien a enregistrer pour atexit / les destructeurs statiques.
+// Sans cette fonction, __register_exitproc tire le bloc statique __atexit0 (400 o de .bss).
+extern "C" int __register_exitproc(int type,void (*fn)(void),void *arg,void *d) { (void)type;(void)fn;(void)arg;(void)d;return 0; }

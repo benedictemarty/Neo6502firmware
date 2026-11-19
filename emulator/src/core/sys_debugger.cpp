@@ -38,7 +38,14 @@ static uint16_t displayScale = 3; 													// Display scale.
 //
 // *******************************************************************************************************************************
 
+static uint8_t palette8[256][3];													// T-152 : the 8-bit values (the 0xRGB palette keeps 4 bits)
+
+void RNDGetPalette(uint8_t colour,uint8_t *r,uint8_t *g,uint8_t *b) {
+	*r = palette8[colour][0];*g = palette8[colour][1];*b = palette8[colour][2];
+}
+
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
+	palette8[colour][0] = r;palette8[colour][1] = g;palette8[colour][2] = b;
 	palette[colour] = ((r >> 4) << 8) | (g & 0xF0) | (b >> 4);
 }
 

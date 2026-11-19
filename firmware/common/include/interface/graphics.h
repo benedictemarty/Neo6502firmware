@@ -63,6 +63,7 @@ struct GraphicsMode {
 extern struct GraphicsMode gMode;
 
 void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b); 				// Implementation specific.
+void RNDGetPalette(uint8_t colour,uint8_t *r,uint8_t *g,uint8_t *b); 			// T-152 : the 8-bit values last given to RNDSetPalette.
 int  RNDGetFrameCount(void);
 void RNDStartMode0(struct GraphicsMode *gMode);
 void RNDSuspend(void);  														// T-17 : full teardown (unused)

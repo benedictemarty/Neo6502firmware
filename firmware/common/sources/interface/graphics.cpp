@@ -16,10 +16,6 @@
 
 struct GraphicsMode gMode;														// Info about current mode.
 
-struct _PaletteState {  														// Current RGB Palette values.
-	uint8_t r,g,b;
-} currentPalette[256];
-
 // ***************************************************************************************
 //
 //							Initialise the graphics mode 0
@@ -157,10 +153,7 @@ void GFXDefaultPalette(void) {
 // ***************************************************************************************
 
 void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
-	RNDSetPalette(colour,r,g,b);
-	currentPalette[colour].r = r;
-	currentPalette[colour].g = g;
-	currentPalette[colour].b = b;
+	RNDSetPalette(colour,r,g,b);												// T-152 : the implementation keeps the 8-bit values (no copy here)
 	if (colour < 16 && GFXIsTextMode()) T80RecolourAll();  							// T-131 : the cells hold RGB222, recolour them
 }
 
@@ -171,9 +164,7 @@ void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 // ***************************************************************************************
 
 void GFXGetPalette(uint8_t colour,uint8_t *r,uint8_t *g,uint8_t *b) {
-	*r = currentPalette[colour].r;
-	*g = currentPalette[colour].g;
-	*b = currentPalette[colour].b;
+	RNDGetPalette(colour,r,g,b);
 }
 
 // ***************************************************************************************

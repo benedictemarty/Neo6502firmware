@@ -112,8 +112,9 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 	xTrailer = todo - xLeader - xBlock16 * tileSize;  						// Pixels to display to edge.
 
 	gDraw = gMode.graphicsMemory + x + yWindow * gMode.xGSize;				// Start drawing here.
-	static uint8_t lineBuffer[MAXSCREENWIDTH];  							// Packed modes : render each line here, then pack it.
 	int packed = GFXIsPackedMode();
+	uint8_t *lineBuffer = NULL;  											// T-152 : packed modes render each line here, then pack it ; heap, per call, not 720 static bytes.
+	if (packed && (lineBuffer = (uint8_t *)malloc(MAXSCREENWIDTH)) == NULL) return 1;
 
 //	printf("TD:%d,%d %d,%d\n",xWindow,yWindow,wWindow,hWindow);	
 //	printf("%d %d %d\n",xLeader,xBlock16,xTrailer);	
@@ -149,6 +150,7 @@ uint8_t TMPDrawTileMap(uint8_t *data) {
 		}
 		gDraw += gMode.xGSize;
 	}
+	free(lineBuffer);
 	return 0;
 }
 
