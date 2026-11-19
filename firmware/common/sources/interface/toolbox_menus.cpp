@@ -53,12 +53,21 @@ static uint8_t _MNItemCount(const struct Menu *m) {
     return n;
 }
 
+// T-148 : position of the TAB (9) in the text of the item at a, -1 if none. The text right of it is the
+// shortcut, drawn right-aligned ; "Ctrl+X" (X = A-Z or 0-9) is also matched by 35,11.
+static int _MNTab(uint16_t a) {
+    for (int i = 0;i < cpuMemory[a+1];i++) if (cpuMemory[a+2+i] == 9) return i;
+    return -1;
+}
+
 static int _MNWidest(const struct Menu *m) {
     int w = 0;
     for (uint8_t i = 1;;i++) {
         uint16_t a = _MNItem(m,i);
         if (a == 0) break;
-        if (cpuMemory[a+1] > w) w = cpuMemory[a+1];
+        int l = cpuMemory[a+1];
+        if (_MNTab(a) >= 0) l++;                                                // T-148 : tab = two blanks, not drawn
+        if (l > w) w = l;
     }
     return w;
 }
@@ -109,7 +118,11 @@ static void _MNDrawItem(const struct Menu *m,uint8_t n,bool hilite) {
     }
     uint8_t colour = (flags & MN_ITEM_DISABLED) ? MN_COL_DISABLED : ((hilite && active) ? MN_COL_BAR : MN_COL_TEXT);
     if (flags & MN_ITEM_CHECKED) { static const uint8_t tick[] = { '*' };QDTextRaw(tick,1,r.left+2,r.top+1,colour); }
-    QDTextRaw(cpuMemory + a + 2,cpuMemory[a+1],r.left+12,r.top+1,colour);
+    int tab = _MNTab(a);
+    if (tab < 0) { QDTextRaw(cpuMemory + a + 2,cpuMemory[a+1],r.left+12,r.top+1,colour);return; }
+    QDTextRaw(cpuMemory + a + 2,tab,r.left+12,r.top+1,colour);
+    int right = cpuMemory[a+1] - tab - 1;
+    QDTextRaw(cpuMemory + a + 3 + tab,right,r.right-4-right*6,r.top+1,colour);
 }
 
 static void _MNOpen(uint8_t id) {
@@ -320,6 +333,34 @@ uint8_t MNKey(uint8_t keyCode,uint8_t *menu,uint8_t *item) {
             return 3;
     }
     return 1;                                                                   // Menu open : other keys are swallowed
+}
+
+// 35,11 (T-148) : Ctrl+letter or Ctrl+digit shortcuts. The shortcut is the text right of the TAB of an item,
+// exactly "Ctrl+X". Not with a menu down ; disabled items and separators never match.
+uint8_t MNShortcut(uint8_t keyCode,uint8_t modifiers,uint8_t *menu,uint8_t *item) {
+    *menu = 0;*item = 0;
+    if (openMenu != 0 || !(modifiers & KEY_CONTROL)) return 0;
+    char want;
+    if (keyCode >= KEY_A && keyCode < KEY_A + 26) want = (char)('A' + keyCode - KEY_A);
+    else if (keyCode >= KEY_1 && keyCode < KEY_1 + 9) want = (char)('1' + keyCode - KEY_1);
+    else if (keyCode == KEY_1 + 9) want = '0';
+    else return 0;
+    for (uint8_t id = 1;id <= MN_MAX_MENUS;id++) {
+        if (!menus[id-1].used) continue;
+        for (uint8_t n = 1;;n++) {
+            uint16_t a = _MNItem(&menus[id-1],n);
+            if (a == 0) break;
+            if (cpuMemory[a] & (MN_ITEM_DISABLED | MN_ITEM_SEP)) continue;
+            int tab = _MNTab(a);
+            if (tab < 0 || cpuMemory[a+1] - tab - 1 != 6) continue;
+            const uint8_t *k = cpuMemory + a + 3 + tab;
+            if (memcmp(k,"Ctrl+",5) != 0) continue;
+            char c = (char)k[5];
+            if (c >= 'a' && c <= 'z') c = (char)(c - 32);
+            if (c == want) { *menu = id;*item = n;return 2; }
+        }
+    }
+    return 0;
 }
 
 uint8_t MNSetItemFlags(uint8_t menu,uint8_t item,uint8_t flags) {

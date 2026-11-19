@@ -97,3 +97,20 @@ GROUP 35 Menu Manager
         return Parameter:0 is 0 if the key was not used (bar closed and not F10 : the program handles the key), 1 if it
         was used and a menu is down, 2 if an item was chosen (menu in Parameter:1, item in Parameter:2, as Function
         35,5), 3 if the menu was closed without a choice. The mouse (35,3 to 35,5) keeps working.
+
+
+    FUNCTION 11 Menu Shortcut
+        {
+            uint8_t m,i;
+            uint8_t r = MNShortcut(DPARAMS[0],DPARAMS[1],&m,&i);
+            DPARAMS[0] = r;DPARAMS[1] = m;DPARAMS[2] = i;
+        }
+    DOCUMENTATION
+        Keyboard shortcuts of menu items (Trinity T-148). In the text of an item (31 characters at most), a TAB (code 9)
+        separates the label from the shortcut : "Save<TAB>Ctrl+S". The text right of the TAB is drawn right-aligned,
+        and the pull-down is widened by two blanks and the shortcut. Pass in Parameter:0 the key code of a key down
+        event (message2, group 33) and in Parameter:1 the modifiers (Function 1,2, Parameter:1). On return Parameter:0
+        is 2 if the key with Ctrl matches the shortcut "Ctrl+X" (X = A-Z or 0-9, case ignored, exactly six characters)
+        of an enabled item (menu in Parameter:1, item in Parameter:2, as Function 35,5), else 0 : the program handles
+        the key. Not used while a menu is down (use Function 35,10). Disabled items and separators never match. A
+        firmware older than this one draws the TAB as an ordinary character : check the version (1,11) first.

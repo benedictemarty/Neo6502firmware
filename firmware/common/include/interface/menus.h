@@ -40,4 +40,5 @@ uint8_t MNDisposeMenu(uint8_t id);                                              
 uint8_t MNGetItemFlags(uint8_t menu,uint8_t item,uint8_t *flags);               // 35,8
 uint8_t MNSetBarBounds(int16_t left,int16_t right);                             // 35,9 (T-83)
 uint8_t MNKey(uint8_t keyCode,uint8_t *menu,uint8_t *item);                     // 35,10 (T-89)
+uint8_t MNShortcut(uint8_t keyCode,uint8_t modifiers,uint8_t *menu,uint8_t *item);   // 35,11 (T-148)
 void MNRedrawOpen(void);                                                        // T-89 : after a window update (34,11)
