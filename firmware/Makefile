@@ -130,7 +130,9 @@ build: prelim always
 #				RAM 240 200 -> 238 560 (-1 640 o) : `__atexit0` retiré (-400, `__register_exitproc` neutre dans main.cpp), tampon de
 #				ligne de TMPDrawTileMap sur le tas par appel (-720), `currentPalette` de 768 o remplacé par 256 o de bits bas
 #				(palette RGB565 + paletteLow, reconstruction vérifiée sur les 16 777 216 couleurs). Tas libre 21 944 -> 23 584 o.
-RAM_LIMIT ?= 238800
+#				2026-11-20 (T-153, piste M2 de l'étude) : 238800 -> 236300. Groupes 3, 9, 10, 13, 14 dans DSPRare (flash) : DSPHandler 7 080 -> 4 596 o
+#				en RAM ; RAM 238 560 -> 236 080 (-2 480 o), tas libre 23 584 -> 26 064 o. Vitesse de l'API non mesurée, placement du code changé (T-48).
+RAM_LIMIT ?= 236300
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

@@ -38,6 +38,20 @@ static void __attribute__((noinline)) DSPToolbox(uint8_t *cBlock, uint8_t *memor
 	#include "data/dispatch_toolbox.h"
 }
 
+// T-153 : rarely used groups (3 file I/O, 9 turtle, 10 UExt, 13 editor, 14 CDC) are dispatched here, in flash, so that
+// the RAM copy of DSPHandler does not carry them. Same locals as DSPHandler, which the generated code expects.
+static void __attribute__((noinline)) DSPRare(uint8_t *cBlock, uint8_t *memory,uint8_t cmd) {
+	float f1,f2;
+	int i1,i2,r;
+	uint32_t u1;
+	uint8_t u2,u4;
+	char *s;
+	uint16_t u3;
+	SOUND_UPDATE su;
+	bool b1;
+	(void)memory;
+	#include "data/dispatch_rare.h"
+}
 
 // ***************************************************************************************
 //

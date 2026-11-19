@@ -22,7 +22,7 @@ def relever(chemin):
 	return vu
 
 fonctions = set()
-for nom in ('dispatch_code.h','dispatch_toolbox.h'):
+for nom in ('dispatch_code.h','dispatch_toolbox.h','dispatch_rare.h'):
 	fonctions |= relever(os.path.join(DATA,nom))
 texte = ''.join('%d,%d\n' % f for f in sorted(fonctions))
 if '--ref' in sys.argv:
