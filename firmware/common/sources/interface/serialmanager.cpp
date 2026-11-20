@@ -41,11 +41,13 @@ bool SERSetup(void) {
 //
 // ***************************************************************************************
 
-static uint8_t sBuffer[256];  														// Input buffer.
+static uint8_t *sBuffer = NULL;  // Input buffer (T-155 : 256 bytes in the heap, only while the serial link runs).
+#define SBUFFER_SIZE 256
 
 void SERCheckDataAvailable(void) {
 
 	if (!SERSetup()) return; 														// Initialise serial I/O if not done
+	if ((sBuffer = (uint8_t *)malloc(SBUFFER_SIZE)) == NULL) { CONWriteString("Serial link : no memory.\r");return; }
 	bool completed = false;
 	CONWriteString("Serial link enabled.\r");
 	while (!completed) {
@@ -61,7 +63,7 @@ void SERCheckDataAvailable(void) {
 			//		sBuffer[i+2] reached sBuffer[256] — one past the end. Everything here comes
 			//		from whatever is sending on the serial line.
 			uint8_t toRead = sBuffer[0];
-			if (toRead > sizeof(sBuffer)-2) toRead = sizeof(sBuffer)-2;
+			if (toRead > SBUFFER_SIZE-2) toRead = sizeof(sBuffer)-2;
 			for (int16_t i = 0;i < toRead;i++) {  									// Read in data and calculate checksum
 				sBuffer[i+2] = SERReadByte();
 				checksum += sBuffer[i+2];			
@@ -74,6 +76,7 @@ void SERCheckDataAvailable(void) {
 			}
 		}
 	}
+	free(sBuffer);sBuffer = NULL;
 	CONWriteString("Serial link disabled.\r");
 }
 

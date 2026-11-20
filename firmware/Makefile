@@ -133,7 +133,9 @@ build: prelim always
 #				2026-11-20 (T-153, piste M2 de l'étude) : 238800 -> 236300. Groupes 3, 9, 10, 13, 14 dans DSPRare (flash) : DSPHandler 7 080 -> 4 596 o
 #				en RAM ; RAM 238 560 -> 236 080 (-2 480 o), tas libre 23 584 -> 26 064 o. Vitesse de l'API non mesurée, placement du code changé (T-48).
 #				2026-11-20 (T-154) : 236300 -> 235400. Groupes 7, 8, 11, 12 ajoutés à DSPRare : DSPHandler 4 596 -> 3 648 o ; RAM 236 080 -> 235 136 (-944 o), tas libre 27 008 o.
-RAM_LIMIT ?= 235400
+#				2026-11-20 (T-155) : 235400 -> 234400. Réservation à l'usage dans le tas : paramData de MOSExecute (-256), sBuffer de la liaison série (-256),
+#				LfnBuf de FatFs (FF_USE_LFN 3, -512). RAM 235 136 -> 234 120 (-1 016 o), tas libre 28 024 o.
+RAM_LIMIT ?= 234400
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

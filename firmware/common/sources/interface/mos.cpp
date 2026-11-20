@@ -16,7 +16,8 @@
 
 static uint8_t paramCount,stringPos;
 static uint8_t *params[MAX_PARAMS];
-static uint8_t paramData[256];
+#define PARAMDATA_SIZE 256
+static uint8_t *paramData = NULL;												// T-155 : heap, only during MOSExecute (was 256 static bytes)
 
 // ***************************************************************************************
 //
@@ -43,7 +44,7 @@ static void _MOSUnpackParameters(uint8_t *cmd) {
 		//		T-61 : paramData holds 256 bytes, but a 255 character command with four
 		//		parameters also stores four length bytes and four terminators — 263 in all.
 		//		Stop writing at the end of the buffer ; the command is simply truncated.
-		const uint8_t *dataEnd = paramData + sizeof(paramData) - 1;
+		const uint8_t *dataEnd = paramData + PARAMDATA_SIZE - 1;
 		if (dataPos >= dataEnd) return;
 		params[paramCount] = dataPos; 											// Store param position, both length prefixed
 		*dataPos++ = 0;  														// and NULL terminated
@@ -66,7 +67,7 @@ static void _MOSUnpackParameters(uint8_t *cmd) {
 
 #define CPPPARAM(n) 	std::string((const char *)(params[n]+1))
 
-uint8_t MOSExecute(uint8_t *command) {
+static uint8_t _MOSExecute(uint8_t *command) {
 	_MOSUnpackParameters(command);  											// Process parameters
 	for (int i = 0;i < paramCount;i++) TRACEF("%d %d [%s]\n",i,*params[i],params[i]+1);
 	if (paramCount == 0) return 0;  											// Nothing to do.
@@ -139,3 +140,12 @@ uint8_t MOSExecute(uint8_t *command) {
 //		==== 		========
 //
 // ***************************************************************************************
+
+// T-155 : the parameter buffer lives in the heap for the duration of one command only. Error 1 if the heap is short.
+uint8_t MOSExecute(uint8_t *command) {
+	paramData = (uint8_t *)malloc(PARAMDATA_SIZE);
+	if (paramData == NULL) return 1;
+	uint8_t error = _MOSExecute(command);
+	free(paramData);paramData = NULL;
+	return error;
+}
