@@ -38,7 +38,7 @@ static void __attribute__((noinline)) DSPToolbox(uint8_t *cBlock, uint8_t *memor
 	#include "data/dispatch_toolbox.h"
 }
 
-// T-153 : rarely used groups (3 file I/O, 9 turtle, 10 UExt, 13 editor, 14 CDC) are dispatched here, in flash, so that
+// T-153 : rarely used groups (3 file I/O, 7 controller, 8 sound, 9 turtle, 10 UExt, 11 mouse, 12 blitter, 13 editor, 14 CDC ; list : RARE_GROUPS in makedispatch.py) are dispatched here, in flash, so that
 // the RAM copy of DSPHandler does not carry them. Same locals as DSPHandler, which the generated code expects.
 static void __attribute__((noinline)) DSPRare(uint8_t *cBlock, uint8_t *memory,uint8_t cmd) {
 	float f1,f2;

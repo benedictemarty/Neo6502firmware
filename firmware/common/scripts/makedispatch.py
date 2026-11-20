@@ -13,7 +13,7 @@
 # ***************************************************************************************
 
 import sys,os,re
-RARE_GROUPS = (3,9,10,13,14)                                                    # T-153 : rarely used groups, dispatched by DSPRare() in flash (not in the RAM copy of DSPHandler)
+RARE_GROUPS = (3,7,8,9,10,11,12,13,14)                                                   # T-153 : rarely used groups, dispatched by DSPRare() in flash (not in the RAM copy of DSPHandler)
 TOOLBOX_FIRST = 32                                                              # bmarty : first toolbox group (ADR-01)
 from datetime import date
 

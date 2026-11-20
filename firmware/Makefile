@@ -132,7 +132,8 @@ build: prelim always
 #				(palette RGB565 + paletteLow, reconstruction vérifiée sur les 16 777 216 couleurs). Tas libre 21 944 -> 23 584 o.
 #				2026-11-20 (T-153, piste M2 de l'étude) : 238800 -> 236300. Groupes 3, 9, 10, 13, 14 dans DSPRare (flash) : DSPHandler 7 080 -> 4 596 o
 #				en RAM ; RAM 238 560 -> 236 080 (-2 480 o), tas libre 23 584 -> 26 064 o. Vitesse de l'API non mesurée, placement du code changé (T-48).
-RAM_LIMIT ?= 236300
+#				2026-11-20 (T-154) : 236300 -> 235400. Groupes 7, 8, 11, 12 ajoutés à DSPRare : DSPHandler 4 596 -> 3 648 o ; RAM 236 080 -> 235 136 (-944 o), tas libre 27 008 o.
+RAM_LIMIT ?= 235400
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "
