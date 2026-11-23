@@ -27,6 +27,7 @@ static const int16_t clipRight = 319;
 // ***************************************************************************************
 
 static inline uint8_t _SPRPixFull(const SPRITE_ACTION *s,int xi,int yi) {  		// T-146 : whole value 0-255
+	if (s->scale > 1) { xi /= s->scale;yi /= s->scale; }  						// T-160 : integer zoom
 	const uint8_t *line = s->image + yi * s->stride;
 	uint8_t v;
 	switch (s->bpp) {
@@ -156,7 +157,7 @@ static void _SPXORDrawGeneric(SPRITE_ACTION *s) {
 
 void SPRPHYDraw(SPRITE_ACTION *s) {
 	if (GFXIsPackedMode()) { _SPXORDrawPacked(s);return; }
-	if (s->bpp != 0) { _SPXORDrawGeneric(s);return; }
+	if (s->bpp != 0 || s->scale > 1) { _SPXORDrawGeneric(s);return; }
 	if (s->x < clipLeft - s->xSize || s->x > clipRight) return; 				// Clip completely.
 
 	s->xBytes = s->xSize/2; 							 						// Bytes to copy

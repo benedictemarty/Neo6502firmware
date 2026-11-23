@@ -37,7 +37,8 @@ typedef struct _sprite_action {
 	uint8_t *image;  															// image data 
 	uint8_t flip; 																// flip position
 	int16_t x,y;  																// top left.
-	uint8_t xSize,ySize;  														// Sprite size
+	uint16_t xSize,ySize;  														// Sprite size on the screen (T-160 : image size x scale)
+	uint8_t scale;  															// T-160 : 1-4, bits 2-3 of the flip byte of 6,2
 	uint8_t xBytes; 															// Bytes to copy.
 	uint8_t bpp;  																// T-113 : 0 standard (4 bits, fast path), 1/2/4/8
 	uint16_t stride;  															// T-113 : bytes a line of the image
@@ -64,6 +65,8 @@ void SPRPHYDrawByte(SPRITE_ACTION *s,uint8_t *save);  							// T-146 : whole by
 void SPRPHYRestoreByte(SPRITE_ACTION *s,const uint8_t *save);  					// T-146 : background put back
 int SPRSetSaveArea(uint8_t *paramData);  										// T-146 : 6,9
 int SPRBackgroundRedrawn(void);  												// T-146 : 6,10
+uint8_t SPRRectCollision(uint8_t *error,uint8_t s1,uint8_t s2);  				// T-161 : 6,12
+int SPRUpdateMany(uint8_t *paramData);  										// T-161 : 6,13
 int SPRSetForeground(uint8_t threshold);  										// T-159 : 6,11
 void SPRPHYSetForeground(uint8_t threshold);  									// T-159 : byte mode, background >= threshold stays
 uint8_t SPRPHYGetForeground(void);

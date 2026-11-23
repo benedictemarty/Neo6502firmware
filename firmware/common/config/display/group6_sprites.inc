@@ -44,6 +44,12 @@ GROUP 6 Sprites
         Trinity (T-146) : error 3 in byte mode (6,6 = 2) if the save area (6,9) has no room for the sprite ; it
         is then not drawn.
 
+        Trinity (T-160) : integer zoom. Bits 2-3 of the Flip byte give the scale : 0 = x1 (the default), 4 = x2,
+        8 = x3, 12 = x4 ; bits 0-1 are still the flips. The sprite is drawn pixel by pixel (slower than the
+        fast path of unzoomed standard images), its size on the screen is the image size times the scale (so are
+        the anchor and the byte mode save of 6,9 : 4096 bytes for a 16 x 16 sprite at x4). A change of scale keeps
+        the anchor point. The turtle is never zoomed. Programs that passed a Flip with bits 2-3 set now get a zoom.
+
     FUNCTION 3 Sprite Hide
         SPRHide(DPARAMS);
     DOCUMENTATION
@@ -127,3 +133,22 @@ GROUP 6 Sprites
         The test is on the byte on the screen : keep the colours of the sprites below the threshold. The sprites
         drawn are erased and drawn again. Set back to 0 by 6,1 and by a reset (1,0). After a new background (12,3,
         group 5...) call 6,10, as for any background. Always returns no error.
+
+    FUNCTION 12 Sprite Rectangle Collision
+        DPARAMS[0] = SPRRectCollision(DERROR,DPARAMS[0],DPARAMS[1]);
+    DOCUMENTATION
+        Trinity (T-161). Parameters:0,1 are two sprite numbers. Returns in Parameter:0 1 if the rectangles of the two
+        shown sprites on the screen (the size of the image times the zoom of 6,2, T-160) overlap by at least one
+        pixel, 0 otherwise or if one of them is hidden. Only the rectangles are tested, not the pixels of the
+        images. Error 1 for a sprite number out of range. Unlike 6,4 (distance between the centres) it does not
+        depend on the anchor.
+
+    FUNCTION 13 Sprite Move Many
+        *DERROR = GFXIsTextMode() ? 1 : SPRUpdateMany(DPARAMS);
+    DOCUMENTATION
+        Trinity (T-161). Moves several sprites in one call. Parameters:0,1 : offset in graphics memory (page $90)
+        of a list of 5 bytes per sprite : number, X low, X high, Y low, Y high ; Parameter:2 : number of entries
+        (1-255). Each entry is a 6,2 whose image, flip and anchor are $80 (unchanged), so the sprites must have
+        been set by 6,2 or 6,7 before. On return Parameter:2 is the number of entries done. The first error
+        stops the call and is returned (1 : empty list, list outside graphics memory, text mode, bad sprite ;
+        2 and 3 as 6,2). One call instead of one per sprite : fewer API round trips per frame.

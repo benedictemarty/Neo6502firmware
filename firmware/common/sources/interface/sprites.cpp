@@ -171,14 +171,18 @@ void SPRScreenCleared(void) {
 	}
 }
 
+static inline int _SPRScale(uint8_t flip) { return ((flip >> 2) & 3) + 1; } 	// T-160 : bits 2-3 of the flip byte
+
 static void SPRSetupAction(SPRITE_ACTION *sa,SPRITE_INTERNAL *p) {
 	sa->display = gMode.graphicsMemory + p->x + p->y*gMode.xGSize; 				// Work out the draw address top left of sprite.
 	sa->image = p->imageAddress; 												// Where graphic data comes from.
 	sa->x = p->x;sa->y = p->y;  												// Coordinates
 	sa->xSize = p->xSize;sa->ySize = p->ySize;  								// Size and flip.
-	sa->flip = p->flip;
+	sa->flip = p->flip & 3;
+	sa->scale = _SPRScale(p->flip);  											// T-160
 	sa->bpp = p->bpp;  															// T-113
-	sa->stride = (p->bpp == 0) ? p->xSize / 2 : (p->xSize * p->bpp + 7) / 8;
+	int bw = p->xSize / sa->scale;  											// Width of the image itself
+	sa->stride = (p->bpp == 0) ? bw / 2 : (bw * p->bpp + 7) / 8;
 	sa->map = (p->bpp != 0 && p->mapOffset != 0xFFFF) ? gfxObjectMemory + p->mapOffset : NULL;
 }
 
@@ -441,9 +445,12 @@ int SPRUpdate(uint8_t *paramData) {
 	if (xyChanged || isChanged || flipChanged || anchorChanged || isTurtle || forced) {  // Some change made.
 		if (p->isDrawn) _SPRUndraw(p);  										// Erase if currently drawn
 
+		int oldScale = _SPRScale(p->flip);  									// T-160
 		if (flipChanged) { 														// Flip has changed
 			p->flip = flip; 
-		}									
+		}
+		if (isTurtle) p->flip &= 3;  											// The turtle is never zoomed
+		int scale = _SPRScale(p->flip);									
 
 		if (anchorChanged) {  													// Anchor has changed.
 			if (anchor > 9) return 1;  											// Bad anchor.
@@ -453,8 +460,8 @@ int SPRUpdate(uint8_t *paramData) {
 		if (isChanged != 0 && isTurtle == 0) {  								// Image or size changed, not turtle
 			p->imageSize = imageSize;  											// Update image size.
 			p->bpp = 0;p->mapOffset = 0xFFFF;  									// T-113 : back to a standard image
-			p->xSize = p->ySize = (imageSize & 0x40) ? 32:16;   				// Size of image.
-			int img = GFXFindImage((p->xSize == 16) ? 1 : 2,imageSize & 0x3F);	// Address of image (offset in gfx memory)													
+			p->xSize = p->ySize = ((imageSize & 0x40) ? 32:16) * scale;   		// Size of image (T-160 : zoomed).
+			int img = GFXFindImage((imageSize & 0x40) ? 2 : 1,imageSize & 0x3F);  	// T-160 : the size no longer tells the set	// Address of image (offset in gfx memory)													
 			if (img < 0) return 2;   											// Bad image number
 			p->imageAddress = gfxObjectMemory + img;  							// Physical address
 		}
@@ -465,6 +472,15 @@ int SPRUpdate(uint8_t *paramData) {
 			p->imageAddress = SPRUnpackTurtleGraphic(turtleRotation);
 		}
 
+		bool rescaled = (scale != oldScale) && !isChanged && !isTurtle && p->imageSize != 0xFF;
+		if (rescaled) {  														// T-160 : zoom changed, same image
+			p->xSize = p->xSize / oldScale * scale;
+			p->ySize = p->ySize / oldScale * scale;
+			if (!xyChanged && (p->xc != -1 || p->yc != -1)) {  					// Same anchor point
+				p->x = p->xc - anchorX[p->anchor] * p->xSize / 2;
+				p->y = p->yc - anchorY[p->anchor] * p->ySize / 2;
+			}
+		}
 		if (xyChanged) {  														// Positions changed.
 			p->x = x - anchorX[p->anchor] * p->xSize / 2;   					// Initially anchor point is centre.
 			p->y = y - anchorY[p->anchor] * p->ySize / 2;
@@ -509,7 +525,7 @@ int SPRSetImage(uint8_t *paramData) {
 	if (p->isDrawn) _SPRUndraw(p);
 	p->imageSize = 0xFE;p->bpp = bpp;p->mapOffset = map;
 	p->imageAddress = (uint8_t *)image;  										// Read only when it is in a bank
-	p->xSize = width;p->ySize = height;
+	p->xSize = width * _SPRScale(p->flip);p->ySize = height * _SPRScale(p->flip);  // T-160
 	if (p->xc != -1 || p->yc != -1) {  											// Placed : same anchor point
 		p->x = p->xc - anchorX[p->anchor] * p->xSize / 2;
 		p->y = p->yc - anchorY[p->anchor] * p->ySize / 2;
@@ -599,6 +615,44 @@ uint8_t SPRCollisionCheck(uint8_t *error,uint8_t s1,uint8_t s2,uint8_t distance)
 	SPRITE_INTERNAL *p1 = &sprites[s1],*p2 = &sprites[s2]; 						// Structure pointers.
 	int sdist = (p1->xc-p2->xc)*(p1->xc-p2->xc)+(p1->yc-p2->yc)*(p1->yc-p2->yc);// Square of distance
 	return sdist <= distance*distance;
+}
+
+// ***************************************************************************************
+//
+//		T-161 : 6,12, collision of the rectangles on the screen (size times zoom, T-160) of two shown
+//		sprites : 1 if they overlap by at least one pixel, whatever their images. Error 1 : bad number.
+//
+// ***************************************************************************************
+
+uint8_t SPRRectCollision(uint8_t *error,uint8_t s1,uint8_t s2) {
+	if (s1 >= MAX_SPRITES || s2 >= MAX_SPRITES) { *error = 1;return 0; }
+	const SPRITE_INTERNAL *a = &sprites[s1],*b = &sprites[s2];
+	if (!a->isVisible || !b->isVisible) return 0;
+	return _SPRTouches(b,a->x,a->y,a->x+a->xSize-1,a->y+a->ySize-1) ? 1 : 0;
+}
+
+// ***************************************************************************************
+//
+//		T-161 : 6,13, moves several sprites in one call. A list in graphics memory (page $90), 5 bytes each :
+//		sprite, X low, X high, Y low, Y high ; image, flip and anchor are left as they are ($80 of 6,2).
+//		Parameters : 0,1 offset of the list, 2 number of entries (1-255). On return Parameter:2 is the number
+//		of entries done ; the first error stops the call and is returned (1 : list outside graphics memory).
+//
+// ***************************************************************************************
+
+int SPRUpdateMany(uint8_t *paramData) {
+	uint16_t offset = paramData[0] + (paramData[1] << 8);
+	uint8_t count = paramData[2];
+	paramData[2] = 0;
+	if (count == 0 || (uint32_t)offset + (uint32_t)count * 5 > GFX_MEMORY_SIZE) return 1;
+	for (int i = 0;i < count;i++) {
+		const uint8_t *e = gfxObjectMemory + offset + i * 5;
+		uint8_t q[8] = { e[0],e[1],e[2],e[3],e[4],0x80,0x80,0x80 };
+		int err = SPRUpdate(q);
+		if (err != 0) return err;
+		paramData[2] = i + 1;
+	}
+	return 0;
 }
 
 // ***************************************************************************************
