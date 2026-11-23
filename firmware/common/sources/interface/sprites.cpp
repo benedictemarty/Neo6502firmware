@@ -103,6 +103,7 @@ void SPRResetAll(void) {
 		_SPRResetSprite(i);
 	}
 	turtleSpriteID = -1;turtleRotation = 0;turtleColour = 7; 					// Reset turtle setup
+	SPRPHYSetForeground(0);  													// T-159 : no foreground
 }
 
 // ***************************************************************************************
@@ -554,6 +555,22 @@ int SPRBackgroundRedrawn(void) {
 	if (!_SPRByte()) return 0;
 	for (int i = MAX_SPRITES-1;i >= 0;i--) {
 		if (sprites[i].isDrawn) _SPRByteSaveDraw(i);
+	}
+	return 0;
+}
+
+//		T-159 : 6,11, foreground threshold. Byte mode (6,6 = 2) : a background byte >= threshold is not
+//		overwritten by a sprite pixel. 0 = off. The sprites drawn are erased and drawn again.
+int SPRSetForeground(uint8_t threshold) {
+	if (threshold == SPRPHYGetForeground()) return 0;
+	bool wasDrawn[MAX_SPRITES];
+	for (int i = 0;i < MAX_SPRITES;i++) {
+		wasDrawn[i] = _SPRByte() && sprites[i].isDrawn;
+	}
+	if (_SPRByte()) _SPRByteRestoreAll();
+	SPRPHYSetForeground(threshold);
+	for (int i = MAX_SPRITES-1;i >= 0;i--) {
+		if (wasDrawn[i]) _SPRDraw(&sprites[i]);
 	}
 	return 0;
 }

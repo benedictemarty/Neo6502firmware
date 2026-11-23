@@ -237,6 +237,13 @@ static bool _SPRByteArea(const SPRITE_ACTION *s,int *xa,int *ya,int *xb,int *yb)
 	return *xa <= *xb && *ya <= *yb;
 }
 
+//		T-159 : foreground threshold, byte mode. A background byte >= threshold is not overwritten by a sprite
+//		pixel (a tree in front of the player). 0 : off. The test is on the byte on the screen, so the colours of
+//		the sprites must stay below the threshold (otherwise a sprite drawn later skips the pixels of the first).
+static uint8_t byteForeground = 0;
+void SPRPHYSetForeground(uint8_t threshold) { byteForeground = threshold; }
+uint8_t SPRPHYGetForeground(void) { return byteForeground; }
+
 void SPRPHYDrawByte(SPRITE_ACTION *s,uint8_t *save) {
 	int xa,ya,xb,yb;
 	if (!_SPRByteArea(s,&xa,&ya,&xb,&yb)) return;
@@ -248,7 +255,7 @@ void SPRPHYDrawByte(SPRITE_ACTION *s,uint8_t *save) {
 		for (int x = xa;x <= xb;x++,display++) {
 			int xImg = (s->flip & 1) ? s->xSize-1-(x-s->x) : x-s->x;
 			uint8_t p = _SPRPixFull(s,xImg,yImg);
-			if (p != 0) *display = p;
+			if (p != 0 && (byteForeground == 0 || *display < byteForeground)) *display = p;
 		}
 	}
 }
@@ -270,5 +277,6 @@ void SPRPHYRestoreByte(SPRITE_ACTION *s,const uint8_t *save) {
 //		07/10/26 	T-111 : opaque drawing (bmarty).
 //		07/10/26 	T-113 : images of any size, 1/2/4/8 bits a pixel, colour table (bmarty).
 //		16/11/26 	T-146 : byte sprites with a saved background (bmarty).
+//		23/11/26 	T-159 : foreground threshold in byte mode (bmarty).
 //
 // ***************************************************************************************

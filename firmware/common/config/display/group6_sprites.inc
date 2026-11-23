@@ -117,3 +117,13 @@ GROUP 6 Sprites
         group 5...). The saved bytes are forgotten without being put back, the new background is saved and the
         sprites are drawn again. Every pixel under every shown sprite must have been redrawn, otherwise sprite
         pixels left there are saved as background. No effect in the other modes.
+
+    FUNCTION 11 Sprite Foreground
+        *DERROR = SPRSetForeground(DPARAMS[0]);
+    DOCUMENTATION
+        Trinity (T-159). Byte mode (6,6 = 2) only : Parameter:0 is a threshold 1-255 ; a background byte on the
+        screen whose value is the threshold or more is not overwritten by a sprite pixel, so a tree or a wall drawn
+        in the background stays in front of the sprites. 0 (the default) : off, as in the other modes (no effect).
+        The test is on the byte on the screen : keep the colours of the sprites below the threshold. The sprites
+        drawn are erased and drawn again. Set back to 0 by 6,1 and by a reset (1,0). After a new background (12,3,
+        group 5...) call 6,10, as for any background. Always returns no error.

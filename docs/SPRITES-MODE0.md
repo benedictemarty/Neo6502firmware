@@ -197,6 +197,7 @@ n'écrivent que dans les 4 bits hauts (§ 1 à 2 bis) et abîment un tel fond. *
 | 6,9 Sprite Save Area | `[0..1]` adresse dans la page `$90`, `[2..3]` taille | zone où le firmware sauvegarde le fond ; erreur 1 si elle dépasse les 32 Ko ; taille 0 = aucune zone |
 | 6,6 | `[0]` = 2 | mode octet entier |
 | 6,10 Sprite Background Redrawn | aucun | le programme a redessiné le fond sous les sprites : sauvegardes oubliées sans restauration, nouveau fond sauvegardé, sprites redessinés |
+| 6,11 Sprite Foreground | `[0]` seuil 1-255, 0 = aucun | **T-159** : en mode 2, un octet de fond ≥ seuil n'est pas écrasé par un pixel de sprite (décor devant les sprites) |
 
 - **Dessin** : avant d'écrire un sprite, le firmware copie les octets de son rectangle (partie visible à l'écran)
   dans la zone de 6,9 ; puis chaque pixel non nul de l'image est écrit **sur l'octet entier** : `table[v]` (table
@@ -211,6 +212,7 @@ n'écrivent que dans les 4 bits hauts (§ 1 à 2 bis) et abîment un tel fond. *
   rendent l'**erreur 3** et le sprite n'est pas dessiné. Exemple NeoWoW : 25 sprites 16 × 16 = 6 400 o.
 - **La zone appartient au programme** : rien n'empêche d'y charger des images ; elle doit éviter les images et les
   tables utilisées. 6,9 pendant que des sprites sont affichés les efface et les redessine dans la nouvelle zone.
+- **Premier plan (6,11, Trinity 0.16.111, T-159)** : `Parameter:0` = seuil 1-255 ; avant d'écrire un pixel de sprite, le firmware regarde l'octet **déjà à l'écran** : s'il vaut le seuil ou plus, il le laisse (un arbre ou un mur dessiné dans le fond reste devant le sprite). 0 (défaut) = aucun seuil. Mode 2 seulement (sans effet dans les autres). **Les couleurs des sprites doivent rester sous le seuil** : le test porte sur l'octet à l'écran, un sprite dessiné plus tard sauterait les pixels d'un autre sprite dont la couleur dépasse le seuil. Les sprites déjà affichés sont effacés et redessinés ; 6,1 et un reset (1,0) remettent le seuil à 0 ; après un nouveau fond, 6,10 comme d'habitude. Vérifié dans l'émulateur par `tests/api/sprfg.asm` (contre-essai : sans le seuil, les lignes A, C et G échouent). **Non essayé sur carte.** Coût : un test d'octet par pixel écrit, non mesuré.
 - **Fond redessiné** : après une copie 12,2 / 12,3 ou un tracé sous les sprites, appeler **6,10**. Il suppose que
   tout pixel sous chaque sprite affiché a été redessiné ; un reste de sprite serait sauvegardé comme fond. Sans
   6,10, le prochain effacement remet l'ancien fond.
