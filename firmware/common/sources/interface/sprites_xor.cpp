@@ -26,8 +26,18 @@ static const int16_t clipRight = 319;
 //
 // ***************************************************************************************
 
+//		T-160 : integer zoom, division by 2, 3 or 4 without a hardware divide (the RP2040 core has none : the
+//		division per pixel cost about 2 times the area of the zoom). 43691 = ceil(2^17/3), exact below 65536.
+static inline int _SPRDivScale(int v,int scale) {
+	switch (scale) {
+		case 2:  return v >> 1;
+		case 3:  return (int)(((uint32_t)v * 43691u) >> 17);
+		default: return v >> 2;
+	}
+}
+
 static inline uint8_t _SPRPixFull(const SPRITE_ACTION *s,int xi,int yi) {  		// T-146 : whole value 0-255
-	if (s->scale > 1) { xi /= s->scale;yi /= s->scale; }  						// T-160 : integer zoom
+	if (s->scale > 1) { xi = _SPRDivScale(xi,s->scale);yi = _SPRDivScale(yi,s->scale); }  // T-160 : integer zoom
 	const uint8_t *line = s->image + yi * s->stride;
 	uint8_t v;
 	switch (s->bpp) {
