@@ -65,8 +65,26 @@ const uint32_t *tmdsFontLut;  													// Read by the encoder (RAM copy)
 #define BAND_ATTRS 		(BAND_PLANES + 3 * BAND_ROWS * T80_ROW_WORDS * 4)  			// 800
 #define BAND_HOST 		(BAND_ATTRS + BAND_ROWS * T80_COLS)  							// 1 120 : table 2 Ko + police 2 Ko
 #define BAND_BYTES 		(BAND_HOST + 4096)
-static uint8_t bandData[BAND_BYTES] __attribute__((aligned(4)));
+static uint8_t bandData[8296] __attribute__((aligned(4)));  // T-163 colonnes : 8 296 o (la bande n'en utilise que 5 216)
 static volatile bool bandOn = false;
+
+//		T-163 (ESSAI COLONNES, jamais livre) : mode 0, moitie gauche = image (160 pixels, voie 16 bpp), moitie droite = texte 40 x 30
+//		(voie du mode 3, 320 pixels physiques). Chaque encodeur ecrit dans sa part du tampon de chaque voie TMDS. Le numero de ligne
+//		passe dans le tampon de pixels (mot 150, partie inutilisee). Donnees du texte dans bandData.
+#include "hardware/structs/systick.h"
+#define COL_ROWS 		(30)
+#define COL_COLS 		(40)
+#define COL_PLANE_WORDS (COL_ROWS * 5)  												// 150 mots par plan (5 mots par rangee)
+#define COL_GLYPHS 		(0)
+#define COL_PLANES 		(COL_ROWS * COL_COLS)  										// 1 200
+#define COL_ATTRS 		(COL_PLANES + 3 * COL_PLANE_WORDS * 4)  						// 3 000
+#define COL_HOST 		(COL_ATTRS + COL_ROWS * COL_COLS)  							// 4 200 : table 2 Ko + police 2 Ko
+static volatile bool colOn = false;
+//		t4[0] rappels, [1] cycles, [2] max ; [3] encodages, [4] cycles, [5] max ; [6] cycles image, [7] cycles texte
+volatile uint32_t t4[16];
+static uint32_t cbCyc0 = 0;
+static inline uint32_t _T4Now(void) { return systick_hw->cvr & 0xFFFFFF; }
+static inline uint32_t _T4Dt(uint32_t a,uint32_t b) { return (a - b) & 0xFFFFFF; }  		// SysTick counts down
 
 // ***************************************************************************************
 //
@@ -251,7 +269,8 @@ uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
 uint32_t __not_in_flash_func(RNDCallbackMax)(void) { return cbDurMax; }
 void RNDTimingReset(void) { cbDurMax = 0;irqGapMax = 0;irqGapLong = 0; }  		// T-90 : 5,41 $FF clears them too
 
-#define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; } while (0)
+#define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; \
+		uint32_t cc = _T4Dt(cbCyc0,_T4Now()); t4[0] = t4[0] + 1;t4[1] = t4[1] + cc;if (cc > t4[2]) t4[2] = cc; } while (0)
 
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
@@ -288,6 +307,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		}
 		lastEntry = now;
 		cbEntry = now;  												// T-77 : duree du callback, mesuree en sortie
+		cbCyc0 = _T4Now();  											// T-163 : meme chose en cycles
 	}
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
@@ -351,7 +371,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		//		multiple of four and both buffers are word aligned, so this is safe.
 		//		Alignment is guaranteed : both buffers are declared word aligned and the stride
 		//		of every colour mode is a multiple of four, so no run time check is needed.
-		int pixels = currentMode->xGSize;
+		int pixels = colOn ? 160 : currentMode->xGSize;  						// T-163 : colonnes, moitie gauche seulement
 		const uint32_t *src32 = (const uint32_t *)screenPos;
 		uint32_t *dst32 = (uint32_t *)scan;
 		for (int i = pixels >> 2;i > 0;i--) {
@@ -386,6 +406,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			cursline++;
 		}
 	}
+	if (colOn) ((uint32_t *)SCANBUF(lineCounter))[150] = (uint32_t)y;  			// T-163 : ligne du texte pour l'encodeur
 	CB_END();
 }
 
@@ -443,9 +464,27 @@ static void __not_in_flash_func(_encode_loop)(void) {
 			for (uint n = 3 * words_per_channel;n > 0;n--) *p++ = TMDS_BLACK_WORD;
 		} else {  																	// 16 bpp half resolution (pixel doubled) as PicoDVI does.
 			const uint32_t *pix = (const uint32_t *)scanbuf;
+			uint32_t e0 = _T4Now(),e1,e2;
+			if (colOn) {  															// T-163 : image a gauche (160 pixels), texte a droite
+				uint32_t y = pix[150];
+				tmds_encode_data_channel_16bpp(pix, tmdsbuf + 0 * words_per_channel, 160, DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
+				tmds_encode_data_channel_16bpp(pix, tmdsbuf + 1 * words_per_channel, 160, DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
+				tmds_encode_data_channel_16bpp(pix, tmdsbuf + 2 * words_per_channel, 160, DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
+				e1 = _T4Now();
+				const uint8_t *glyphs = bandData + COL_GLYPHS + (y >> 3) * COL_COLS;
+				const uint32_t *planes = (const uint32_t *)(bandData + COL_PLANES) + (y >> 3) * 5;
+				const uint8_t *fontLine = bandData + COL_HOST + 2048 + (y & 7) * 256;
+				for (int plane = 0;plane < 3;plane++)
+					tmds_encode_font_2bpp(glyphs, planes + plane * COL_PLANE_WORDS, tmdsbuf + plane * words_per_channel + 160, 320, fontLine);
+				e2 = _T4Now();
+				t4[6] = t4[6] + _T4Dt(e0,e1);t4[7] = t4[7] + _T4Dt(e1,e2);
+			} else {
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 0 * words_per_channel, pixwidth / 2, DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 1 * words_per_channel, pixwidth / 2, DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 2 * words_per_channel, pixwidth / 2, DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
+			}
+			uint32_t et = _T4Dt(e0,_T4Now());
+			t4[3] = t4[3] + 1;t4[4] = t4[4] + et;if (et > t4[5]) t4[5] = et;
 		}
 		queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 		if (scanbuf != 0) queue_add_blocking_u32(&dvi0.q_colour_free, &scanbuf);
@@ -459,6 +498,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 // ***************************************************************************************
 
 static void __not_in_flash_func(core1_main)() {
+	systick_hw->rvr = 0x00FFFFFF;systick_hw->cvr = 0;systick_hw->csr = 5;  		// T-163 : cycles of core 1
 	while (1) {  																// Restartable : a mode switch parks core 1 here
 		dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);                      	// Enable IRQs
 		dvi_start(&dvi0);                                           			// Start DVI library
@@ -769,7 +809,7 @@ static void _BandSetCell(int x,int y,uint8_t glyph,uint8_t attr) {
 	}
 }
 
-static void _BandPrepare(void) {
+__attribute__((unused)) static void _BandPrepare(void) {
 	uint8_t *host = bandData + BAND_HOST;
 	memcpy(host,palettised_1bpp_tables,2048);
 	const uint8_t *font = T80Font();
@@ -793,13 +833,51 @@ static void _BandPrepare(void) {
 		}
 }
 
+static void _ColSetCell(int x,int y,uint8_t glyph,uint8_t attr) {
+	uint32_t cell = x + y * COL_COLS;
+	bandData[COL_GLYPHS + cell] = glyph;bandData[COL_ATTRS + cell] = attr;
+	static const uint8_t cga222[16] = { 0,2,8,10,32,34,36,42,21,23,29,31,53,55,61,63 };
+	uint8_t ink222 = cga222[attr & 15],paper222 = cga222[attr >> 4];
+	uint32_t shift = (cell & 7) * 4;
+	uint32_t *w = (uint32_t *)(bandData + COL_PLANES) + (cell >> 3);  					// 40 cells a row = 5 words : rows stay word aligned
+	for (int plane = 0;plane < 3;plane++) {
+		uint32_t nib = (ink222 & 3) | ((paper222 & 3) << 2);
+		*w = (*w & ~(0xFu << shift)) | (nib << shift);
+		ink222 >>= 2;paper222 >>= 2;w += COL_PLANE_WORDS;
+	}
+}
+
+static void _ColPrepare(void) {
+	uint8_t *host = bandData + COL_HOST;
+	memcpy(host,palettised_1bpp_tables,2048);
+	const uint8_t *font = T80Font();
+	for (int row = 0;row < 8;row++)
+		for (int c = 0;c < 256;c++) {
+			uint8_t b = font[c * 8 + row],r = 0;
+			for (int k = 0;k < 8;k++) r |= ((b >> k) & 1) << (7 - k);
+			host[2048 + row * 256 + c] = r;
+		}
+	tmdsFontLut = (const uint32_t *)host;
+	static const char *lines[] = {
+		"T-163 essai : colonnes","Image a gauche, texte a droite,","40 colonnes x 30 rangees.","",
+		"Encre et papier par cellule,","16 couleurs CGA fixes.","","0123456789 ABCDEFGHIJKLM","NOPQRSTUVWXYZ abcdefghijklm","nopqrstuvwxyz +-*/=()[]{}<>" };
+	for (int y = 0;y < COL_ROWS;y++)
+		for (int x = 0;x < COL_COLS;x++) {
+			const char *l = (y < 10) ? lines[y] : "";
+			char ch = (x < (int)strlen(l)) ? l[x] : ' ';
+			uint8_t attr = (uint8_t)((y < 10) ? (y == 0 ? 15 : 10 + (y & 3)) : (((x / 5) & 7) << 4 | 15));
+			if (y >= 14 && y < 18) { ch = (char)0xDB;attr = (uint8_t)(((x / 2) & 15) << 4 | ((x / 2) & 15)); }  	// barre de couleurs
+			_ColSetCell(x,y,(uint8_t)ch,attr);
+		}
+}
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.
 	if (restart) DVIStopMode();
-	bandOn = false;  																// T-163 (essai) : la bande n'existe qu'en mode 0
+	bandOn = false;colOn = false;  													// T-163 (essai)
 	if (gMode->bitsPerPixel == 0) _T80PrepareEncoder();  							// T-131 : mode 3
-	else if (gMode->modeID == 0) { _BandPrepare();bandOn = true; }
+	else if (gMode->modeID == 0) { _ColPrepare();colOn = true; }
 	screenMemory = gMode->graphicsMemory;                             			// Remember where drawing.
 	currentMode = gMode;
 	currentTiming = t;
