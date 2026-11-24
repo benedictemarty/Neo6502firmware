@@ -263,5 +263,5 @@ fabrication limitée aux cellules texte). **Limite documentée proposée : 4 seg
 7 676 o de 41,2 ne tiendrait plus pendant un dessin. Pistes : héberger les 4 800 o de grille dans la banque RAM `$80` de 8 Ko (déjà dans le .bss, à
 condition qu'Ozmoo ne s'en serve pas : à demander), réduire les segments à 4 par rangée (−360 o), ou 41,2 avec une table plus petite (non étudié).
 
-Non vérifié par moi : l'aspect de l'écran (motif de test par SWD dans la VRAM, texte aux couleurs CGA fixes). Pas d'API, pas d'émulation, pas de
+**Aspect de l'écran (2026-11-24)** : bmarty a d'abord signalé « le premier caractère de chaque ligne est rogné », en tout texte comme en deux segments ; des blocs pleins de 8 pixels aux colonnes 0 à 3, 78 et 79 ont été affichés entiers (« tout est ok »), puis le texte remis : « c'est bon ». **Cause du rognage non trouvée** (non reproduite par la suite) ; l'ordre de mon motif à 2 segments était inversé (texte à gauche, image à droite) et n'a pas été validé visuellement. Motif de test par SWD dans la VRAM, texte aux couleurs CGA fixes. Pas d'API, pas d'émulation, pas de
 recoloration par 5,32, curseur souris sur toute la ligne mais invisible sur les cellules de texte.
