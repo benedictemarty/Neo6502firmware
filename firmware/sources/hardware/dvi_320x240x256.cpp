@@ -55,6 +55,24 @@ const uint32_t *tmdsFontLut;  													// Read by the encoder (RAM copy)
 }
 #define T80_TEXT_LINES 	(T80_ROWS * 8)  												// 200 logical lines
 
+//		T-163 (ESSAI, jamais livre) : 640 x 200 x 16 couleurs + texte 80 x 25 compose dans les indices, encodeur a palette de
+//		PicoDVI. Tout est dans graphicsMemory (zones apres la grille et la zone carte). SysTick du coeur 1 = cycles.
+#include "hardware/structs/systick.h"
+extern "C" {
+void tmds_setup_palette24_symbols(const uint32_t *palette, uint32_t *symbuf, size_t n_palette);
+void tmds_encode_palette_data(const uint32_t *pixbuf, const uint32_t *tmds_palette, uint32_t *symbuf, size_t n_pix, uint32_t palette_bits);
+}
+#define T4_IDX_OFF 		(T80_GRID_BYTES + T80_HOST_BYTES)  							// 11 096 : 640 index bytes
+#define T4_LUT_OFF 		(T4_IDX_OFF + 640)  											// 16 words : 4 font bits -> 4 byte mask
+#define T4_PAL_OFF 		(T4_LUT_OFF + 64)  											// 16 x 6 words of TMDS symbols
+#define T4_BMP_OFF 		(T4_PAL_OFF + 384)  											// 640 x 200 x 4 bits = 320 bytes a line
+//		t4[0] lignes, [1] cycles total, [2] max, [3] depliage, [4] composition, [5] encodage, [6] reserve,
+//		[7] variante (0 nouvelle voie, 1 voie actuelle du mode 3, 2 sans composition), [8] stress (1 : toute cellule pleine),
+//		[9] lignes 16 bpp, [10] cycles 16 bpp, [11] max 16 bpp, [12] lignes de la voie 1, [13] cycles voie 1, [14] max voie 1
+volatile uint32_t t4[16];
+static inline uint32_t _T4Now(void) { return systick_hw->cvr & 0xFFFFFF; }
+static inline uint32_t _T4Dt(uint32_t a,uint32_t b) { return (a - b) & 0xFFFFFF; }  		// SysTick counts down
+
 // ***************************************************************************************
 //
 //                      Configuration for DVI
@@ -407,8 +425,46 @@ static void __not_in_flash_func(_encode_loop)(void) {
 			const uint8_t *glyphs = T80Grid() + (y >> 3) * T80_COLS;  				// are buffer ADDRESSES (seen on the board, essai 2389c3fc).
 			const uint32_t *planes = T80Planes() + (y >> 3) * T80_ROW_WORDS;
 			const uint8_t *fontLine = T80HostArea() + 2048 + (y & 7) * 256;
+			if (t4[7] != 1) {  														// T-163 : voie 640 x 16 couleurs (essai)
+				uint32_t c0 = _T4Now();
+				uint8_t *g = graphicsMemory;
+				uint32_t *idx = (uint32_t *)(g + T4_IDX_OFF);
+				const uint32_t *lut = (const uint32_t *)(g + T4_LUT_OFF);
+				const uint32_t *src = (const uint32_t *)(g + T4_BMP_OFF + y * 320);
+				for (int i = 0;i < 80;i++) {  											// 4 octets = 8 pixels -> 8 indices
+					uint32_t w = *src++;
+					*idx++ = ((w >> 4) & 15) | ((w & 15) << 8) | (((w >> 12) & 15) << 16) | (((w >> 8) & 15) << 24);
+					*idx++ = ((w >> 20) & 15) | (((w >> 16) & 15) << 8) | ((w >> 28) << 16) | (((w >> 24) & 15) << 24);
+				}
+				uint32_t c1 = _T4Now();
+				if (t4[7] != 2) {
+					uint32_t *dst = (uint32_t *)(g + T4_IDX_OFF);
+					const uint8_t *attrs = T80Attrs() + (y >> 3) * T80_COLS;
+					bool stress = t4[8] != 0;
+					for (int col = 0;col < T80_COLS;col++) {
+						uint32_t fb = stress ? 0x55 : fontLine[glyphs[col]];
+						if (fb == 0) { dst += 2;continue; }
+						uint32_t ink = (attrs[col] & 15) * 0x01010101u;
+						uint32_t m0 = lut[fb & 15],m1 = lut[fb >> 4];
+						dst[0] = (dst[0] & ~m0) | (ink & m0);
+						dst[1] = (dst[1] & ~m1) | (ink & m1);
+						dst += 2;
+					}
+				}
+				uint32_t c2 = _T4Now();
+				tmds_encode_palette_data((const uint32_t *)(g + T4_IDX_OFF),(const uint32_t *)(g + T4_PAL_OFF),tmdsbuf,pixwidth,4);
+				uint32_t c3 = _T4Now();
+				uint32_t tot = _T4Dt(c0,c3);
+				t4[0] = t4[0] + 1;t4[1] = t4[1] + tot;if (tot > t4[2]) t4[2] = tot;
+				t4[3] = t4[3] + _T4Dt(c0,c1);t4[4] = t4[4] + _T4Dt(c1,c2);t4[5] = t4[5] + _T4Dt(c2,c3);
+				queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
+				continue;
+			}
+			uint32_t d0 = _T4Now();
 			for (int plane = 0;plane < 3;plane++)
 				tmds_encode_font_2bpp(glyphs, planes + plane * T80_PLANE_WORDS, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
+			uint32_t dt1 = _T4Dt(d0,_T4Now());
+			t4[12] = t4[12] + 1;t4[13] = t4[13] + dt1;if (dt1 > t4[14]) t4[14] = dt1;
 			queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 			continue;
 		} else if (currentMode->bitsPerPixel == 1) {  								// 1 bpp : one encode into channel 0 ; the lanes point to it
@@ -418,9 +474,12 @@ static void __not_in_flash_func(_encode_loop)(void) {
 			for (uint n = 3 * words_per_channel;n > 0;n--) *p++ = TMDS_BLACK_WORD;
 		} else {  																	// 16 bpp half resolution (pixel doubled) as PicoDVI does.
 			const uint32_t *pix = (const uint32_t *)scanbuf;
+			uint32_t e0 = _T4Now();
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 0 * words_per_channel, pixwidth / 2, DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 1 * words_per_channel, pixwidth / 2, DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 2 * words_per_channel, pixwidth / 2, DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
+			uint32_t et = _T4Dt(e0,_T4Now());
+			t4[9] = t4[9] + 1;t4[10] = t4[10] + et;if (et > t4[11]) t4[11] = et;
 		}
 		queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 		if (scanbuf != 0) queue_add_blocking_u32(&dvi0.q_colour_free, &scanbuf);
@@ -434,6 +493,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 // ***************************************************************************************
 
 static void __not_in_flash_func(core1_main)() {
+	systick_hw->rvr = 0x00FFFFFF;systick_hw->cvr = 0;systick_hw->csr = 5;  		// T-163 : cycle counter of core 1 (essai)
 	while (1) {  																// Restartable : a mode switch parks core 1 here
 		dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);                      	// Enable IRQs
 		dvi_start(&dvi0);                                           			// Start DVI library
@@ -727,11 +787,24 @@ static void _T80PrepareEncoder(void) {
 	tmdsFontLut = (const uint32_t *)host;
 }
 
+//		T-163 (essai) : motif de test 640 x 200 x 16, grille pleine, palette 16 couleurs, table des masques.
+static void _T4Prepare(void) {
+	uint8_t *g = graphicsMemory;
+	uint32_t *lut = (uint32_t *)(g + T4_LUT_OFF);
+	for (int n = 0;n < 16;n++) { uint32_t m = 0;for (int k = 0;k < 4;k++) if (n & (1 << k)) m |= 0xFFu << (8 * k);lut[n] = m; }
+	static const uint32_t pal24[16] = { 0x000000,0x0000AA,0x00AA00,0x00AAAA,0xAA0000,0xAA00AA,0xAA5500,0xAAAAAA,
+		0x555555,0x5555FF,0x55FF55,0x55FFFF,0xFF5555,0xFF55FF,0xFFFF55,0xFFFFFF };
+	tmds_setup_palette24_symbols(pal24,(uint32_t *)(g + T4_PAL_OFF),16);
+	uint32_t seed = 12345;
+	for (int i = 0;i < 64000;i++) { seed = seed * 1664525u + 1013904223u;g[T4_BMP_OFF + i] = (seed >> 24) & 0xFF; }
+	for (int i = 0;i < T80_CELLS;i++) { T80Grid()[i] = 'A' + (i % 26);T80Attrs()[i] = (uint8_t)(1 + (i % 15)); }
+}
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.
 	if (restart) DVIStopMode();
-	if (gMode->bitsPerPixel == 0) _T80PrepareEncoder();  							// T-131 : mode 3
+	if (gMode->bitsPerPixel == 0) { _T80PrepareEncoder();_T4Prepare(); }  		// T-131 : mode 3 (T-163 : + essai)
 	screenMemory = gMode->graphicsMemory;                             			// Remember where drawing.
 	currentMode = gMode;
 	currentTiming = t;
