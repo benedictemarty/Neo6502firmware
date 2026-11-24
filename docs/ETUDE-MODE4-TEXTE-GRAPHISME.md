@@ -237,3 +237,31 @@ d'où un surcoût fixe par appel. **Le mode 0 plein laisse donc environ 5 250 cy
 
 Non vérifié par moi : l'aspect de l'écran. Limites (non essayées) : le curseur souris ne se dessine que sur l'image (le rappel écrit dans la
 moitié gauche du tampon, utile seulement à gauche), pas d'API, pas d'émulation, pas de recoloration par 5,32.
+
+## 14. Prototype du mode mixte par segments (2026-11-24, demande de la session Ozmoo, option A de bmarty « go »)
+
+Branche `essai-mixte` (`a68c4e18`), jamais livrée. Généralise §12 et §13 : mode 0 (320 × 240 × 8, pixels doublés) et grille de texte **80 × 30**
+(cellules 8 × 8 = 4 pixels logiques, voie du mode 3). Par rangée de cellules, une liste de segments (début, fin, texte ou graphisme, 8 au plus) ;
+le rappel ne convertit que les segments graphiques (par mots de 4 pixels) ; l'encodeur code d'abord les segments texte (cellules arrondies à 8,
+le débordement est recouvert par les segments graphiques) puis les segments graphiques ; les plans de couleur d'une rangée sont fabriqués par
+l'encodeur au changement de rangée (120 o au lieu de 3 600). Numéro de ligne dans le mot 160 du tampon de pixels. Inspiré aussi de la lecture du
+pilote DVI d'Eliott65 (cœur 0 qui dessine d'avance, cœur 1 qui encode) : **non repris**, une réserve de lignes coûterait environ 10 Ko de tas.
+
+| Cycles du cœur 1 par ligne (moyennes ; budget 16 000) | Rappel | Encodage | Total | Lignes en retard |
+|---|---|---|---|---|
+| 2 segments (image à gauche, texte à droite : Journey) | 2 281 | 8 768 | **11 049** | 0 |
+| 4 segments | 1 897 | 10 119 | **12 015** | 0 |
+| 8 segments (pire cas essayé) | 2 007 | 14 294 | **16 301** | 0 (à la limite) |
+| tout en texte | 452 | 8 071 | 8 523 | 0 |
+| mode 0 plein (même carte) | 3 105 | 7 365 | 10 470 | 0 |
+
+Fabrication des plans : environ 4 300 cycles sur la première ligne de chaque rangée (538 en moyenne), réductible (table attribut → nibbles,
+fabrication limitée aux cellules texte). **Limite documentée proposée : 4 segments par rangée** (8 est au bord du budget). `publishRejects` 0, `irqGapLong` 0.
+
+**Mémoire (le vrai problème)** : la grille 80 × 30 coûte 4 800 o (glyphes, attributs) + 4 096 (table et police, lues par le cœur 1 donc en RAM)
++ 120 (plans de rangée) + 750 (segments) : **10 896 o de RAM statique de plus (245 100 au total), tas total 17 044 o, libre environ 5,3 Ko** : la table de
+7 676 o de 41,2 ne tiendrait plus pendant un dessin. Pistes : héberger les 4 800 o de grille dans la banque RAM `$80` de 8 Ko (déjà dans le .bss, à
+condition qu'Ozmoo ne s'en serve pas : à demander), réduire les segments à 4 par rangée (−360 o), ou 41,2 avec une table plus petite (non étudié).
+
+Non vérifié par moi : l'aspect de l'écran (motif de test par SWD dans la VRAM, texte aux couleurs CGA fixes). Pas d'API, pas d'émulation, pas de
+recoloration par 5,32, curseur souris sur toute la ligne mais invisible sur les cellules de texte.
