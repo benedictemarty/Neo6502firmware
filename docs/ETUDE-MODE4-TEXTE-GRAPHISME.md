@@ -213,3 +213,27 @@ les compteurs ne prouvent pas que l'affichage est correct. Dans une version livr
 
 **Confirmation visuelle (2026-11-24)** : bmarty a regardé le moniteur après la correction des couleurs : « c'est bon ». Les bandes de texte 80 colonnes
 de 8 pixels sous le graphisme du mode 0 s'affichent correctement sur la carte (branche `essai-bandes-80col`, firmware d'essai, non livré).
+
+## 13. Prototype image à gauche, texte à droite (2026-11-24, « proto »)
+
+Branche `essai-colonnes`, jamais livrée. Mode 0 ; pour chaque ligne, l'encodeur 16 bits encode **160 pixels** (moitié gauche, doublés = 320 pixels
+physiques) dans la première moitié de chaque voie TMDS, et l'encodeur de texte du mode 3 encode **40 colonnes** (320 pixels physiques) dans la
+seconde moitié (décalage de 160 mots par voie). Le rappel de ligne ne convertit que 160 pixels et glisse le numéro de ligne dans la partie
+inutilisée du tampon (mot 150). Texte 40 × 30 (CGA fixes), 8 296 o statiques (tas 18 964 o). Image de test : motif écrit par SWD dans la moitié
+gauche de la VRAM. Cycles du cœur 1 par SysTick, comparés à la même carte avec les colonnes coupées (commutation par SWD) :
+
+| Cycles par ligne (budget 16 000) | Colonnes | Mode 0 plein |
+|---|---|---|
+| Rappel de ligne (moyenne ; maximum) | 1 900 ; 3 058 | 3 392 ; 3 500 |
+| Encodage (moyenne ; maximum) | 7 783 ; 7 884 | 7 363 ; 7 884 |
+| dont image / texte | 3 553 / 4 200 | – |
+| **Total moyen** | **9 683** | **10 754** |
+
+Lignes en retard (`lateTotal`), lignes perdues (`publishRejects`), `irqGapLong` : **0**. `irqGapMax` 64 µs, `cbDurMax` 14 µs.
+
+Ma prédiction de 9 400 cycles (§ colonnes, proportionnelle à la largeur) était proche : le texte coûte 4 200 pour 40 colonnes et non 3 730,
+d'où un surcoût fixe par appel. **Le mode 0 plein laisse donc environ 5 250 cycles par ligne** (16 000 − 10 754, moyennes), chiffre plus précis que les
+4 500 du § 11, qui supposait un rappel de 4 000 cycles au maximum.
+
+Non vérifié par moi : l'aspect de l'écran. Limites (non essayées) : le curseur souris ne se dessine que sur l'image (le rappel écrit dans la
+moitié gauche du tampon, utile seulement à gauche), pas d'API, pas d'émulation, pas de recoloration par 5,32.
