@@ -756,7 +756,10 @@ static void _T80PrepareEncoder(void) {
 static void _BandSetCell(int x,int y,uint8_t glyph,uint8_t attr) {
 	uint32_t cell = x + y * T80_COLS;
 	bandData[BAND_GLYPHS + cell] = glyph;bandData[BAND_ATTRS + cell] = attr;
-	uint8_t ink222 = T80Colour(attr & 15),paper222 = T80Colour(attr >> 4);
+	//		Couleurs CGA fixes en RGB222 : la palette n'est pas encore initialisee quand la bande est preparee (GFXDefaultPalette
+	//		passe apres RNDStartMode0) et le texte sortait noir sur noir (essai du 2026-11-24).
+	static const uint8_t cga222[16] = { 0,2,8,10,32,34,36,42,21,23,29,31,53,55,61,63 };
+	uint8_t ink222 = cga222[attr & 15],paper222 = cga222[attr >> 4];
 	uint32_t shift = (cell & 7) * 4;
 	uint32_t *w = (uint32_t *)(bandData + BAND_PLANES) + (cell >> 3);
 	for (int plane = 0;plane < 3;plane++) {
