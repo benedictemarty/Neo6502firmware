@@ -179,3 +179,29 @@ La composition mesurée à 640 pixels (1 900 à 4 760 cycles) est du même ordre
 **Reste vrai (non mesuré)** : coût de la composition RGB565 à 320 pixels ; variante B (bandes de texte à 640 pixels, § « écran coupé en
 bandes » : chaque ligne est encodée par une seule voie, donc 7 458 cycles pour une ligne de texte, déjà mesurés comme voie actuelle du
 mode 3).
+
+## 12. Prototype des bandes de texte 80 colonnes (2026-11-24, « go proto »)
+
+Branche `essai-bandes-80col`, jamais livrée (commit sur cette branche). Le mode 0 garde son graphisme 320 × 240 ; **les 32 dernières lignes
+(4 rangées de 8 lignes) sont du texte 80 colonnes** de la voie du mode 3 (`tmds_encode_font_2bpp`, cellules 8 × 8, encre et papier de
+16 couleurs par cellule). Même timing (640 × 480p60, lignes doublées) pour les deux : le rappel de ligne publie, pour ces lignes, un
+jeton de ligne de texte au lieu du tampon de pixels et ne prépare pas la ligne ; l'encodeur reconnaît le jeton (valeur 1 à 32, les
+tampons sont des adresses). Données du texte (5 216 o) dans un tableau statique : la VRAM du mode 0 est entièrement utilisée et la console
+de NeoDOS la défile, une bande placée dans la VRAM serait écrasée.
+
+Résultats sur la carte :
+
+| Mesure | Résultat |
+|---|---|
+| Lignes en retard (`lateTotal`), lignes perdues (`publishRejects`), `irqGapLong`, `displayRestarts` | **0** au repos, **0** pendant `PERFSPR` (sprites, 60 s) |
+| Écart maximal entre deux lignes (`irqGapMax`), rappel maximal (`cbDurMax`) | 64 µs (inchangé), 18 µs |
+| `PERFSPR` avec la bande | 28 / 28 / 18 / 50 / 18 / 159 cs (sans bande : 28 / 28 / 17 / 50 / 18 / 158) |
+| Mise à jour en direct de la grille par le cœur 0 pendant l'affichage | 40 octets écrits sans ligne en retard |
+| Coût d'une ligne de texte | celui de la voie du mode 3 : 7 458 cycles (§ 11), inférieur à une ligne de pixels du mode 0 (7 349 + rappel) |
+
+**Non vérifié par moi** : l'aspect de l'écran (netteté du texte, raccord entre la dernière ligne de graphisme et la première de texte,
+déchirure lors d'une écriture du cœur 0). Je n'ai aucune capture HDMI ; seuls les compteurs du cœur 1 ont été lus. À regarder sur le moniteur.
+
+**Ce que le prototype n'est pas** : pas d'API (contenu fixé au démarrage, modifiable seulement par SWD), pas de réglage de la position ni du
+nombre de rangées, pas de recoloration par 5,32, pas d'émulation dans `neo` ni Phosphoneo, graphisme non réduit à 208 lignes (le dessin
+continue d'écrire dans les lignes cachées par la bande), +5 216 o de RAM statique (tas 22 592 o).
