@@ -210,3 +210,6 @@ continue d'écrire dans les lignes cachées par la bande), +5 216 o de RAM stati
 calculées d'après la palette avant que `GFXDefaultPalette` l'initialise (les plans de couleur lus par SWD étaient tous nuls) ; les compteurs
 du cœur 1 ne pouvaient pas le voir. Corrigé par une table CGA fixe (plans non nuls vérifiés par SWD, toujours 0 ligne en retard) ; **l'aspect de l'écran reste à confirmer par bmarty**. Leçon :
 les compteurs ne prouvent pas que l'affichage est correct. Dans une version livrable, 5,32 doit recolorer la bande comme `T80RecolourAll` en mode 3.
+
+**Confirmation visuelle (2026-11-24)** : bmarty a regardé le moniteur après la correction des couleurs : « c'est bon ». Les bandes de texte 80 colonnes
+de 8 pixels sous le graphisme du mode 0 s'affichent correctement sur la carte (branche `essai-bandes-80col`, firmware d'essai, non livré).
