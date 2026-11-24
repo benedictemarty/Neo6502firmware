@@ -138,10 +138,44 @@ Conséquences, **par raisonnement et non par mesure** :
 | Texte transparent | Possible **à 640 pixels** : le texte est composé dans le tampon d'indices (encre/papier = entrées 0-15) avant l'encodeur à palette, donc papier transparent pixel par pixel, ce qui était impossible en RGB565 à 320. |
 | Étapes par ligne | 1. dépliage des demi-octets en octets (320 → 640 o) ; 2. composition de 80 cellules ; 3. encodeur à palette sur 640 pixels. |
 | Palette | 16 entrées de 24 bits (`tmds_setup_palette24_symbols`) : plus de couleurs possibles qu'en RGB222, mais 16 à l'écran en même temps. |
-| Temps | Borne haute déduite de `vista-palette` : 1 280 pixels tiennent dans une ligne de 720p30 (environ 16 500 cycles à 372 MHz), donc 640 pixels devraient coûter au plus la moitié, à ramener à 252 MHz et au rappel de ligne du cœur 1. **Aucune mesure sur la carte.** |
+| Temps | Ma déduction à partir de `vista-palette` (640 pixels « au plus la moitié » d'une ligne de 720p30) était **fausse** : voir le § 11, mesuré sur la carte. |
 | Dessin et sprites | Le dessin et les sprites du mode 2 (4 bits par pixel) passent par la voie « packed » pixel par pixel, **lente et en OU exclusif** (`_SPXORDrawPacked`) : c'est la contrepartie principale de cette variante. |
 | Risques | interpolateurs du RP2040 partagés avec l'encodeur 16 bpp (T-101, à vérifier) ; code et table de palette en RAM (cœur 1 jamais en flash, `make test-coeur1`) ; marge de RAM statique de 196 o. |
 
 **Première mesure** (remplace celle du § 7 si cette variante est retenue) : firmware d'essai, 640 × 200 × 4 bits statique, encodeur à palette
 sur 640 pixels + composition de 80 cellules pleines, relever `RNDCallbackMax`, les lignes en retard et les cycles par ligne, comme pour
 l'essai c1086931 du mode 3 (7 400 cycles sur 16 000).
+
+## 11. Mesures sur la carte (2026-11-24)
+
+Firmware d'essai, branche `essai-mode4-640x16` (commit `365e5aac`, jamais livré) : le mode 3 affiche un 640 × 200 × 16 couleurs
+fixe (motif pseudo-aléatoire) plus la grille de texte composée dans les indices, encodé par `tmds_encode_palette_data`. Cycles du
+cœur 1 relevés par SysTick à chaque ligne, lus par SWD (RP3Sonde) sur 3 s (environ 14 400 lignes par seconde). Carte flashée avec ce
+firmware, puis remise sur le build 0.16.113 normal.
+
+| Mesure | Cycles par ligne (budget 16 000) |
+|---|---|
+| **Étalonnage** : voie actuelle du mode 3 (`tmds_encode_font_2bpp`) | moyenne **7 458**, maximum 7 973 (valeur connue : 7 400, l'instrument est cohérent) |
+| **Mode 0 : encodeur 16 bits** (NeoDOS à l'invite) | moyenne **7 349**, maximum 7 397 (46 %) |
+| Nouvelle voie, texte réel (grille presque vide) | moyenne **22 486**, maximum 26 951 |
+| Nouvelle voie, texte « stress » (80 cellules pleines) | moyenne **25 290** |
+| dont dépliage des demi-octets en octets | environ 3 650 |
+| dont composition du texte | environ 1 900 (grille presque vide) à 4 760 (80 cellules pleines) |
+| dont **encodeur à palette sur 640 pixels** | environ **16 900 à lui seul** : plus que le budget de la ligne |
+
+Compteurs de lignes après les essais : `lateTotal` = 592 316, `publishRejects` = 121 617 (lignes perdues), `displayRestarts` = 0.
+
+**Conclusion : la voie « 640 × 200 × 16 couleurs + texte 80 colonnes » est écartée** avec l'encodeur à palette de PicoDVI à 252 MHz :
+l'encodeur seul dépasse le budget, il faudrait le rendre plus de 2,3 fois plus rapide pour y loger aussi le dépliage et le texte.
+Coût secondaire relevé : le code de cet encodeur (boucles en `scratch_x`) ajoute **1 040 o** de RAM statique (235 244 contre 234 204),
+au-dessus de la limite de 234 400.
+
+**Ce que la mesure donne aussi pour la variante A (mode 4, 320 × 200 + texte 40 × 25)** : le mode 0 consomme 7 349 cycles par ligne
+dans l'encodeur, auxquels s'ajoute le rappel de ligne (maximum observé 16 µs sur toute la durée de l'essai, mode 0 compris, soit environ
+4 000 cycles à 252 MHz). La marge restante est donc de l'ordre de **4 500 cycles par ligne** (déduction : 16 000 − 7 349 − 4 000).
+La composition mesurée à 640 pixels (1 900 à 4 760 cycles) est du même ordre de grandeur que cette marge : la variante A est
+**serrée, pas exclue** ; sa composition, à 320 pixels RGB565, n'a pas été mesurée. Même remarque pour T-162.
+
+**Reste vrai (non mesuré)** : coût de la composition RGB565 à 320 pixels ; variante B (bandes de texte à 640 pixels, § « écran coupé en
+bandes » : chaque ligne est encodée par une seule voie, donc 7 458 cycles pour une ligne de texte, déjà mesurés comme voie actuelle du
+mode 3).
