@@ -99,14 +99,14 @@ static const uint8_t egaColours[16][3] = {
     {0x55,0x55,0x55},{0x55,0x55,0xFF},{0x55,0xFF,0x55},{0x55,0xFF,0xFF},{0xFF,0x55,0x55},{0xFF,0x55,0xFF},{0xFF,0xFF,0x55},{0xFF,0xFF,0xFF}
 };
 
-static uint8_t _IPLoadPalette(uint8_t channel,uint32_t address) {
+static uint8_t _IPLoadPalette(uint8_t channel,uint32_t address,uint8_t base) {
     uint8_t n = 0,rgb[14 * 3];
     uint16_t cnt = 1;
     if (FISSeekFileHandle(channel,address) != 0 || FISReadFileHandleBuffer(channel,&n,&cnt) != 0 || cnt != 1) return IP_ERR_IO;
     if (n > 14) n = 14;                                                         // « buggy Arthur pictures »
     cnt = n * 3;
     if (cnt != 0 && (FISReadFileHandleBuffer(channel,rgb,&cnt) != 0 || cnt != n * 3)) return IP_ERR_IO;
-    for (uint8_t i = 0;i < n;i++) GFXSetPalette(i + 2,rgb[i * 3],rgb[i * 3 + 1],rgb[i * 3 + 2]);
+    for (uint8_t i = 0;i < n;i++) if ((unsigned)base + i + 2 < 256) GFXSetPalette(base + i + 2,rgb[i * 3],rgb[i * 3 + 1],rgb[i * 3 + 2]);
     return IP_ERR_OK;
 }
 
@@ -116,25 +116,26 @@ static uint8_t _IPLoadPalette(uint8_t channel,uint32_t address) {
 //
 // ***************************************************************************************
 
-struct IPDrawing { int x,y;uint16_t width;uint8_t options,transparent;bool useTransparent; };
+struct IPDrawing { int x,y;uint16_t width;uint8_t options,transparent,base;bool useTransparent; };
 
 static void _IPPut(const struct IPDrawing *d,int px,int py,uint8_t c) {
     if (d->useTransparent && c == d->transparent) return;
     if (d->options & IP_OPT_HALF) { if (px & 1) return;px >>= 1; }
     int sx = d->x + px,sy = d->y + py;
     if (sx < 0 || sy < 0 || sx >= (int)gMode.xGSize || sy >= (int)gMode.yGSize) return;
-    GFXWritePixelRaw(sx,sy,c);
+    GFXWritePixelRaw(sx,sy,(uint8_t)(c + d->base));
 }
 
-uint8_t IPDraw(uint8_t channel,uint16_t number,int16_t x,int16_t y,uint8_t options) {
+uint8_t IPDraw(uint8_t channel,uint16_t number,int16_t x,int16_t y,uint8_t options,uint8_t base) {
+    if (!(options & IP_OPT_BASE)) base = 0;
     if (gMode.bitsPerPixel != 4 && gMode.bitsPerPixel != 8) return IP_ERR_PARAM;
     struct IPEntry e;
     uint8_t err = _IPFind(channel,number,&e);
     if (err != IP_ERR_OK) return err;
     if (e.data == 0 || e.width == 0 || e.height == 0) return IP_ERR_NODATA;
-    if (options & IP_OPT_EGA) for (uint8_t i = 0;i < 16;i++) GFXSetPalette(i,egaColours[i][0],egaColours[i][1],egaColours[i][2]);
+    if (options & IP_OPT_EGA) for (uint8_t i = 0;i < 16;i++) if ((unsigned)base + i < 256) GFXSetPalette(base + i,egaColours[i][0],egaColours[i][1],egaColours[i][2]);
     if ((options & IP_OPT_PALETTE) && e.palette != 0) {
-        err = _IPLoadPalette(channel,e.palette);
+        err = _IPLoadPalette(channel,e.palette,base);
         if (err != IP_ERR_OK) return err;
     }
     uint16_t *table = (uint16_t *)malloc(IP_ENTRIES * sizeof(uint16_t));
@@ -145,7 +146,7 @@ uint8_t IPDraw(uint8_t channel,uint16_t number,int16_t x,int16_t y,uint8_t optio
     if (FISSeekFileHandle(channel,e.data) != 0) err = IP_ERR_IO;
     src->channel = channel;src->len = src->pos = 0;src->acc = 0;src->nbits = 0;
 
-    struct IPDrawing d = { x,y,e.width,options,(uint8_t)(e.flags >> 12),(options & IP_OPT_TRANSP) && (e.flags & 1) };
+    struct IPDrawing d = { x,y,e.width,options,(uint8_t)(e.flags >> 12),base,(options & IP_OPT_TRANSP) && (e.flags & 1) };
     uint32_t total = (uint32_t)e.width * e.height,index = 0;
     int width = 9;
     unsigned next = IP_FIRST;

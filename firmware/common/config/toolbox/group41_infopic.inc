@@ -27,7 +27,7 @@ GROUP 41 Infocom Pictures
         error, 3 no such picture.
 
     FUNCTION 2 Draw Picture
-        *DERROR = IPDraw(DPARAMS[0],DSPGetInt16(DPARAMS,1),(int16_t)DSPGetInt16(DPARAMS,3),(int16_t)DSPGetInt16(DPARAMS,5),DPARAMS[7]);
+        *DERROR = IPDraw(DPARAMS[0],DSPGetInt16(DPARAMS,1),(int16_t)DSPGetInt16(DPARAMS,3),(int16_t)DSPGetInt16(DPARAMS,5),DPARAMS[7],DPARAMS[8]);
     DOCUMENTATION
         Trinity (T-164). Decodes picture number Parameters:1,2 of the file open on channel Parameter:0 and draws it
         on the draw page (Function 5,11) with its top left corner at the signed screen position X Parameters:3,4,
@@ -36,7 +36,10 @@ GROUP 41 Infocom Pictures
         divide the width by 2 (even columns kept, for the 640 pixel wide EGA pictures) ; bit 1 : if the picture
         is transparent do not write its transparent colour ; bit 2 : load the picture palette (MG1) in the palette
         entries 2 to n+1 (n at most 14 ; entries 0 and 1 are not changed) ; bit 3 : load the 16 standard EGA
-        colours in the palette entries 0 to 15 (done before bit 2). The file is read from the address of the
+        colours in the palette entries 0 to 15 (done before bit 2) ; bit 4 (T-165) : base colour, Parameter:8 : the colours 0-15 of the
+        file are written as base + 0 to 15 and the palette of bit 2 goes to the entries base + 2 to base + n + 1 (bit 3 to base + 0 to 15),
+        entries past 255 are not set ; the transparent colour is still the file's own index. Each picture can thus keep its own
+        palette bank in the 256 entries of mode 0 and mode 4. The file is read from the address of the
         picture, piece by piece : only an 8 KB table is taken in the heap for the call (graphics memory $90 and
         the 6502 RAM are not touched). The 6502 is held while it decodes. Errors : 1 bad channel, not a picture
         file or mode not supported, 2 storage error, 3 no such picture, 4 entry without data, 5 no heap for the

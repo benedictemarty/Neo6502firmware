@@ -40,7 +40,7 @@ start:
   lda #2                    ; mode 2
   sta API_PARAMETERS
   lda #9
-  ldx #1
+  ldx #5
   jsr api
   lda #0                    ; canal 0 : fichier EG1
   sta API_PARAMETERS

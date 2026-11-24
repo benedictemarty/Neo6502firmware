@@ -24,6 +24,13 @@
 
 const uint8_t *T80Font(void) { return fontCP437_8x8; }
 
+//		T-165 : the same functions serve mode 4, whose grid is 80 x 30 in the RAM bank (mixed.h) and has no planes (core 1 builds
+//		the planes of the row it encodes from the attributes and mixColour).
+static inline bool _Mixed(void) { return gMode.modeID == GFX_MODE_MIXED; }
+static inline int _Rows(void) { return _Mixed() ? MIX_ROWS : T80_ROWS; }
+static inline uint8_t *_Glyphs(void) { return _Mixed() ? mixGrid : T80Grid(); }
+static inline uint8_t *_Attrs(void) { return _Mixed() ? mixGrid + MIX_CELLS : T80Attrs(); }
+
 // ***************************************************************************************
 //
 //									Write / invert a cell
@@ -31,6 +38,7 @@ const uint8_t *T80Font(void) { return fontCP437_8x8; }
 // ***************************************************************************************
 
 static void _T80SetPlanes(uint32_t cell) {  												// Planes of a cell from its attribute
+	if (_Mixed()) return;
 	uint8_t attr = T80Attrs()[cell];
 	uint8_t ink222 = T80Colour(attr & 15),paper222 = T80Colour(attr >> 4);
 	uint32_t shift = (cell & 7) * 4;
@@ -43,13 +51,14 @@ static void _T80SetPlanes(uint32_t cell) {  												// Planes of a cell from
 }
 
 void T80PutCell(int x,int y,uint8_t glyph,uint8_t attr) {
-	if (x < 0 || y < 0 || x >= T80_COLS || y >= T80_ROWS) return;
+	if (x < 0 || y < 0 || x >= T80_COLS || y >= _Rows()) return;
 	uint32_t cell = x + y * T80_COLS;
-	T80Grid()[cell] = glyph;T80Attrs()[cell] = attr;
+	_Glyphs()[cell] = glyph;_Attrs()[cell] = attr;
 	_T80SetPlanes(cell);
 }
 
 void T80RecolourAll(void) {
+	if (_Mixed()) { MixRecolour();return; }
 	for (uint32_t cell = 0;cell < T80_CELLS;cell++) _T80SetPlanes(cell);
 }
 
@@ -62,24 +71,24 @@ void T80RecolourAll(void) {
 // ***************************************************************************************
 
 uint8_t T80Write(int x,int y,uint8_t attr,const uint8_t *text,int length) {
-	if (x < 0 || y < 0 || x >= T80_COLS || y >= T80_ROWS) return 1;
+	if (x < 0 || y < 0 || x >= T80_COLS || y >= _Rows()) return 1;
 	for (int i = 0;i < length && x + i < T80_COLS;i++) T80PutCell(x + i,y,text[i],attr);
 	return 0;
 }
 
 uint8_t T80Clear(int x1,int y1,int x2,int y2,uint8_t attr) {
-	if (x1 < 0 || y1 < 0 || x2 >= T80_COLS || y2 >= T80_ROWS || x1 > x2 || y1 > y2) return 1;
+	if (x1 < 0 || y1 < 0 || x2 >= T80_COLS || y2 >= _Rows() || x1 > x2 || y1 > y2) return 1;
 	for (int y = y1;y <= y2;y++)
 		for (int x = x1;x <= x2;x++) T80PutCell(x,y,' ',attr);
 	return 0;
 }
 
 uint8_t T80Scroll(int top,int bottom,int count,uint8_t attr) {
-	if (top < 0 || bottom >= T80_ROWS || top > bottom) return 1;
+	if (top < 0 || bottom >= _Rows() || top > bottom) return 1;
 	int rows = bottom - top + 1,n = (count < 0) ? -count : count;
 	if (n >= rows) return T80Clear(0,top,T80_COLS - 1,bottom,attr);
 	if (n == 0) return 0;
-	uint8_t *g = T80Grid(),*a = T80Attrs();
+	uint8_t *g = _Glyphs(),*a = _Attrs();
 	int moved = (rows - n) * T80_COLS;
 	if (count > 0) {  																	// Up : rows top+n.. move to top..
 		memmove(g + top * T80_COLS,g + (top + n) * T80_COLS,moved);
@@ -93,8 +102,26 @@ uint8_t T80Scroll(int top,int bottom,int count,uint8_t attr) {
 	return (count > 0) ? T80Clear(0,bottom - n + 1,T80_COLS - 1,bottom,attr) : T80Clear(0,top,T80_COLS - 1,top + n - 1,attr);
 }
 
+//		5,45 (T-165) : scroll a rectangle of cells (columns x1-x2, rows y1-y2) up (count > 0) or down, the cells freed
+//		become spaces in the attribute ; the cells outside the columns do not move (a text window beside an image).
+uint8_t T80ScrollRect(int x1,int y1,int x2,int y2,int count,uint8_t attr) {
+	if (x1 < 0 || y1 < 0 || x2 >= T80_COLS || y2 >= _Rows() || x1 > x2 || y1 > y2) return 1;
+	int rows = y2 - y1 + 1,n = (count < 0) ? -count : count,w = x2 - x1 + 1;
+	if (n >= rows) return T80Clear(x1,y1,x2,y2,attr);
+	if (n == 0) return 0;
+	uint8_t *g = _Glyphs(),*a = _Attrs();
+	for (int i = 0;i < rows - n;i++) {                                                  // Row by row, in the order that never reads a row already overwritten
+		int dst = (count > 0) ? y1 + i : y2 - i,src = (count > 0) ? dst + n : dst - n;
+		memmove(g + dst * T80_COLS + x1,g + src * T80_COLS + x1,w);
+		memmove(a + dst * T80_COLS + x1,a + src * T80_COLS + x1,w);
+		if (!_Mixed()) for (int x = x1;x <= x2;x++) _T80SetPlanes(dst * T80_COLS + x);
+	}
+	return (count > 0) ? T80Clear(x1,y2 - n + 1,x2,y2,attr) : T80Clear(x1,y1,x2,y1 + n - 1,attr);
+}
+
 void T80InvertCell(int x,int y) {
-	if (x < 0 || y < 0 || x >= T80_COLS || y >= T80_ROWS) return;
+	if (x < 0 || y < 0 || x >= T80_COLS || y >= _Rows()) return;
+	if (_Mixed()) { uint8_t *a = _Attrs() + x + y * T80_COLS;*a = (uint8_t)((*a << 4) | (*a >> 4));return; }
 	uint32_t cell = x + y * T80_COLS,shift = (cell & 7) * 4;
 	uint32_t *w = T80Planes() + (cell >> 3);
 	for (int plane = 0;plane < 3;plane++) {

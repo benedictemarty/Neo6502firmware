@@ -112,31 +112,31 @@ GROUP 5 Graphics
     FUNCTION 13 Text Write
         {
             uint16_t a = DSPGetInt16(DPARAMS,3);
-            *DERROR = (!GFXIsTextMode() || a >= 0xFF00) ? 1 : T80Write(DPARAMS[0],DPARAMS[1],DPARAMS[2],cpuMemory+a+1,cpuMemory[a]);
+            *DERROR = (!GFXHasTextGrid() || a >= 0xFF00) ? 1 : T80Write(DPARAMS[0],DPARAMS[1],DPARAMS[2],cpuMemory+a+1,cpuMemory[a]);
         }
     DOCUMENTATION
-        Mode 3 only (Trinity T-131, 0.16.89 : the interface asked by NeoBBS). Writes the length-prefixed string at
+        Modes 3 and 4 (Trinity T-131, 0.16.89 : the interface asked by NeoBBS ; mode 4 : T-165, 80x25). Writes the length-prefixed string at
         Parameters:3,4 in the text grid from column Parameter:0, row Parameter:1, with the attribute Parameter:2 (paper in
         the high nibble, ink in the low one : palette entries 0-15, as a PC attribute). Every byte is a code page 437
         glyph, $00-$1F and $80-$FF included (box drawing, blocks...) : nothing is interpreted, no Latin-1 conversion.
         Clipped at the end of the row ; the console cursor does not move and the console memory is unchanged (a console
-        clear or scroll repaints what the console holds). Error if not in mode 3 or if the position is outside 80x25.
+        clear or scroll repaints what the console holds). Error if not in mode 3 or 4 or if the position is outside 80x25.
 
     FUNCTION 14 Text Scroll
         {
             int8_t n = (int8_t)DPARAMS[2];
-            *DERROR = GFXIsTextMode() ? T80Scroll(DPARAMS[0],DPARAMS[1],n,DPARAMS[3]) : 1;
+            *DERROR = GFXHasTextGrid() ? T80Scroll(DPARAMS[0],DPARAMS[1],n,DPARAMS[3]) : 1;
         }
     DOCUMENTATION
-        Mode 3 only (Trinity T-131). Scrolls the whole-width rows Parameter:0 (top) to Parameter:1 (bottom, included) by
+        Modes 3 and 4 (Trinity T-131 ; mode 4 : T-165). Scrolls the whole-width rows Parameter:0 (top) to Parameter:1 (bottom, included) by
         the signed count Parameter:2 : positive moves the text up (a terminal's line feed at the bottom of its scrolling
         region), negative moves it down. The rows freed are filled with spaces in the attribute Parameter:3. A count as
-        large as the region clears it. Error if not in mode 3 or if the rows are not 0 <= top <= bottom <= 24.
+        large as the region clears it. Error if not in mode 3 or 4 or if the rows are not 0 <= top <= bottom <= 24.
 
     FUNCTION 15 Text Clear
-        *DERROR = GFXIsTextMode() ? T80Clear(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],DPARAMS[4]) : 1;
+        *DERROR = GFXHasTextGrid() ? T80Clear(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],DPARAMS[4]) : 1;
     DOCUMENTATION
-        Mode 3 only (Trinity T-131). Fills the rectangle from column Parameter:0, row Parameter:1 to column Parameter:2,
+        Modes 3 and 4 (Trinity T-131 ; mode 4 : T-165). Fills the rectangle from column Parameter:0, row Parameter:1 to column Parameter:2,
         row Parameter:3 (included) with spaces in the attribute Parameter:4. Error if not in mode 3 or if the rectangle is
         empty or outside 80x25. The grid can be read back with 12,2 from $80:0000 : 2 000 glyph codes, 3 colour planes
         (3 x 1 000 bytes), then 2 000 attribute bytes at $80:1388.
@@ -282,3 +282,31 @@ GROUP 5 Graphics
         Returns in Parameters:0-3 the number of scanlines the display could not encode in time since the last mode
         change (Trinity T-32c, Function 5,40, diagnostic : these show as coloured streaks on the board ; 0 in the emulators). A
         counter that keeps growing while a program runs means the second core is starved.
+
+    FUNCTION 44 Set Cell Layer
+        *DERROR = MixSetCells(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],DPARAMS[4] & 1);
+    DOCUMENTATION
+        Mode 4 only (Trinity T-165, requested by the Ozmoo project). Mode 4 is the 320x240x256 graphics of mode 0 with an
+        80 x 25 grid of 8x8 text cells (the mode 3 format : CP437 glyph, attribute paper << 4 | ink, palette entries 0-15,
+        written by 5,13 to 5,15, 5,45 and read or written as page $91 by 12,2 / 12,3 : glyph codes from offset 0 (row by
+        row, 80 per row), attributes from offset 2 000). Each cell shows either its text or the 4x8 graphics pixels
+        under it (8 physical pixels wide) : never both. Function 5,44 chooses, for the rectangle of cells from column
+        Parameter:0, row Parameter:1 to column Parameter:2, row Parameter:3 (included), what is shown : Parameter:4 = 1 the
+        text, 0 the graphics. On entering mode 4 every cell shows the graphics (the console and the drawing functions
+        work as in mode 0) and the grid is spaces with the attribute $0F. Limit : a row may hold at most 4 segments
+        (runs of cells of the same kind, so image | text | image | text) : more is refused (error 2, nothing changed) because
+        each segment costs the video encoder time (measured : 12 015 of 16 000 cycles per line at 4 segments). Errors :
+        1 not in mode 4 or the rectangle is outside 80x25, 2 more than 4 segments in a row. The grid and the video encoder's tables
+        (4 096 bytes) live in the RAM bank $80 (bytes 0-8095) while mode 4 is active : 1,18 / 1,22 / 1,26 reach the same memory, and
+        a program must not use that bank for anything else in mode 4 (writing it with 1,22 corrupts the display tables).
+
+    FUNCTION 45 Text Scroll Rect
+        {
+            int8_t n = (int8_t)DPARAMS[4];
+            *DERROR = GFXHasTextGrid() ? T80ScrollRect(DPARAMS[0],DPARAMS[1],DPARAMS[2],DPARAMS[3],n,DPARAMS[5]) : 1;
+        }
+    DOCUMENTATION
+        Modes 3 and 4 (Trinity T-165). Scrolls the rectangle of cells from column Parameter:0, row Parameter:1 to column
+        Parameter:2, row Parameter:3 (included) by the signed count Parameter:4 : positive moves the text up, negative
+        down ; the cells outside the columns do not move. The cells freed are spaces in the attribute Parameter:5. A count
+        as large as the rectangle clears it. Errors : 1 not in mode 3 or 4 or the rectangle is outside the grid.

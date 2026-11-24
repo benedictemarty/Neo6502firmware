@@ -52,6 +52,8 @@ void RNDSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 //		Colour (0xRGB, 4 bits each) of a displayed pixel. T-131 : mode 3 has no pixels, its 640x200 picture comes
 //		from the text grid (text80.cpp), RGB222 levels 0-3 shown as 0, 5, 10, 15 as on the board (00/55/AA/FF).
 static int RNDDisplayColour(int x,int y) {
+	uint8_t m;
+	if (MixTextPixel(x,y,&m)) return (((m >> 4) & 3) * 5 << 8) | (((m >> 2) & 3) * 5 << 4) | ((m & 3) * 5);  	// T-165 : mode 4, a text cell
 	if (!GFXIsTextMode()) return palette[GFXReadDisplayPixelRaw(x,y)];
 	uint8_t c = T80PixelRGB222(x,y);
 	return (((c >> 4) & 3) * 5 << 8) | (((c >> 2) & 3) * 5 << 4) | ((c & 3) * 5);

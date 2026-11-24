@@ -29,6 +29,9 @@ uint8_t *BLTGetRealAddress(uint8_t page,uint16_t address) {  					// Public : Qu
 			pos = ((page - 0x80) << 16) | address;  								// Offset in video RAM
 			if (pos < 320*240) ptr = graphicsMemory + pos; 							// Position in bitmap RAM
 			break;
+		case MIX_GRID_PAGE: 														// T-165 : mode 4 text grid (glyphs, then attributes)
+			if (GFXIsMixedMode() && address < MIX_GRID_BYTES) ptr = mixGrid + address;
+			break;
 		case 0x90: 																	// Graphic storage RAM
 			if (address < GFX_MEMORY_SIZE) ptr = gfxObjectMemory + address;
 			break;
@@ -613,6 +616,7 @@ static const uint8_t *_BLTAreaEnd(uint8_t page) {
 		case 0x80:
 		case 0x81: return graphicsMemory + MAXGRAPHICSMEMORY;
 		case 0x90: return gfxObjectMemory + GFX_MEMORY_SIZE;
+		case MIX_GRID_PAGE: return GFXIsMixedMode() ? mixGrid + MIX_GRID_BYTES : NULL;  	// T-165
 	}
 	if (page >= BANK_PAGE && page < BANK_PAGE + BANK_COUNT) return (const uint8_t *)BNKStorage(page - BANK_PAGE) + BANK_SIZE;
 	return NULL;

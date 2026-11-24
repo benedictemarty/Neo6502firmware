@@ -135,7 +135,10 @@ build: prelim always
 #				2026-11-20 (T-154) : 236300 -> 235400. Groupes 7, 8, 11, 12 ajoutés à DSPRare : DSPHandler 4 596 -> 3 648 o ; RAM 236 080 -> 235 136 (-944 o), tas libre 27 008 o.
 #				2026-11-20 (T-155) : 235400 -> 234400. Réservation à l'usage dans le tas : paramData de MOSExecute (-256), sBuffer de la liaison série (-256),
 #				LfnBuf de FatFs (FF_USE_LFN 3, -512). RAM 235 136 -> 234 120 (-1 016 o), tas libre 28 024 o.
-RAM_LIMIT ?= 234400
+#				2026-11-24 (T-165, mode 4 mixte, demande Ozmoo) : 234400 -> 236300. Tables de segments (4 par rangée), masque de cellules, plans de
+#				rangée, tampon de ligne et code de l'encodeur en RAM : RAM 234 204 -> 236 260 (+2 056 o), tas 27 940 -> 25 884 o. La grille 80 x 25
+#				(4 000 o) et la table et la police de l'encodeur (4 096 o) sont dans la banque RAM $80, pas dans le tas.
+RAM_LIMIT ?= 236300
 
 size: always
 	arm-none-eabi-size -A $(BINARY).elf | grep -E "^\.(text|rodata|data|bss) "

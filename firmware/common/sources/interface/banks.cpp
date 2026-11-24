@@ -34,6 +34,8 @@ static const uint8_t *_BNKRam(void) {
     return ramBank;
 }
 
+uint8_t *BNKRamBank(void) { return (uint8_t *)_BNKRam(); }                      // T-165 : mode 4 keeps its text grid here
+
 // 1,18 : copy bank into the window (BANK_NONE : forget the mapping, the window keeps its content)
 uint8_t BNKSelect(uint8_t bank,uint16_t address) {
     if (bank == BANK_NONE) { currentBank = BANK_NONE;return 0; }

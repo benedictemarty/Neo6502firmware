@@ -43,6 +43,7 @@ void T80RecolourAll(void);  															// Planes from the attributes (5,32)
 uint8_t T80Write(int x,int y,uint8_t attr,const uint8_t *text,int length);  			// 5,13 : raw CP437, clipped at the row end
 uint8_t T80Scroll(int top,int bottom,int count,uint8_t attr);  						// 5,14 : rows top-bottom, count > 0 up
 uint8_t T80Clear(int x1,int y1,int x2,int y2,uint8_t attr);  							// 5,15 : rectangle of spaces
+uint8_t T80ScrollRect(int x1,int y1,int x2,int y2,int count,uint8_t attr);  		// 5,45 (T-165) : a rectangle of cells, up if count > 0
 void T80InvertCell(int x,int y);  														// Swap ink and paper (text cursor)
 uint8_t T80Glyph(uint8_t ch);  															// Console code (Latin-1) -> CP437 glyph
 uint8_t T80Colour(uint8_t index);  														// Palette entry -> RGB222 (rrggbb)

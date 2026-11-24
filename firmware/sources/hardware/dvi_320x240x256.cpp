@@ -55,6 +55,22 @@ const uint32_t *tmdsFontLut;  													// Read by the encoder (RAM copy)
 }
 #define T80_TEXT_LINES 	(T80_ROWS * 8)  												// 200 logical lines
 
+//		T-165 : mode 4 (mixed.h) = mode 0 + grid of 80 x 25 text cells, each cell text OR graphics. Per row, a few segments
+//		(mixRun*, set by core 0 : MixSetCells) ; the callback converts only the graphics segments, the encoder codes the text
+//		segments (cells rounded to 8, the overshoot is covered by the graphics segments) then the graphics segments. The colour
+//		planes of a row are built here when the row changes, from the attributes and mixColour (RAM tables, no call into flash).
+//		Prototype and measures : branch essai-mixte, docs/ETUDE-MODE4-TEXTE-GRAPHISME.md section 14. The line number goes in word
+//		160 of the pixel buffer (past the 320 pixels).
+#include "hardware/structs/systick.h"
+static uint32_t mixPlane[3][10];  													// planes of the current row (blue, green, red)
+static uint32_t mixPlaneRow = 0xFFFFFFFF;
+static volatile bool mixOn = false;
+//		t4[0] rappels, [1] cycles, [2] max ; [3] encodages, [4] cycles, [5] max ; [6] cycles image, [7] cycles texte
+volatile uint32_t t4[16];
+static uint32_t cbCyc0 = 0;
+static inline uint32_t _T4Now(void) { return systick_hw->cvr & 0xFFFFFF; }
+static inline uint32_t _T4Dt(uint32_t a,uint32_t b) { return (a - b) & 0xFFFFFF; }  		// SysTick counts down
+
 // ***************************************************************************************
 //
 //                      Configuration for DVI
@@ -93,6 +109,7 @@ static const struct DisplayTiming displayTimings[GFX_MODE_COUNT] = {
 	{ &dvi_timing_720x480p_60hz, 1, 480, 65 },  									// Mode 1 : 350 lines centred in 480
 	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 2 (T-90) : as mode 0, 4 bpp lines
 	{ &dvi_timing_640x480p_60hz, 2, 240, 20 },  									// Mode 3 (T-131) : 200 text lines centred in 240
+	{ &dvi_timing_640x480p_60hz, 2, 240, 0 },  										// Mode 4 (T-165) : as mode 0, text cells over it
 };
 
 // ***************************************************************************************
@@ -238,7 +255,8 @@ uint32_t __not_in_flash_func(RNDIrqGapLong)(void) { return irqGapLong; }
 uint32_t __not_in_flash_func(RNDCallbackMax)(void) { return cbDurMax; }
 void RNDTimingReset(void) { cbDurMax = 0;irqGapMax = 0;irqGapLong = 0; }  		// T-90 : 5,41 $FF clears them too
 
-#define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; } while (0)
+#define CB_END() do { uint32_t d = timer_hw->timerawl - cbEntry; if (d < 10000 && d > cbDurMax) cbDurMax = d; \
+		uint32_t cc = _T4Dt(cbCyc0,_T4Now()); t4[0] = t4[0] + 1;t4[1] = t4[1] + cc;if (cc > t4[2]) t4[2] = cc; } while (0)
 
 static void __not_in_flash_func(_scanline_callback)(void) {
 	uint32_t scanline;
@@ -275,6 +293,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		}
 		lastEntry = now;
 		cbEntry = now;  												// T-77 : duree du callback, mesuree en sortie
+		cbCyc0 = _T4Now();  											// T-163 : meme chose en cycles
 	}
 	if (dvi0.late_scanline_ctr) lateTotal = lateTotal + 1;  						// T-57 : sampled every line, on core 1
 	while (queue_try_remove_u32(&dvi0.q_colour_free, &scanline));           	// Remove unused buffers from queue
@@ -335,6 +354,25 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 		//		multiple of four and both buffers are word aligned, so this is safe.
 		//		Alignment is guaranteed : both buffers are declared word aligned and the stride
 		//		of every colour mode is a multiple of four, so no run time check is needed.
+		if (mixOn) {  															// T-163 : segments graphiques seulement
+			const uint32_t *srcRow = (const uint32_t *)screenPos;
+			uint32_t *dstRow = (uint32_t *)scan;
+			int row = y >> 3;
+			for (int r = 0;r < mixRunN[row];r++) {
+				if (mixRunT[row][r]) continue;
+				int w0 = mixRunA[row][r],w1 = mixRunB[row][r];  					// cellules = mots de 4 pixels
+				const uint32_t *src32 = srcRow + w0;
+				uint32_t *dst32 = dstRow + 2 * w0;
+				for (int i = w1 - w0;i > 0;i--) {
+					uint32_t w = *src32++;
+					uint32_t p0 = palette[w & 0xFF],p1 = palette[(w >> 8) & 0xFF];
+					uint32_t p2 = palette[(w >> 16) & 0xFF],p3 = palette[w >> 24];
+					*dst32++ = p0 | (p1 << 16);
+					*dst32++ = p2 | (p3 << 16);
+				}
+			}
+			scan += currentMode->xGSize;screenPos += currentMode->xGSize;
+		} else {
 		int pixels = currentMode->xGSize;
 		const uint32_t *src32 = (const uint32_t *)screenPos;
 		uint32_t *dst32 = (uint32_t *)scan;
@@ -346,6 +384,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			*dst32++ = p2 | (p3 << 16);
 		}
 		scan += pixels;screenPos += pixels;
+		}
 	} else {  																		// 4 bpp : two pixels per byte, high nibble first.
 		//		T-90 : one word read = 8 pixels (as T-58 does for 8 bpp) : 40 reads and 160 writes
 		//		per 320 pixel line instead of 160 and 320 byte by byte. Byte k of the little endian
@@ -370,6 +409,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			cursline++;
 		}
 	}
+	if (mixOn) ((uint32_t *)SCANBUF(lineCounter))[160] = (uint32_t)y;  			// T-163 : ligne pour l'encodeur
 	CB_END();
 }
 
@@ -404,11 +444,11 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
 		if (currentMode->bitsPerPixel == 0 && scanbuf != 0 && scanbuf <= T80_TEXT_LINES) {  	// T-131 : mode 3. Only a line
 			uint32_t y = scanbuf - 1;  												// token is text : DVIStart queues two junk lines that
-			const uint8_t *glyphs = T80Grid() + (y >> 3) * T80_COLS;  				// are buffer ADDRESSES (seen on the board, essai 2389c3fc).
+			const uint8_t *glyphs = T80Grid() + (y >> 3) * T80_COLS,*fontLine = T80HostArea() + 2048 + (y & 7) * 256;  // are buffer ADDRESSES (seen on the board, essai 2389c3fc).
 			const uint32_t *planes = T80Planes() + (y >> 3) * T80_ROW_WORDS;
-			const uint8_t *fontLine = T80HostArea() + 2048 + (y & 7) * 256;
+			uint32_t pstride = T80_PLANE_WORDS;
 			for (int plane = 0;plane < 3;plane++)
-				tmds_encode_font_2bpp(glyphs, planes + plane * T80_PLANE_WORDS, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
+				tmds_encode_font_2bpp(glyphs, planes + plane * pstride, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
 			queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 			continue;
 		} else if (currentMode->bitsPerPixel == 1) {  								// 1 bpp : one encode into channel 0 ; the lanes point to it
@@ -418,9 +458,50 @@ static void __not_in_flash_func(_encode_loop)(void) {
 			for (uint n = 3 * words_per_channel;n > 0;n--) *p++ = TMDS_BLACK_WORD;
 		} else {  																	// 16 bpp half resolution (pixel doubled) as PicoDVI does.
 			const uint32_t *pix = (const uint32_t *)scanbuf;
+			uint32_t e0 = _T4Now(),e1,e2;
+			if (mixOn) {  															// T-163 : segments texte puis graphiques
+				uint32_t y = pix[160],row = y >> 3;
+				if (row != mixPlaneRow) {  											// plans de couleur de la rangee
+					mixPlaneRow = row;
+					const uint8_t *at = mixGrid + MIX_CELLS + row * MIX_COLS;
+					for (int w = 0;w < 10;w++) {
+						uint32_t pb = 0,pg = 0,pr = 0;
+						for (int k = 0;k < 8;k++) {
+							uint8_t a2 = *at++;
+							uint32_t ink = mixColour[a2 & 15],paper = mixColour[a2 >> 4];
+							pb |= ((ink & 3) | ((paper & 3) << 2)) << (4 * k);
+							pg |= (((ink >> 2) & 3) | (((paper >> 2) & 3) << 2)) << (4 * k);
+							pr |= (((ink >> 4) & 3) | (((paper >> 4) & 3) << 2)) << (4 * k);
+						}
+						mixPlane[0][w] = pb;mixPlane[1][w] = pg;mixPlane[2][w] = pr;
+					}
+				}
+				e1 = _T4Now();
+				const uint8_t *glyphs = mixGrid + row * MIX_COLS;
+				const uint8_t *fontLine = mixHost + 2048 + (y & 7) * 256;
+				int n = mixRunN[row];
+				for (int r = 0;r < n;r++) {
+					if (!mixRunT[row][r]) continue;
+					int a8 = mixRunA[row][r] & ~7,b8 = (mixRunB[row][r] + 7) & ~7;
+					for (int plane = 0;plane < 3;plane++)
+						tmds_encode_font_2bpp(glyphs + a8, &mixPlane[plane][a8 >> 3], tmdsbuf + plane * words_per_channel + a8 * 4, (b8 - a8) * 8, fontLine);
+				}
+				for (int r = 0;r < n;r++) {
+					if (mixRunT[row][r]) continue;
+					int a = mixRunA[row][r],b = mixRunB[row][r];
+					tmds_encode_data_channel_16bpp(pix + 2 * a, tmdsbuf + 0 * words_per_channel + 4 * a, 4 * (b - a), DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
+					tmds_encode_data_channel_16bpp(pix + 2 * a, tmdsbuf + 1 * words_per_channel + 4 * a, 4 * (b - a), DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
+					tmds_encode_data_channel_16bpp(pix + 2 * a, tmdsbuf + 2 * words_per_channel + 4 * a, 4 * (b - a), DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
+				}
+				e2 = _T4Now();
+				t4[6] = t4[6] + _T4Dt(e0,e1);t4[7] = t4[7] + _T4Dt(e1,e2);
+			} else {
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 0 * words_per_channel, pixwidth / 2, DVI_16BPP_BLUE_MSB,  DVI_16BPP_BLUE_LSB );
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 1 * words_per_channel, pixwidth / 2, DVI_16BPP_GREEN_MSB, DVI_16BPP_GREEN_LSB);
 			tmds_encode_data_channel_16bpp(pix, tmdsbuf + 2 * words_per_channel, pixwidth / 2, DVI_16BPP_RED_MSB,   DVI_16BPP_RED_LSB  );
+			}
+			uint32_t et = _T4Dt(e0,_T4Now());
+			t4[3] = t4[3] + 1;t4[4] = t4[4] + et;if (et > t4[5]) t4[5] = et;
 		}
 		queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 		if (scanbuf != 0) queue_add_blocking_u32(&dvi0.q_colour_free, &scanbuf);
@@ -434,6 +515,7 @@ static void __not_in_flash_func(_encode_loop)(void) {
 // ***************************************************************************************
 
 static void __not_in_flash_func(core1_main)() {
+	systick_hw->rvr = 0x00FFFFFF;systick_hw->cvr = 0;systick_hw->csr = 5;  		// T-163 : cycles of core 1
 	while (1) {  																// Restartable : a mode switch parks core 1 here
 		dvi_register_irqs_this_core(&dvi0, DMA_IRQ_1);                      	// Enable IRQs
 		dvi_start(&dvi0);                                           			// Start DVI library
@@ -727,11 +809,27 @@ static void _T80PrepareEncoder(void) {
 	tmdsFontLut = (const uint32_t *)host;
 }
 
+//		T-165 : encoder table and font (core 0, before the display starts).
+static void _MixPrepare(void) {
+	uint8_t *host = mixHost;
+	memcpy(host,palettised_1bpp_tables,2048);
+	const uint8_t *font = T80Font();
+	for (int row = 0;row < 8;row++)
+		for (int c = 0;c < 256;c++) {
+			uint8_t b = font[c * 8 + row],r = 0;
+			for (int k = 0;k < 8;k++) r |= ((b >> k) & 1) << (7 - k);
+			host[2048 + row * 256 + c] = r;
+		}
+	tmdsFontLut = (const uint32_t *)host;
+}
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.
 	if (restart) DVIStopMode();
+	mixOn = false;  																// T-163 (essai)
 	if (gMode->bitsPerPixel == 0) _T80PrepareEncoder();  							// T-131 : mode 3
+	else if (gMode->modeID == GFX_MODE_MIXED) { _MixPrepare();mixOn = true; }
 	screenMemory = gMode->graphicsMemory;                             			// Remember where drawing.
 	currentMode = gMode;
 	currentTiming = t;

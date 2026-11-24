@@ -27,6 +27,7 @@ const struct GraphicsModeDescriptor gfxModes[GFX_MODE_COUNT] = {
 	{ 720,350, 1,  90, 80,25, 9,14, 1, 65 },  									// 1 : Hercules text 80x25 (9x14) / graphics 720x348, timing 720x480
 	{ 320,240, 4, 160, 53,30, 6,8,  0, 0 },  									// 2 : T-90, 320x240x16, two pages of 38 400 (mode 0 timing)
 	{ 640,200, 0,   0, 80,25, 8,8,  0, 20 },  									// 3 : T-131, colour text 80x25 in 8x8 cells, no pixels (text80.cpp)
+	{ 320,240, 8, 320, 53,30, 6,8,  0, 0 },  									// 4 : T-165, mode 0 + 80x30 text cells shown instead of the pixels, cell by cell (mixed.cpp)
 };
 
 static void GFXInitialiseMode(int mode) {
@@ -78,6 +79,14 @@ int GFXIsTextMode(void) {  														// T-131
 	return gMode.bitsPerPixel == 0;
 }
 
+int GFXIsMixedMode(void) {  													// T-165
+	return gMode.modeID == GFX_MODE_MIXED;
+}
+
+int GFXHasTextGrid(void) {  													// T-165
+	return gMode.bitsPerPixel == 0 || gMode.modeID == GFX_MODE_MIXED;
+}
+
 int GFXIsPackedMode(void) {
 	return gMode.bitsPerPixel != 8;
 }
@@ -119,6 +128,7 @@ uint8_t GFXReadPixelRaw(int x,int y) {
 
 int GFXSetMode(int Mode) {
 	if (Mode < 0 || Mode >= GFX_MODE_COUNT || !RNDModeSupported(Mode)) return 1; 	// Unknown or not displayable here.
+	if (Mode == GFX_MODE_MIXED) MixInit();  									// T-165 : grid in the RAM bank, every cell graphic
 	GFXInitialiseMode(Mode); 													// Initialise the mode
 	RNDStartMode0(&gMode); 					 									// Start it (renderer reads the descriptor fields)
 	RNDSetDisplayPage(gMode.displayMemory);
@@ -154,7 +164,7 @@ void GFXDefaultPalette(void) {
 
 void GFXSetPalette(uint8_t colour,uint8_t r,uint8_t g,uint8_t b) {
 	RNDSetPalette(colour,r,g,b);												// T-152 : the implementation keeps the 8-bit values (no copy here)
-	if (colour < 16 && GFXIsTextMode()) T80RecolourAll();  							// T-131 : the cells hold RGB222, recolour them
+	if (colour < 16 && GFXHasTextGrid()) T80RecolourAll();  							// T-131 : the cells hold RGB222, recolour them
 }
 
 // ***************************************************************************************
