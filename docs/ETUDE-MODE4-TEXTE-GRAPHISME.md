@@ -119,3 +119,29 @@ en retard (`RNDCallbackMax`, `RNDIrqGap*`, `RNDCtrlOverrun*`).
 T-162 (couche composée **de sprites**, gelée) vise la priorité sprite/fond, sous la même condition de marge du cœur 1. La mesure
 de l'étape 1 sert aux deux tickets ; si elle montre une marge, T-162 et T-163 pourraient partager le passage de composition
 dans le rappel de ligne.
+
+## 10. Variante « 640 × 200 × 16 couleurs + texte 80 × 25 » (question bmarty, 2026-11-24)
+
+Lecture de la demande : un graphisme 640 × 200 en 16 couleurs sous un texte 80 × 25 de cellules 8 × 8 (vrais 80 colonnes).
+Le mode 3 actuel refuse le dessin et NeoDOS/NeoBBS en dépendent : ce serait un **mode 4**, pas un changement du mode 3.
+
+**Correction du § 3.** J'y écartais le 640 natif en supposant un réencodage RGB565 non doublé. PicoDVI a un autre encodeur,
+`tmds_encode_palette_data` (`libdvi/tmds_encode.c`, même fichier que l'encodeur 16 bpp déjà utilisé par Trinity) : il lit **un octet
+d'indice par pixel** et sort les symboles TMDS par une table de palette (6 mots par entrée, interpolateurs), sans passer par le RGB565.
+Son exemple `vista-palette` encode **1 280 pixels par ligne** en 720p30 avec une palette de 256 entrées.
+
+Conséquences, **par raisonnement et non par mesure** :
+
+| Point | Analyse |
+|---|---|
+| Graphisme | 640 × 200 × 4 bits = 64 000 o ; grille 80 × 25 (glyphes + attributs 4 000 o) + police 2 048 o : **70 048 o sur 76 800** dans `graphicsMemory`. Les tampons de ligne gardent leur taille : 640 octets d'indice = 640 octets de RGB565 à 320 pixels. |
+| Texte transparent | Possible **à 640 pixels** : le texte est composé dans le tampon d'indices (encre/papier = entrées 0-15) avant l'encodeur à palette, donc papier transparent pixel par pixel, ce qui était impossible en RGB565 à 320. |
+| Étapes par ligne | 1. dépliage des demi-octets en octets (320 → 640 o) ; 2. composition de 80 cellules ; 3. encodeur à palette sur 640 pixels. |
+| Palette | 16 entrées de 24 bits (`tmds_setup_palette24_symbols`) : plus de couleurs possibles qu'en RGB222, mais 16 à l'écran en même temps. |
+| Temps | Borne haute déduite de `vista-palette` : 1 280 pixels tiennent dans une ligne de 720p30 (environ 16 500 cycles à 372 MHz), donc 640 pixels devraient coûter au plus la moitié, à ramener à 252 MHz et au rappel de ligne du cœur 1. **Aucune mesure sur la carte.** |
+| Dessin et sprites | Le dessin et les sprites du mode 2 (4 bits par pixel) passent par la voie « packed » pixel par pixel, **lente et en OU exclusif** (`_SPXORDrawPacked`) : c'est la contrepartie principale de cette variante. |
+| Risques | interpolateurs du RP2040 partagés avec l'encodeur 16 bpp (T-101, à vérifier) ; code et table de palette en RAM (cœur 1 jamais en flash, `make test-coeur1`) ; marge de RAM statique de 196 o. |
+
+**Première mesure** (remplace celle du § 7 si cette variante est retenue) : firmware d'essai, 640 × 200 × 4 bits statique, encodeur à palette
+sur 640 pixels + composition de 80 cellules pleines, relever `RNDCallbackMax`, les lignes en retard et les cycles par ligne, comme pour
+l'essai c1086931 du mode 3 (7 400 cycles sur 16 000).
