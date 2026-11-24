@@ -55,6 +55,19 @@ const uint32_t *tmdsFontLut;  													// Read by the encoder (RAM copy)
 }
 #define T80_TEXT_LINES 	(T80_ROWS * 8)  												// 200 logical lines
 
+//		T-163 (ESSAI BANDES, jamais livre) : mode 0 avec une bande de texte 80 colonnes (voie du mode 3) dans les dernieres
+//		lignes. Chaque ligne est encodee par UNE voie : texte (jeton 1..n) ou pixels (tampon). Donnees du texte : tableau statique
+//		(la VRAM est entierement utilisee par le mode 0 et la console de NeoDOS la defile).
+#define BAND_ROWS 		(4)  															// 4 rangees de 8 lignes
+#define BAND_START 		(240 - BAND_ROWS * 8)  										// premiere ligne de texte : 208
+#define BAND_GLYPHS 	(0)
+#define BAND_PLANES 	(BAND_ROWS * T80_COLS)  										// 320 : 3 plans de 40 mots
+#define BAND_ATTRS 		(BAND_PLANES + 3 * BAND_ROWS * T80_ROW_WORDS * 4)  			// 800
+#define BAND_HOST 		(BAND_ATTRS + BAND_ROWS * T80_COLS)  							// 1 120 : table 2 Ko + police 2 Ko
+#define BAND_BYTES 		(BAND_HOST + 4096)
+static uint8_t bandData[BAND_BYTES] __attribute__((aligned(4)));
+static volatile bool bandOn = false;
+
 // ***************************************************************************************
 //
 //                      Configuration for DVI
@@ -284,6 +297,8 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 			lineCounter >= currentTiming->yOffset + currentMode->yGSize) scanline = 0;
 	else if (currentMode->bitsPerPixel == 0)  										// T-131 : mode 3, the text line + 1 (1-200),
 		scanline = (uint32_t)(lineCounter - currentTiming->yOffset + 1);  			// decoded by the encoder loop
+	else if (bandOn && lineCounter - currentTiming->yOffset >= BAND_START)  			// T-163 : band of text lines (essai)
+		scanline = (uint32_t)(lineCounter - currentTiming->yOffset - BAND_START + 1);
 	if (!queue_try_add_u32(&dvi0.q_colour_valid, &scanline)) publishRejects = publishRejects + 1;  	// T-71 : NEVER block here (see above)
 
 	lineCounter++;               												// Adjust line and frame.
@@ -302,6 +317,7 @@ static void __not_in_flash_func(_scanline_callback)(void) {
 	if (currentMode->bitsPerPixel == 0) { CB_END();return; }  					// T-131 : mode 3, nothing to prepare
 	int y = (int)lineCounter - currentTiming->yOffset;  							// Framebuffer line to prepare (e.g. the other buffer)
 	if (y < 0 || y >= currentMode->yGSize) return;  								// Border : nothing to prepare.
+	if (bandOn && y >= BAND_START) { CB_END();return; }  							// T-163 : text band, nothing to prepare
 
 	if (currentMode->bitsPerPixel == 1) {  											// Mode 1 : word aligned copy of the packed line.
 		uint32_t *mono = monoLine[lineCounter & monoLineMask];
@@ -402,13 +418,22 @@ static void __not_in_flash_func(_encode_loop)(void) {
 		queue_remove_blocking_u32(&dvi0.q_tmds_free, &tmdsbuf);
 		uint pixwidth = dvi0.timing->h_active_pixels;
 		uint words_per_channel = pixwidth / DVI_SYMBOLS_PER_WORD;
-		if (currentMode->bitsPerPixel == 0 && scanbuf != 0 && scanbuf <= T80_TEXT_LINES) {  	// T-131 : mode 3. Only a line
+		if ((currentMode->bitsPerPixel == 0 || bandOn) && scanbuf != 0 && scanbuf <= T80_TEXT_LINES) {  	// T-131 : mode 3. Only a line
 			uint32_t y = scanbuf - 1;  												// token is text : DVIStart queues two junk lines that
-			const uint8_t *glyphs = T80Grid() + (y >> 3) * T80_COLS;  				// are buffer ADDRESSES (seen on the board, essai 2389c3fc).
-			const uint32_t *planes = T80Planes() + (y >> 3) * T80_ROW_WORDS;
-			const uint8_t *fontLine = T80HostArea() + 2048 + (y & 7) * 256;
+			const uint8_t *glyphs,*fontLine;const uint32_t *planes;uint32_t pstride;  // are buffer ADDRESSES (seen on the board, essai 2389c3fc).
+			if (bandOn) {  															// T-163 : band, own data
+				glyphs = bandData + BAND_GLYPHS + (y >> 3) * T80_COLS;
+				planes = (const uint32_t *)(bandData + BAND_PLANES) + (y >> 3) * T80_ROW_WORDS;
+				fontLine = bandData + BAND_HOST + 2048 + (y & 7) * 256;
+				pstride = BAND_ROWS * T80_ROW_WORDS;
+			} else {
+				glyphs = T80Grid() + (y >> 3) * T80_COLS;
+				planes = T80Planes() + (y >> 3) * T80_ROW_WORDS;
+				fontLine = T80HostArea() + 2048 + (y & 7) * 256;
+				pstride = T80_PLANE_WORDS;
+			}
 			for (int plane = 0;plane < 3;plane++)
-				tmds_encode_font_2bpp(glyphs, planes + plane * T80_PLANE_WORDS, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
+				tmds_encode_font_2bpp(glyphs, planes + plane * pstride, tmdsbuf + plane * words_per_channel, pixwidth, fontLine);
 			queue_add_blocking_u32(&dvi0.q_tmds_valid, &tmdsbuf);
 			continue;
 		} else if (currentMode->bitsPerPixel == 1) {  								// 1 bpp : one encode into channel 0 ; the lanes point to it
@@ -727,11 +752,51 @@ static void _T80PrepareEncoder(void) {
 	tmdsFontLut = (const uint32_t *)host;
 }
 
+//		T-163 (essai bandes) : table, police et contenu de la bande (par le coeur 0, affichage arrete ou non).
+static void _BandSetCell(int x,int y,uint8_t glyph,uint8_t attr) {
+	uint32_t cell = x + y * T80_COLS;
+	bandData[BAND_GLYPHS + cell] = glyph;bandData[BAND_ATTRS + cell] = attr;
+	uint8_t ink222 = T80Colour(attr & 15),paper222 = T80Colour(attr >> 4);
+	uint32_t shift = (cell & 7) * 4;
+	uint32_t *w = (uint32_t *)(bandData + BAND_PLANES) + (cell >> 3);
+	for (int plane = 0;plane < 3;plane++) {
+		uint32_t nib = (ink222 & 3) | ((paper222 & 3) << 2);
+		*w = (*w & ~(0xFu << shift)) | (nib << shift);
+		ink222 >>= 2;paper222 >>= 2;w += BAND_ROWS * T80_ROW_WORDS;
+	}
+}
+
+static void _BandPrepare(void) {
+	uint8_t *host = bandData + BAND_HOST;
+	memcpy(host,palettised_1bpp_tables,2048);
+	const uint8_t *font = T80Font();
+	for (int row = 0;row < 8;row++)
+		for (int c = 0;c < 256;c++) {
+			uint8_t b = font[c * 8 + row],r = 0;
+			for (int k = 0;k < 8;k++) r |= ((b >> k) & 1) << (7 - k);
+			host[2048 + row * 256 + c] = r;
+		}
+	tmdsFontLut = (const uint32_t *)host;
+	static const char *lines[BAND_ROWS] = {
+		"T-163 essai : bande de texte 80 colonnes reelles sous le graphisme du mode 0 (320 x 208)",
+		"0123456789 ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 +-*/=()[]{}<>",
+		"Encre et papier par cellule, 16 couleurs : chaque ligne est encodee par une seule voie",
+		"" };
+	for (int y = 0;y < BAND_ROWS;y++)
+		for (int x = 0;x < T80_COLS;x++) {
+			char ch = lines[y][0] ? lines[y][x] : 0;
+			if (y == 3) _BandSetCell(x,y,0xDB,(uint8_t)(((x / 5) & 15) << 4 | ((x / 5) & 15 ? 0 : 15)));  	// barre de couleurs
+			else _BandSetCell(x,y,ch ? (uint8_t)ch : ' ',(uint8_t)(0x00 | (y == 2 ? 14 : (y == 0 ? 15 : 10 + (x & 3)))));
+		}
+}
+
 void RNDStartMode0(struct GraphicsMode *gMode) {
 	const struct DisplayTiming *t = &displayTimings[gMode->modeID];
 	bool restart = isInitialised && t != currentTiming;  							// Timing or repeat changes : restart DVI.
 	if (restart) DVIStopMode();
+	bandOn = false;  																// T-163 (essai) : la bande n'existe qu'en mode 0
 	if (gMode->bitsPerPixel == 0) _T80PrepareEncoder();  							// T-131 : mode 3
+	else if (gMode->modeID == 0) { _BandPrepare();bandOn = true; }
 	screenMemory = gMode->graphicsMemory;                             			// Remember where drawing.
 	currentMode = gMode;
 	currentTiming = t;
