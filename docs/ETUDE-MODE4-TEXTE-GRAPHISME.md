@@ -205,3 +205,8 @@ déchirure lors d'une écriture du cœur 0). Je n'ai aucune capture HDMI ; seuls
 **Ce que le prototype n'est pas** : pas d'API (contenu fixé au démarrage, modifiable seulement par SWD), pas de réglage de la position ni du
 nombre de rangées, pas de recoloration par 5,32, pas d'émulation dans `neo` ni Phosphoneo, graphisme non réduit à 208 lignes (le dessin
 continue d'écrire dans les lignes cachées par la bande), +5 216 o de RAM statique (tas 22 592 o).
+
+**Correction (2026-11-24, après le retour de bmarty « je ne vois que A:\> »)** : la première version de la bande était **noire sur noir** : ses couleurs étaient
+calculées d'après la palette avant que `GFXDefaultPalette` l'initialise (les plans de couleur lus par SWD étaient tous nuls) ; les compteurs
+du cœur 1 ne pouvaient pas le voir. Corrigé par une table CGA fixe (plans non nuls vérifiés par SWD, toujours 0 ligne en retard) ; **l'aspect de l'écran reste à confirmer par bmarty**. Leçon :
+les compteurs ne prouvent pas que l'affichage est correct. Dans une version livrable, 5,32 doit recolorer la bande comme `T80RecolourAll` en mode 3.
