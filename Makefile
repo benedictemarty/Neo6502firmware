@@ -202,6 +202,14 @@ test-msc:
 	gcc -O1 -ffunction-sections -fdata-sections -Wl,--gc-sections -Itests/usb -I$(TUSB)/src tests/usb/test_msc.c -o build/usb/test_msc
 	build/usb/test_msc
 
+# T-168 : msc_recovery.cpp (réinitialisation d'une clé) sur PC, pile USB remplacée par des bouchons
+STOCKAGE = firmware/sources/hardware/storage
+test-recovery:
+	@[ -f "$(TUSB)/src/tusb.h" ] || { echo "test-recovery : PICO_TINYUSB_PATH (ou TUSB) à définir"; exit 1; }
+	@mkdir -p build/usb
+	g++ -O1 -Wall -Itests/usb -I$(TUSB)/src -I$(STOCKAGE) tests/usb/test_recovery.cpp $(STOCKAGE)/msc_recovery.cpp -o build/usb/test_recovery
+	build/usb/test_recovery
+
 test-msc-ancien:
 	$(MAKE) --no-print-directory test-msc TUSB=$(TUSB_ORIGINE)
 

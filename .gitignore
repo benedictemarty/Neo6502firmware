@@ -17,6 +17,8 @@ firmware/build/
 firmware/build.sh
 firmware/common/include/data/
 storage
+# Sources du firmware : le motif ci-dessus ne doit pas les masquer (T-168)
+!firmware/sources/hardware/storage
 storage/*
 *.neo
 *.elf

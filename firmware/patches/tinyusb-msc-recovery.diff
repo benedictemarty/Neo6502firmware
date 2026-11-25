@@ -1,0 +1,111 @@
+--- a/src/portable/raspberrypi/rp2040/hcd_rp2040.c
++++ b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+@@ -616,12 +616,36 @@
+   return false; // TODO not implemented yet
+ }
+ 
++// Trinity T-168 : drop the transfer queued or under way on EPX (control or bulk ; interrupt endpoints are not handled).
++// Stopping EPX under a transaction may lose a packet and leave the data toggles out of step : the caller must reset the
++// transport and the toggles afterwards (USB key : Reset Recovery).
+ bool hcd_edpt_abort_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr) {
+   (void)rhport;
+-  (void)dev_addr;
+-  (void)ep_addr;
+-  // TODO not implemented yet
+-  return false;
++
++  hw_endpoint_t *ep = edpt_find(dev_addr, ep_addr);
++  TU_VERIFY(ep && ep->interrupt_num == 0);
++
++  rp2usb_critical_enter();
++  if (ep == epx && ep->state == EPSTATE_ACTIVE) {
++    sie_stop_xfer();
++    usbh_dpram->epx_buf_ctrl = 0;
++    usb_hw_clear->buf_status = 1u;
++    usb_hw_clear->sie_status =
++      USB_SIE_STATUS_RX_TIMEOUT_BITS | USB_SIE_STATUS_TRANS_COMPLETE_BITS | USB_SIE_STATUS_STALL_REC_BITS;
++  #ifndef HAS_STOP_EPX_ON_NAK
++    epx_switch_request = false;
++  #endif
++    rp2usb_reset_transfer(ep);
++    hw_endpoint_t *next_ep = epx_next_pending(ep);
++    if (next_ep != NULL) {
++      epx_switch_ep(next_ep);
++    }
++  } else if (ep->state != EPSTATE_IDLE) {
++    rp2usb_reset_transfer(ep); // waiting for EPX : never started
++  }
++  rp2usb_critical_exit();
++
++  return true;
+ }
+ 
+ bool hcd_edpt_xfer(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr, uint8_t *buffer, uint16_t buflen) {
+@@ -724,13 +748,16 @@
+   return true;
+ }
+ 
++// Trinity T-168 : host side of a cleared halt, the endpoint starts again at DATA0 (it called panic()). The
++// CLEAR_FEATURE request to the device is up to the caller.
+ bool hcd_edpt_clear_stall(uint8_t rhport, uint8_t dev_addr, uint8_t ep_addr) {
+   (void)rhport;
+-  (void)dev_addr;
+-  (void)ep_addr;
+ 
+-  panic("hcd_clear_stall");
+-  // return true;
++  hw_endpoint_t *ep = edpt_find(dev_addr, ep_addr);
++  TU_VERIFY(ep);
++  ep->next_pid = 0;
++
++  return true;
+ }
+ 
+ #endif
+--- a/src/class/msc/msc_host.c
++++ b/src/class/msc/msc_host.c
+@@ -130,6 +130,22 @@
+   return !epin_busy && !epout_busy;
+ }
+ 
++// Trinity T-168 : give up the command under way (no completion callback) and free both bulk endpoints
++bool tuh_msc_abort(uint8_t daddr, uint8_t* itf_num, uint8_t* ep_in, uint8_t* ep_out) {
++  msch_interface_t* p_msc = get_itf(daddr);
++  TU_VERIFY(p_msc->configured);
++
++  p_msc->stage = MSC_STAGE_IDLE;
++  p_msc->complete_cb = NULL;
++  (void) tuh_edpt_abort_xfer(daddr, p_msc->ep_in); // false when the endpoint carries nothing
++  (void) tuh_edpt_abort_xfer(daddr, p_msc->ep_out);
++
++  *itf_num = p_msc->itf_num;
++  *ep_in = p_msc->ep_in;
++  *ep_out = p_msc->ep_out;
++  return true;
++}
++
+ //--------------------------------------------------------------------+
+ // PUBLIC API: SCSI COMMAND
+ //--------------------------------------------------------------------+
+@@ -367,7 +383,8 @@
+       // SCSI op is complete
+       p_msc->stage = MSC_STAGE_IDLE;
+       if (p_msc->trinity_failed) {
+-        csw->status = MSC_CSW_STATUS_FAILED; // Trinity T-167
++        // Trinity T-167, T-168 : a transport failure, not a command refused by the device : Reset Recovery is needed
++        csw->status = MSC_CSW_STATUS_PHASE_ERROR;
+       }
+       if (p_msc->complete_cb != NULL) {
+         tuh_msc_complete_data_t const cb_data = {
+--- a/src/class/msc/msc_host.h
++++ b/src/class/msc/msc_host.h
+@@ -58,6 +58,9 @@
+ // This function true after tuh_msc_mounted_cb() and false after tuh_msc_unmounted_cb()
+ bool tuh_msc_mounted(uint8_t dev_addr);
+ 
++// Trinity T-168 : give up the command under way ; returns the interface and endpoints for the Reset Recovery
++bool tuh_msc_abort(uint8_t dev_addr, uint8_t* itf_num, uint8_t* ep_in, uint8_t* ep_out);
++
+ // Check if the interface is currently ready or busy transferring data
+ bool tuh_msc_ready(uint8_t dev_addr);
+ 

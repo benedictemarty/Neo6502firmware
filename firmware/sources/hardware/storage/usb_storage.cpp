@@ -15,6 +15,7 @@
 #include "tusb.h"
 #include "ff.h"
 #include "diskio.h"
+#include "msc_recovery.h"
 
 //		T-54 : these two used to be indexed by the USB device address itself, but TinyUSB hands
 //		out addresses 1..CFG_TUH_DEVICE_MAX (address 0 is the enumeration one), so a key that
@@ -28,6 +29,8 @@
 static FATFS msc_fatfs_volumes[CFG_TUH_DEVICE_MAX];
 static volatile bool msc_volume_busy[CFG_TUH_DEVICE_MAX];
 static volatile bool msc_volume_failed[CFG_TUH_DEVICE_MAX];  					// T-34 : SCSI status of the last transfer
+static volatile bool msc_volume_broken[CFG_TUH_DEVICE_MAX];  					// T-168 : transport failure, to be recovered
+volatile uint32_t stoDiskRecoveries,stoDiskRecoveryFails;  						// T-168 : read over SWD
 
 static inline int mscSlot(uint8_t dev_addr) {  									// USB address -> array slot, or -1
 	int slot = (int)dev_addr - 1;
@@ -150,10 +153,27 @@ void HWBusServeBurst(void);
 //		(RES_ERROR, FatFs reports a disk error). ADR-0001 says 500 ms ; 2 s is used because the
 //		worst case of a WRITE on a real key has not been measured yet, and a write cut short can
 //		damage the file system : stoDiskWaitMaxUs records the longest wait so the limit can be
-//		set from a measurement. A transfer still pending after a timeout keeps its slot busy :
-//		the next accesses to that key are refused at once instead of piling up.
+//		set from a measurement.
+//		T-168 : after a timeout or a transport failure the transfer is given up and the key reset
+//		(msc_recovery.cpp) ; the access still fails, the next ones work again. If the key does not
+//		recover, it keeps its slot busy : the next accesses are refused at once instead of piling up.
 #define DISK_IO_TIMEOUT_US  (2000000)
 extern volatile uint32_t stoDiskWaitMaxUs,stoDiskTimeouts;  					// debugport.cpp
+
+void MSCRecoveryWait(void) {
+    tuh_task();
+    if (HWBusServeInWait()) HWBusServeBurst();
+}
+
+static void recoverKey(uint8_t dev_addr,int slot) {
+    msc_volume_busy[slot] = true;  											// No other access during the recovery
+    if (MSCResetRecovery(dev_addr)) {
+        stoDiskRecoveries = stoDiskRecoveries + 1;
+        msc_volume_busy[slot] = false;
+    } else {
+        stoDiskRecoveryFails = stoDiskRecoveryFails + 1;  						// Stays busy until the key is unmounted
+    }
+}
 
 static DRESULT wait_for_disk_io(uint8_t dev_addr) {                             // By device, slot = address - 1 (T-24, T-54)
     int slot = mscSlot(dev_addr);
@@ -168,11 +188,16 @@ static DRESULT wait_for_disk_io(uint8_t dev_addr) {                             
         }
         if (time_us_32() - t0 > DISK_IO_TIMEOUT_US) {
             stoDiskTimeouts = stoDiskTimeouts + 1;
+            recoverKey(dev_addr,slot);
             return RES_ERROR;
         }
     }
     uint32_t d = time_us_32() - t0;
     if (d > stoDiskWaitMaxUs) stoDiskWaitMaxUs = d;
+    if (msc_volume_broken[slot]) {
+        msc_volume_broken[slot] = false;
+        recoverKey(dev_addr,slot);
+    }
     return msc_volume_failed[slot] ? RES_ERROR : RES_OK;
 }
 
@@ -180,6 +205,7 @@ static bool disk_io_complete(uint8_t dev_addr, tuh_msc_complete_data_t const *cb
     int slot = mscSlot(dev_addr);
     if (slot >= 0) {
         msc_volume_failed[slot] = (cb_data->csw->status != 0);  					// T-34 : a refused command is an error
+        msc_volume_broken[slot] = (cb_data->csw->status == MSC_CSW_STATUS_PHASE_ERROR);  	// T-168
         msc_volume_busy[slot] = false;
     }
     return true;

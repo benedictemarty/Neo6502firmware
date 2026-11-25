@@ -32,3 +32,13 @@ else
     patch -p1 < "$HERE/tinyusb-data-seq.diff"
     echo "TinyUSB : correctif T-167 appliqué"
 fi
+# T-168 (2026-11-25) : a transfer that timed out kept the USB key busy until it was unplugged. Writes the transfer abort
+# and the data toggle reset of the RP2040 host (missing, or panic()) and an MSC abort, used by msc_recovery.cpp.
+# Applied after T-167.
+if grep -q "Trinity T-168" src/portable/raspberrypi/rp2040/hcd_rp2040.c; then
+    echo "TinyUSB : correctif T-168 déjà appliqué"
+else
+    git apply "$HERE/tinyusb-msc-recovery.diff" 2>/dev/null || \
+    patch -p1 < "$HERE/tinyusb-msc-recovery.diff"
+    echo "TinyUSB : correctif T-168 appliqué"
+fi
