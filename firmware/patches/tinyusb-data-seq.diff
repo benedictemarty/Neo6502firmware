@@ -1,0 +1,84 @@
+--- a/src/portable/raspberrypi/rp2040/hcd_rp2040.c
++++ b/src/portable/raspberrypi/rp2040/hcd_rp2040.c
+@@ -304,9 +304,29 @@
+   }
+ }
+ 
++// Trinity T-167 : data sequence errors seen since power up (read over SWD)
++volatile uint32_t trinity_usb_data_seq_errors;
++
+ static void __tusb_irq_path_func(hcd_rp2040_irq)(void) {
+   const uint32_t status = usb_hw->ints;
+ 
++  // Trinity T-167 : a data sequence error called panic("Data Seq Error") and froze the whole machine (Neo6502 board,
++  // 2026-11-25, during a read of a USB key). The EPX transfer under way now ends as failed. Handled first : the
++  // completion of that same transfer, pending in this status, must not report a success ; the other pending
++  // interrupts raise the handler again.
++  if (status & USB_INTS_ERROR_DATA_SEQ_BITS) {
++    usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
++    trinity_usb_data_seq_errors++;
++    if (epx->state == EPSTATE_ACTIVE) {
++      sie_stop_xfer();
++      epx_save_context(epx); // disarm the buffers, give back the data toggle of those not received
++      usb_hw_clear->buf_status = 1u;
++      usb_hw_clear->sie_status = USB_SIE_STATUS_TRANS_COMPLETE_BITS | USB_SIE_STATUS_RX_TIMEOUT_BITS;
++      xfer_complete_isr(epx, XFER_RESULT_FAILED, true);
++      return;
++    }
++  }
++
+   if (status & USB_INTS_HOST_CONN_DIS_BITS) {
+     uint8_t speed = dev_speed();
+     if (speed == SIE_CTRL_SPEED_DISCONNECT) {
+@@ -396,11 +416,6 @@
+     }
+   }
+   #endif
+-
+-  if (status & USB_INTS_ERROR_DATA_SEQ_BITS) {
+-    usb_hw_clear->sie_status = USB_SIE_STATUS_DATA_SEQ_ERROR_BITS;
+-    panic("Data Seq Error \n");
+-  }
+ }
+ 
+ void __tusb_irq_path_func(hcd_int_handler)(uint8_t rhport, bool in_isr) {
+--- a/src/class/msc/msc_host.c
++++ b/src/class/msc/msc_host.c
+@@ -61,6 +61,7 @@
+ 
+   // SCSI command data
+   uint8_t stage;
++  bool trinity_failed; // Trinity T-167 : a transfer of the command under way has failed
+   void* buffer;
+   tuh_msc_complete_cb_t complete_cb;
+   uintptr_t complete_arg;
+@@ -330,6 +331,19 @@
+   msc_cbw_t const * cbw = &epbuf->cbw;
+   msc_csw_t       * csw = &epbuf->csw;
+ 
++  // Trinity T-167 : the result of a transfer was ignored in the data and status stages, so a command cut short could be
++  // reported as passed (the status came from the device, or was left by the previous command). A failed command block
++  // ends the command at once (it asserted, and the completion callback never ran).
++  if (p_msc->stage == MSC_STAGE_CMD) {
++    p_msc->trinity_failed = false;
++  }
++  if (event == XFER_RESULT_FAILED) {
++    p_msc->trinity_failed = true;
++    if (p_msc->stage == MSC_STAGE_CMD) {
++      p_msc->stage = MSC_STAGE_STATUS;
++    }
++  }
++
+   switch (p_msc->stage) {
+     case MSC_STAGE_CMD:
+       // Must be Command Block
+@@ -352,6 +366,9 @@
+     case MSC_STAGE_STATUS:
+       // SCSI op is complete
+       p_msc->stage = MSC_STAGE_IDLE;
++      if (p_msc->trinity_failed) {
++        csw->status = MSC_CSW_STATUS_FAILED; // Trinity T-167
++      }
+       if (p_msc->complete_cb != NULL) {
+         tuh_msc_complete_data_t const cb_data = {
+             .cbw = cbw,

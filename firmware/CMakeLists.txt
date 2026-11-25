@@ -36,6 +36,13 @@ if(_tusb_t100 EQUAL -1)
     message(FATAL_ERROR "TinyUSB ${tinyusb_SOURCE_DIR} n'a pas le correctif T-100 : sh firmware/patches/apply-tinyusb.sh <copie dédiée à Trinity>")
 endif()
 
+file(READ ${tinyusb_SOURCE_DIR}/src/class/msc/msc_host.c _tusb_msc)
+string(FIND "${_tusb_hcd}" "Trinity T-167" _tusb_t167)
+string(FIND "${_tusb_msc}" "Trinity T-167" _tusb_t167_msc)
+if(_tusb_t167 EQUAL -1 OR _tusb_t167_msc EQUAL -1)
+    message(FATAL_ERROR "TinyUSB ${tinyusb_SOURCE_DIR} n'a pas le correctif T-167 : sh firmware/patches/apply-tinyusb.sh <copie dédiée à Trinity>")
+endif()
+
 pico_sdk_init()
 
 add_compile_options(-Wall -Werror -O2)

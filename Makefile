@@ -192,6 +192,19 @@ test-grappes-ancien:
 	cp $(FATFS)/ff.h $(FATFS)/diskio.h $(FATFS)/ffconf.h build/grappes/
 	$(MAKE) --no-print-directory test-grappes GRAPPES_FF=build/grappes/ff_ancien.c
 
+# T-167 : msc_host.c du TinyUSB du firmware (copie dédiée, corrigée par firmware/patches/apply-tinyusb.sh) : l'échec d'un
+# transfert doit donner une commande en échec. test-msc-ancien = contre-essai : le msc_host.c d'origine (TUSB_ORIGINE,
+# un TinyUSB 0.21.0 sans le correctif), qui doit ÉCHOUER.
+TUSB ?= $(PICO_TINYUSB_PATH)
+test-msc:
+	@[ -f "$(TUSB)/src/class/msc/msc_host.c" ] || { echo "test-msc : PICO_TINYUSB_PATH (ou TUSB) à définir"; exit 1; }
+	@mkdir -p build/usb
+	gcc -O1 -ffunction-sections -fdata-sections -Wl,--gc-sections -Itests/usb -I$(TUSB)/src tests/usb/test_msc.c -o build/usb/test_msc
+	build/usb/test_msc
+
+test-msc-ancien:
+	$(MAKE) --no-print-directory test-msc TUSB=$(TUSB_ORIGINE)
+
 # Outils carte (tests/api/outils/*.asm) : assemblés puis emballés en .NEO dans ~/neo-carte/cle-usb.
 # Une cible, parce que la 0.10.5 a corrigé late.asm sans pouvoir le reconstruire (routine cr retirée
 # par erreur, assemblage cassé) et que la clé a gardé des mois un binaire périmé.

@@ -23,3 +23,12 @@ else
     patch -p1 < "$HERE/tinyusb-int-ep-stale-num.diff"
     echo "TinyUSB : correctif T-137 appliqué"
 fi
+# T-167 (2026-11-25) : a data sequence error panicked ("Data Seq Error") and froze the machine ; the transfer now fails,
+# and the MSC class reports the failure of any transfer of a command (it ignored it). Applied after T-100 and T-137.
+if grep -q "Trinity T-167" src/portable/raspberrypi/rp2040/hcd_rp2040.c; then
+    echo "TinyUSB : correctif T-167 déjà appliqué"
+else
+    git apply "$HERE/tinyusb-data-seq.diff" 2>/dev/null || \
+    patch -p1 < "$HERE/tinyusb-data-seq.diff"
+    echo "TinyUSB : correctif T-167 appliqué"
+fi
