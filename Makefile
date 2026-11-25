@@ -156,14 +156,16 @@ MKFSFAT ?= $(shell command -v mkfs.fat || echo /usr/sbin/mkfs.fat)
 test-noms:
 	@mkdir -p build
 	gcc -O1 -c -I$(FATFS) $(FATFS)/ff.c -o build/noms_ff.o && gcc -O1 -c -I$(FATFS) $(FATFS)/ffunicode.c -o build/noms_ffunicode.o
+	gcc -O1 -c -I$(FATFS) $(FATFS)/ffsystem.c -o build/noms_ffsystem.o
 	g++ -O1 -Wall -Ifirmware/common/include -I$(FATFS) tests/noms/test_noms.cpp firmware/common/sources/interface/filenames.cpp \
-		build/noms_ff.o build/noms_ffunicode.o -o build/test_noms
+		build/noms_ff.o build/noms_ffunicode.o build/noms_ffsystem.o -o build/test_noms
 	@rm -f build/noms.img && $(MKFSFAT) -C build/noms.img 1024 > /dev/null
 	build/test_noms build/noms.img
 
 test-noms-ancien:
 	@rm -rf build/noms-ancien && mkdir -p build/noms-ancien && cp $(FATFS)/* build/noms-ancien/
 	git show 3d8cebef:$(FATFS)/ffconf.h > build/noms-ancien/ffconf.h
+	echo '#define FF_TRINITY_RUN 128' >> build/noms-ancien/ffconf.h	# ff.c actuel (T-144) avec l'ancien ffconf.h
 	gcc -O1 -c -Ibuild/noms-ancien build/noms-ancien/ff.c -o build/noms-ancien/ff.o
 	gcc -O1 -c -Ibuild/noms-ancien build/noms-ancien/ffunicode.c -o build/noms-ancien/ffunicode.o
 	g++ -O1 -Wall -DNOMS_ANCIEN -Ifirmware/common/include -Ibuild/noms-ancien tests/noms/test_noms.cpp \
@@ -178,7 +180,8 @@ GRAPPES_FF ?= $(FATFS)/ff.c
 test-grappes:
 	@mkdir -p build/grappes
 	gcc -O1 -c -I$(FATFS) $(GRAPPES_FF) -o build/grappes/ff.o && gcc -O1 -c -I$(FATFS) $(FATFS)/ffunicode.c -o build/grappes/ffunicode.o
-	g++ -O1 -Wall -I$(FATFS) tests/grappes/test_grappes.cpp build/grappes/ff.o build/grappes/ffunicode.o -o build/grappes/test_grappes
+	gcc -O1 -c -I$(FATFS) $(FATFS)/ffsystem.c -o build/grappes/ffsystem.o
+	g++ -O1 -Wall -I$(FATFS) tests/grappes/test_grappes.cpp build/grappes/ff.o build/grappes/ffunicode.o build/grappes/ffsystem.o -o build/grappes/test_grappes
 	@rm -f build/grappes/f16.img build/grappes/f32.img
 	@$(MKFSFAT) -F 16 -s 8 -C build/grappes/f16.img 20480 > /dev/null && $(MKFSFAT) -F 32 -s 1 -C build/grappes/f32.img 40960 > /dev/null
 	build/grappes/test_grappes build/grappes/f16.img && build/grappes/test_grappes build/grappes/f32.img
