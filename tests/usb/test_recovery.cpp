@@ -1,63 +1,81 @@
-// T-168 : réinitialisation d'une clé USB (msc_recovery.cpp) sur PC, pile USB remplacée par des bouchons : ordre des
-// requêtes, remise à zéro des bits de bascule, clé muette, requête refusée, clé retirée, réponse tardive.
+// T-168 : nouvelle détection d'une clé qui ne répond plus (msc_recovery.cpp) sur PC, pile USB remplacée par des
+// bouchons : volume gardé, clé revenue, clé muette, autre clé à sa place, hub qui ne répond pas, clé hors hub.
 #include <stdio.h>
 #include <string>
+#include <vector>
 #include "tusb.h"
-#include "host/hcd.h"
+#include "host/hub.h"
 #include "msc_recovery.h"
 
 static std::string trace;
 static uint32_t now;
-static int failAt,silentAt,unplugAt,count;
-static bool lateAnswer;
-static tuh_xfer_t pending;
-static bool hasPending;
-static tuh_xfer_cb_t oldCb;static tuh_xfer_t oldXfer;
+static int failures;
+static uint8_t hubOfKey;
+static bool replugRefused,configured;
+static uint16_t vid[8],pid[8];
+static uint32_t blocks[8];
+
+struct Event { uint32_t at;char kind;uint8_t addr; };		// 'r' retrait, 'm' montage, 'c' autre clé
+static std::vector<Event> events;
 
 uint32_t time_us_32(void) { return now; }
-extern "C" bool tuh_msc_mounted(uint8_t) { return unplugAt == 0 || count < unplugAt; }
-extern "C" bool tuh_msc_abort(uint8_t,uint8_t *i,uint8_t *in,uint8_t *out) { trace += "abandon ";*i = 2;*in = 0x81;*out = 0x02;return true; }
-extern "C" bool tuh_edpt_abort_xfer(uint8_t,uint8_t ep) { trace += "abandon-ep" + std::to_string(ep) + " ";hasPending = false;return true; }
-extern "C" bool hcd_edpt_clear_stall(uint8_t,uint8_t,uint8_t ep) { trace += "bascule" + std::to_string(ep) + " ";return true; }
-extern "C" bool tuh_control_xfer(tuh_xfer_t *x) {
-	char b[64];
-	snprintf(b,sizeof(b),"req(%02x,%d,%d) ",*(uint8_t *)x->setup,x->setup->bRequest,x->setup->wIndex);
-	trace += b;count++;
-	pending = *x;pending.setup = 0;hasPending = true;
-	return true;
-}
+extern "C" bool tuh_bus_info_get(uint8_t,tuh_bus_info_t *b) { b->rhport = 0;b->hub_addr = hubOfKey;b->hub_port = 2;b->speed = 0;return true; }
+extern "C" bool tuh_vid_pid_get(uint8_t a,uint16_t *v,uint16_t *p) { *v = vid[a];*p = pid[a];return true; }
+extern "C" uint32_t tuh_msc_get_block_count(uint8_t a,uint8_t) { return blocks[a]; }
+extern "C" bool tuh_msc_abort(uint8_t,uint8_t *i,uint8_t *in,uint8_t *out) { trace += "abandon ";*i = 0;*in = 0x81;*out = 0x02;return configured; }
+extern "C" bool tuh_trinity_hub_replug(uint8_t h,uint8_t p) { trace += "port" + std::to_string(h) + "." + std::to_string(p) + " ";return !replugRefused; }
+void MSCRecoveryLost(uint8_t a) { trace += "démonté" + std::to_string(a) + " "; }
 void MSCRecoveryWait(void) {
 	now += 100;
-	if (!hasPending) return;
-	if (lateAnswer && count == 2 && oldCb) { oldXfer.result = XFER_RESULT_SUCCESS;oldCb(&oldXfer);oldCb = 0;return; }
-	if (count == silentAt) return;
-	if (count == 1) { oldCb = pending.complete_cb;oldXfer = pending; }
-	hasPending = false;
-	pending.result = (count == failAt) ? XFER_RESULT_STALLED : XFER_RESULT_SUCCESS;
-	pending.complete_cb(&pending);
+	while (!events.empty() && now >= events.front().at) {
+		Event e = events.front();events.erase(events.begin());
+		if (e.kind == 'c') blocks[e.addr] = 55;  								// Another key takes this address
+		else if (e.kind == 'r') trace += MSCRecoveryHoldsMount(e.addr) ? "gardé " : "retrait-normal ";
+		else trace += MSCRecoveryReturned(e.addr) ? "revenu " : "montage-normal ";
+	}
 }
 
-static int failures;
-static void play(const char *name,int fail,int silent,int unplug,bool late,bool expected,const char *expectedTrace) {
-	trace.clear();count = 0;failAt = fail;silentAt = silent;unplugAt = unplug;lateAnswer = late;hasPending = false;oldCb = 0;
+static void reset(void) {
+	trace.clear();events.clear();hubOfKey = 6;replugRefused = false;configured = true;
+	for (int i = 0;i < 8;i++) { vid[i] = 0x090c;pid[i] = 0x1000;blocks[i] = 1000000; }
+}
+
+static void check(const char *name,bool expected,const std::string &expectedTrace) {
 	uint32_t t0 = now;
-	bool r = MSCResetRecovery(1);
+	for (auto &e : events) e.at += t0;
+	bool r = MSCRecoverKey(1);
 	bool ok = (r == expected && trace == expectedTrace && now - t0 < 3100000);
-	printf("%-34s : %s\n",name,ok ? "OK" : "ECHEC");
-	if (!ok) { printf("   rendu %d, %u us\n   obtenu  : %s\n   attendu : %s\n",r,(unsigned)(now - t0),trace.c_str(),expectedTrace);failures++; }
+	//	Hors reprise, retraits et montages suivent leur cours normal
+	ok = ok && !MSCRecoveryHoldsMount(1) && !MSCRecoveryReturned(1);
+	printf("%-36s : %s\n",name,ok ? "OK" : "ECHEC");
+	if (!ok) { printf("   rendu %d, %u us\n   obtenu  : %s\n   attendu : %s\n",r,(unsigned)(now - t0),trace.c_str(),expectedTrace.c_str());failures++; }
 }
 
-#define R1 "req(21,255,2) "  		// Bulk-Only Mass Storage Reset, interface 2
-#define R2 "req(02,1,129) "  		// CLEAR_FEATURE HALT, point $81
-#define R3 "req(02,1,2) "  			// CLEAR_FEATURE HALT, point $02
+#define DEBUT "abandon port6.2 "
 
 int main(void) {
-	play("clé qui répond",0,0,0,false,true,"abandon " R1 R2 "bascule129 " R3 "bascule2 ");
-	play("reset refusé",1,0,0,false,false,"abandon " R1);
-	play("seconde requête refusée",2,0,0,false,false,"abandon " R1 R2);
-	play("clé muette",0,1,0,false,false,"abandon " R1 "abandon-ep0 ");
-	play("clé retirée",0,2,2,false,false,"abandon " R1 R2);
-	play("réponse tardive ignorée",0,2,0,true,false,"abandon " R1 R2 "abandon-ep0 ");
+	reset();events = { {20000,'r',1},{600000,'m',1} };
+	check("clé revenue, volume gardé",true,DEBUT "gardé revenu ");
+	reset();events = { {20000,'r',1} };
+	check("clé retirée et pas revenue",false,DEBUT "gardé démonté1 ");
+	reset();
+	check("hub sans réponse : rien démonté",false,DEBUT);
+	reset();events = { {20000,'r',1},{300000,'c',1},{600000,'m',1} };
+	check("autre clé à la même adresse",false,DEBUT "gardé démonté1 montage-normal ");
+	reset();events = { {20000,'r',1},{600000,'m',2} };blocks[2] = 55;
+	check("autre clé à une autre adresse",false,DEBUT "gardé montage-normal démonté1 ");
+	reset();events = { {20000,'r',1},{600000,'m',3} };
+	check("même clé à une autre adresse",false,DEBUT "gardé démonté1 montage-normal ");
+	reset();events = { {10000,'m',2},{20000,'r',1},{600000,'m',1} };
+	check("autre clé montée avant le retrait",true,DEBUT "montage-normal gardé revenu ");
+	reset();events = { {20000,'r',2},{40000,'r',1},{600000,'m',1} };
+	check("retrait d'une autre clé",true,DEBUT "retrait-normal gardé revenu ");
+	reset();replugRefused = true;
+	check("hub qui refuse",false,DEBUT);
+	reset();hubOfKey = 0;
+	check("clé hors d'un hub",false,"");
+	reset();configured = false;
+	check("clé non configurée",false,"abandon ");
 	printf("test_recovery : %s (%d échec(s))\n",failures ? "ECHEC" : "OK",failures);
 	return failures != 0;
 }

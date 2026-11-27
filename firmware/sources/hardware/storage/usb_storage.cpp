@@ -73,12 +73,23 @@ void STOSynchronise(void) {
 //
 // ***************************************************************************************
 
+static bool mounting = false;  													// T-168 : inside the mount, from a USB callback
+
+static bool mountKey(uint8_t dev_addr);
+
 bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_data) {
     if (cb_data->csw->status != 0) {
         CONWriteString("MSC SCSI inquiry failed\r");
         return false;
     }
 
+    mounting = true;
+    bool ok = mountKey(dev_addr);
+    mounting = false;
+    return ok;
+}
+
+static bool mountKey(uint8_t dev_addr) {
     uint16_t vid, pid;
     tuh_vid_pid_get(dev_addr, &vid, &pid);
     CONWriteString("USB Key found %04x %04x\r",vid,pid);
@@ -121,13 +132,25 @@ bool inquiry_complete_cb(uint8_t dev_addr, tuh_msc_complete_data_t const *cb_dat
 
 void tuh_msc_mount_cb(uint8_t dev_addr) {
     USBNoteEvent();                                                             // T-32 : enumeration barrier
+    if (MSCRecoveryReturned(dev_addr)) return;  								// T-168 : its volume is still mounted
     uint8_t const lun = 0;
     //CONWriteString("MSC mounted, inquiring\r\n");
     tuh_msc_inquiry(dev_addr, lun, &msc_inquiry_resp, inquiry_complete_cb, 0);
 }
 
+static void unmountKey(uint8_t dev_addr);
+
 void tuh_msc_umount_cb(uint8_t dev_addr) {
     USBNoteEvent();                                                             // T-32
+    if (MSCRecoveryHoldsMount(dev_addr)) return;  								// T-168 : being enumerated again
+    unmountKey(dev_addr);
+}
+
+void MSCRecoveryLost(uint8_t dev_addr) {  										// T-168 : it did not come back
+    unmountKey(dev_addr);
+}
+
+static void unmountKey(uint8_t dev_addr) {
     int drive = driveOfDevice(dev_addr);
     if (drive < 0) return;
     char drive_path[3] = "0:";
@@ -154,9 +177,10 @@ void HWBusServeBurst(void);
 //		worst case of a WRITE on a real key has not been measured yet, and a write cut short can
 //		damage the file system : stoDiskWaitMaxUs records the longest wait so the limit can be
 //		set from a measurement.
-//		T-168 : after a timeout or a transport failure the transfer is given up and the key reset
-//		(msc_recovery.cpp) ; the access still fails, the next ones work again. If the key does not
-//		recover, it keeps its slot busy : the next accesses are refused at once instead of piling up.
+//		T-168 : after a timeout or a transport failure the transfer is given up and the key
+//		enumerated again (msc_recovery.cpp) ; the access still fails, the next ones work again, on
+//		the same volume. A key that does not come back is unmounted ; if the recovery could not
+//		start, it keeps its slot busy : the next accesses are refused at once instead of piling up.
 #define DISK_IO_TIMEOUT_US  (2000000)
 extern volatile uint32_t stoDiskWaitMaxUs,stoDiskTimeouts;  					// debugport.cpp
 
@@ -167,11 +191,11 @@ void MSCRecoveryWait(void) {
 
 static void recoverKey(uint8_t dev_addr,int slot) {
     msc_volume_busy[slot] = true;  											// No other access during the recovery
-    if (MSCResetRecovery(dev_addr)) {
+    if (!mounting && MSCRecoverKey(dev_addr)) {  								// Not from inside a USB callback
         stoDiskRecoveries = stoDiskRecoveries + 1;
         msc_volume_busy[slot] = false;
     } else {
-        stoDiskRecoveryFails = stoDiskRecoveryFails + 1;  						// Stays busy until the key is unmounted
+        stoDiskRecoveryFails = stoDiskRecoveryFails + 1;  						// Unmounted, or stays busy until it is
     }
 }
 

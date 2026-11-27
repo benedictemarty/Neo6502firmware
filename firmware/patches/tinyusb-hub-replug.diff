@@ -1,0 +1,69 @@
+diff --git a/src/host/hub.c b/src/host/hub.c
+index 7c6735e..f7062ca 100644
+--- a/src/host/hub.c
++++ b/src/host/hub.c
+@@ -58,6 +58,7 @@ typedef struct {
+ } hub_epbuf_t;
+ 
+ static tuh_xfer_cb_t user_complete_cb = NULL;
++static uint8_t trinity_replug_hub, trinity_replug_port; // Trinity T-168 : port to enumerate again (0 : none)
+ static hub_interface_t hub_itfs[CFG_TUH_HUB];
+ CFG_TUH_MEM_SECTION static hub_epbuf_t hub_epbufs[CFG_TUH_HUB];
+ 
+@@ -148,6 +149,27 @@ bool hub_port_set_feature(uint8_t hub_addr, uint8_t hub_port, uint8_t feature,
+   return true;
+ }
+ 
++// Trinity T-168 : the reset request was refused, nothing will be reported
++static void trinity_replug_complete(tuh_xfer_t* xfer) {
++  if (xfer->result != XFER_RESULT_SUCCESS) {
++    trinity_replug_port = 0;
++  }
++}
++
++// Trinity T-168 : enumerate again the device on a port, as if it had just been plugged in. Only the port is reset here :
++// the hub then reports the reset change, and process_new_status raises the attach event, which removes the former
++// device first. Injecting the event while the status endpoint is polled would race with the enumeration.
++bool tuh_trinity_hub_replug(uint8_t hub_addr, uint8_t hub_port) {
++  TU_VERIFY(hub_addr > CFG_TUH_DEVICE_MAX && hub_addr <= CFG_TUH_DEVICE_MAX + CFG_TUH_HUB && hub_port != 0);
++  trinity_replug_hub  = hub_addr;
++  trinity_replug_port = hub_port;
++  if (!hub_port_reset(hub_addr, hub_port, trinity_replug_complete, 0)) {
++    trinity_replug_port = 0;
++    return false;
++  }
++  return true;
++}
++
+ static void port_get_status_complete (tuh_xfer_t* xfer) {
+   if (xfer->result == XFER_RESULT_SUCCESS) {
+     hub_interface_t* p_hub = get_hub_itf(xfer->daddr);
+@@ -466,8 +488,13 @@ static void process_new_status(tuh_xfer_t* xfer) {
+         processed = hub_port_clear_feature(daddr, port_num, HUB_FEATURE_PORT_OVER_CURRENT_CHANGE,
+                                            process_new_status, STATE_COMPLETE);
+       } else if (p_hub->port_status.change.reset) {
++        uintptr_t next = STATE_COMPLETE;
++        if (daddr == trinity_replug_hub && port_num == trinity_replug_port) { // Trinity T-168
++          trinity_replug_port = 0;
++          next = STATE_CHECK_CONN;
++        }
+         processed = hub_port_clear_feature(daddr, port_num, HUB_FEATURE_PORT_RESET_CHANGE,
+-                                           process_new_status, STATE_COMPLETE);
++                                           process_new_status, next);
+       }
+       break;
+ 
+diff --git a/src/host/hub.h b/src/host/hub.h
+index 8a7feda..c60c506 100644
+--- a/src/host/hub.h
++++ b/src/host/hub.h
+@@ -193,6 +193,9 @@ bool hub_port_reset(uint8_t hub_addr, uint8_t hub_port, tuh_xfer_cb_t complete_c
+   return hub_port_set_feature(hub_addr, hub_port, HUB_FEATURE_PORT_RESET, complete_cb, user_data);
+ }
+ 
++// Trinity T-168 : enumerate again the device on a port (reset, then attach event raised by the hub driver)
++bool tuh_trinity_hub_replug(uint8_t hub_addr, uint8_t hub_port);
++
+ // Clear Port Reset Change
+ TU_ATTR_ALWAYS_INLINE static inline
+ bool hub_port_clear_reset_change(uint8_t hub_addr, uint8_t hub_port, tuh_xfer_cb_t complete_cb, uintptr_t user_data) {

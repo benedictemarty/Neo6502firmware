@@ -42,3 +42,12 @@ else
     patch -p1 < "$HERE/tinyusb-msc-recovery.diff"
     echo "TinyUSB : correctif T-168 appliqué"
 fi
+# T-168 (2026-11-27) : the Bulk-Only reset of the key did not bring it back on the board. A port of the hub can now be
+# enumerated again (hub.c), used by msc_recovery.cpp. Applied after the former T-168 patch.
+if grep -q "Trinity T-168" src/host/hub.c; then
+    echo "TinyUSB : correctif T-168 (hub) déjà appliqué"
+else
+    git apply "$HERE/tinyusb-hub-replug.diff" 2>/dev/null || \
+    patch -p1 < "$HERE/tinyusb-hub-replug.diff"
+    echo "TinyUSB : correctif T-168 (hub) appliqué"
+fi
